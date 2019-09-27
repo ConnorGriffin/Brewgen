@@ -1,3 +1,3 @@
-# Brewgen
+# Brewgen - Homebrew Recipe Generatr
 
-Homebrew recipe generater using malt specs and style guidelines to build recipes
+Using malt specs and style guidelines to generate grain bills. 
