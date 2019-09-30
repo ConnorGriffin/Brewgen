@@ -35,8 +35,8 @@
                             {% for grain in grain_data %}
                                 {% if grain['category'] == category %}
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="" id="{{ grain['name'] }}" checked>
-                                        <label class="form-check-label" for="{{ grain['name'] }}">
+                                        <input class="form-check-input" type="checkbox" value="" id="{{ grain['slug'] }}" checked>
+                                        <label class="form-check-label" for="{{ grain['slug'] }}">
                                           {{ grain['name'] }}
                                         </label>
                                       </div>
