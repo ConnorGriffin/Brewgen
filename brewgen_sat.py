@@ -1,14 +1,16 @@
 from ortools.sat.python import cp_model
 import json
-import os
+import random
 import copy
 
 # Equipment profile
 TARGET_OG = 1.054
 MASH_EFFICIENCY = .73
 TARGET_VOLUME = 5.75
-TARGET_COLOR = 4
-TARGET_SWEETNESS = .95
+TARGET_COLOR = 20
+TARGET_SWEETNESS = 2.9
+TARGET_CARAMEL = .1
+TARGET_MALTY = 2.5
 MAX_UNIQUE_GRAINS = 4
 SCALING = 10000
 
@@ -35,6 +37,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
             i += 1
         grain_bills.append(grain_bill)
         self.__solution_count += 1
+
 
     def SolutionCount(self):
         return self.__solution_count
@@ -66,11 +69,16 @@ grain_data_scaled = []
 for grain in copy.deepcopy(grain_data):
     grain['color'] = round(grain['color'] * SCALING)
     grain['potential'] = round((grain['potential'] - 1) * SCALING * MASH_EFFICIENCY)
-    grain['sweetness'] = round(grain['sweetness'] * SCALING)
+    grain['sensory']['sweet'] = round(grain['sensory'].get('sweet', 0) * SCALING)
+    grain['sensory']['caramel'] = round(grain['sensory'].get('caramel', 0) * SCALING)
+    grain['sensory']['malty'] = round(grain['sensory'].get('malty', 0) * SCALING)
+
     grain_data_scaled.append(grain)
 
 # Scale the equipment profile
 target_sweetness_int = int(TARGET_SWEETNESS * SCALING)
+target_caramel_int = int(TARGET_CARAMEL * SCALING)
+target_malty_int = int(TARGET_MALTY * SCALING)
 
 # Define the model
 model = cp_model.CpModel()
@@ -93,12 +101,19 @@ for i in all_grains:
 model.Add(sum(grain_used) <= MAX_UNIQUE_GRAINS)
 
 # Limit sweetness based on target_sweetness
-model.Add(sum(grain_data_scaled[i]['sweetness'] * grain_list[i] for i in all_grains) == target_sweetness_int * 100)
+model.Add(sum(grain_data_scaled[i]['sensory']['sweet'] * grain_list[i] for i in all_grains) == target_sweetness_int * 100)
+model.Add(sum(grain_data_scaled[i]['sensory']['malty'] * grain_list[i] for i in all_grains) == target_malty_int * 100)
+model.Add(sum(grain_data_scaled[i]['sensory']['caramel'] * grain_list[i] for i in all_grains) == target_caramel_int * 100)
+
 
 # Find all solutions and print the details
 solver = cp_model.CpSolver()
+# Sets a time limit of 10 seconds.
+solver.parameters.max_time_in_seconds = 10.0
+
 solution_printer = SolutionPrinter(grain_list)
 status = solver.SearchForAllSolutions(model, solution_printer)
+
 
 print('Solutions found : %i' % solution_printer.SolutionCount())
 
@@ -116,20 +131,25 @@ if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
     # Find the index of the beer with the color closest to the target:
     closest_color = min(range(len(beers)), key=lambda index: beers[index]['srm_distance_from_target'])
 
+    # # Find a random beer that's close enough
+    # all_closest = [beer for beer in beers if beer['srm_distance_from_target'] <= 2]
+    # random_closest = random.randrange(0, len(all_closest))
+
+
     # Print all beer details
-    i = 1
-    for beer in beers:
-        print('Beer {}:'.format(i))
-        print('  Grain Weight: {:0.2f} pounds'.format(sum(grain['use_pounds'] for grain in beer['grain_bill'])))
-        print('  Color: {:0.1f}'.format(beer['srm']))
-        print('  Grains:')
-        for grain in beer['grain_bill']:
-            print('    {}: {:0.2f} pounds'.format(grain['grain_data']['name'], grain['use_pounds']))
-        print()
+    # i = 1
+    # for beer in beers:
+    #     print('Beer {}:'.format(i))
+    #     print('  Grain Weight: {:0.2f} pounds'.format(sum(grain['use_pounds'] for grain in beer['grain_bill'])))
+    #     print('  Color: {:0.1f}'.format(beer['srm']))
+    #     print('  Grains:')
+    #     for grain in beer['grain_bill']:
+    #         print('    {}: {:0.2f} pounds'.format(grain['grain_data']['name'], grain['use_pounds']))
+    #     print()
 
-        i += 1
+    #     i += 1
 
-    # Print the chosen beer
+    # Print the chosen perfect beer
     print('Closest Beer: Beer {}'.format(closest_color +1))
     closest_beer = beers[closest_color]
     print('  Grain Weight: {:0.2f} pounds'.format(sum(grain['use_pounds'] for grain in closest_beer['grain_bill'])))
@@ -137,6 +157,17 @@ if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
     print('  Grains:')
     for grain in closest_beer['grain_bill']:
         print('    {}: {:0.2f} pounds'.format(grain['grain_data']['name'], grain['use_pounds']))
+    print()
+
+    # # Print the chosen close enough beer
+    # print('Random Close Enough: Close Beer {}'.format(random_closest +1))
+    # closest_beer = all_closest[random_closest]
+    # print('  Grain Weight: {:0.2f} pounds'.format(sum(grain['use_pounds'] for grain in closest_beer['grain_bill'])))
+    # print('  Color: {:0.1f}'.format(closest_beer['srm']))
+    # print('  Grains:')
+    # for grain in closest_beer['grain_bill']:
+    #     print('    {}: {:0.2f} pounds'.format(grain['grain_data']['name'], grain['use_pounds']))
+
 
 if status == cp_model.INFEASIBLE:
     print('Infeasible')
