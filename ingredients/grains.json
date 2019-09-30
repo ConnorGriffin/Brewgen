@@ -1,397 +1,345 @@
 [
     {
-        "name": "Acid Malt",
-        "potential": 1.027,
-        "color": 2.1,
-        "max_percent": 0,
-        "sweetness": 0
+        "name": "Pilsen Malt",
+        "brand": "Briess",
+        "potential": 1.0372,
+        "color": 1.2,
+        "max_percent": 100,
+        "category": "base",
+        "sensory": {
+            "sweet": 3,
+            "malty": 3,
+            "bready": 2,
+            "honey": 1,
+            "biscuit": 1,
+            "nutty": 1,
+            "toast": 2,
+            "grainy": 2
+        }
     },
     {
-        "name": "Amber Malt",
-        "potential": 1.035,
-        "color": 22.0,
-        "max_percent": 0,
-        "sweetness": 0
+        "name": "Brewer's Malt",
+        "brand": "Briess",
+        "potential": 1.0374,
+        "color": 1.8,
+        "max_percent": 100,
+        "category": "base",
+        "sensory": {
+            "sweet": 3,
+            "malty": 2,
+            "graham_cracker": 1,
+            "biscuit": 1,
+            "nutty": 1,
+            "toast": 1,
+            "grainy": 2
+        }
     },
     {
-        "name": "Aromatic Malt",
-        "potential": 1.036,
-        "color": 23,
-        "max_percent": 0,
-        "sweetness": 0
+        "name": "Pale Ale Malt",
+        "brand": "Briess",
+        "potential": 1.0363,
+        "color": 3.5,
+        "max_percent": 100,
+        "category": "base",
+        "sensory": {
+            "sweet": 3,
+            "malty": 3,
+            "bready": 2,
+            "graham_cracker": 2,
+            "honey": 2,
+            "biscuit": 1,
+            "nutty": 1,
+            "toast": 1,
+            "grainy":1
+        }
     },
     {
-        "name": "Barley, Flaked",
-        "potential": 1.032,
-        "color": 1.7,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Barley, Raw",
-        "potential": 1.028,
-        "color": 1.7,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Barley, Torrefied",
-        "potential": 1.036,
-        "color": 1.7,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Biscuit Malt",
-        "potential": 1.036,
-        "color": 25,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Black (Patent) Malt",
-        "potential": 1.025,
-        "color": 500,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Black Barley (Stout)",
-        "potential": 1.025,
-        "color": 500,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Brown Malt",
-        "potential": 1.032,
-        "color": 65,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Cara-Pils/Dextrine",
-        "potential": 1.033,
-        "color": 1.5,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Cara-Amber",
-        "potential": 1.035,
-        "color": 30,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Cara-Foam",
-        "potential": 1.033,
-        "color": 2,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Cara-Munich Malt",
-        "potential": 1.033,
-        "color": 56,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Cara-Red",
-        "potential": 1.035,
-        "color": 20,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Cara-Vienna Malt",
-        "potential": 1.034,
-        "color": 22,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Caramel/Crystal Malt – 10L",
-        "potential": 1.035,
+        "name": "Caramel Malt 10L",
+        "brand": "Briess",
+        "potential": 1.0356,
         "color": 10,
         "max_percent": 15,
-        "sweetness": 2
+        "category": "caramel",
+        "sensory": {
+            "sweet": 2,
+            "caramel": 2,
+            "toffee": 1,
+            "almond": 1,
+            "toast": 1
+        }
     },
     {
-        "name": "Caramel/Crystal Malt – 20L",
-        "potential": 1.035,
+        "name": "Caramel Malt 20L",
+        "brand": "Briess",
+        "potential": 1.0351,
         "color": 20,
         "max_percent": 15,
-        "sweetness": 3
+        "category": "caramel",
+        "sensory": {
+            "sweet": 3,
+            "caramel": 2,
+            "toffee": 1,
+            "raisin": 1,
+            "almond": 1,
+            "toast": 1,
+            "sourdough": 1
+        }
     },
     {
-        "name": "Caramel/Crystal Malt – 30L",
-        "potential": 1.035,
+        "name": "Caramel Malt 30L",
+        "brand": "Briess",
+        "potential": 1.0356,
         "color": 30,
         "max_percent": 15,
-        "sweetness": 4
+        "category": "caramel",
+        "sensory": {
+            "sweet": 3,
+            "caramel": 3,
+            "toffee": 2,
+            "raisin": 1,
+            "almond": 1,
+            "toast": 1,
+            "roasted_marshmallow": 1,
+            "burnt_sugar": 1,
+            "sourdough": 1
+        }
     },
     {
-        "name": "Caramel/Crystal Malt – 40L",
-        "potential": 1.034,
+        "name": "Caramel Malt 40L",
+        "brand": "Briess",
+        "potential": 1.0356,
         "color": 40,
         "max_percent": 15,
-        "sweetness": 6
+        "category": "caramel",
+        "sensory": {
+            "sweet": 3,
+            "caramel": 3,
+            "toffee": 2,
+            "raisin": 1,
+            "prune": 1,
+            "almond": 1,
+            "toast": 1,
+            "roasted_marshmallow": 1,
+            "burnt_sugar": 1,
+            "sourdough": 1
+        }
     },
     {
-        "name": "Caramel/Crystal Malt – 60L",
-        "potential": 1.034,
+        "name": "Caramel Malt 60L",
+        "brand": "Briess",
+        "potential": 1.0356,
         "color": 60,
         "max_percent": 15,
-        "sweetness": 6
+        "category": "caramel",
+        "sensory": {
+            "sweet": 2,
+            "caramel": 3,
+            "toffee": 2,
+            "raisin": 2,
+            "prune": 1,
+            "almond": 1,
+            "toast": 1,
+            "roasted_marshmallow": 2,
+            "burnt_sugar": 2,
+            "sourdough": 1
+        }
     },
     {
-        "name": "Caramel/Crystal Malt – 80L",
-        "potential": 1.034,
-        "color": 60,
+        "name": "Caramel Malt 80L",
+        "brand": "Briess",
+        "potential": 1.0351,
+        "color": 80,
         "max_percent": 15,
-        "sweetness": 8
+        "category": "caramel",
+        "sensory": {
+            "sweet": 2,
+            "caramel": 3,
+            "toffee": 2,
+            "raisin": 2,
+            "prune": 1,
+            "almond": 1,
+            "toast": 1,
+            "roasted_marshmallow": 1,
+            "burnt_sugar": 2,
+            "sourdough": 1
+        }
     },
     {
-        "name": "Caramel/Crystal Malt - 120L",
-        "potential": 1.033,
+        "name": "Caramel Malt 90L",
+        "brand": "Briess",
+        "potential": 1.0347,
+        "color": 90,
+        "max_percent": 15,
+        "category": "caramel",
+        "sensory": {
+            "sweet": 2,
+            "caramel": 3,
+            "toffee": 2,
+            "raisin": 2,
+            "prune": 1,
+            "almond": 1,
+            "toast": 1,
+            "roasted_marshmallow": 1,
+            "burnt_sugar": 2,
+            "sourdough": 1
+        }
+    },
+    {
+        "name": "Caramel Malt 120L",
+        "brand": "Briess",
+        "potential": 1.0347,
         "color": 120,
         "max_percent": 15,
-        "sweetness": 10
+        "category": "caramel",
+        "sensory": {
+            "sweet": 2,
+            "caramel": 3,
+            "toffee": 3,
+            "raisin": 2,
+            "prune": 2,
+            "almond": 1,
+            "toast": 2,
+            "roasted_marshmallow": 2,
+            "burnt_sugar": 3,
+            "sourdough": 2
+        }
+    },
+    {
+        "name": "Caramel Vienne Malt 20L",
+        "brand": "Briess",
+        "potential": 1.0360,
+        "color": 20,
+        "max_percent": 10,
+        "category": "caramel",
+        "sensory": {
+            "biscuit": 1,
+            "bready": 1,
+            "caramel": 3,
+            "graham_cracker": 1,
+            "malty": 2,
+            "sweet": 3,
+            "toast": 1,
+            "toffee": 2
+        }
+    },
+    {
+        "name": "Caramel Munich Malt 60L",
+        "brand": "Briess",
+        "potential": 1.0356,
+        "color": 60,
+        "max_percent": 10,
+        "category": "caramel",
+        "sensory": {
+            "biscuit": 2,
+            "bready": 1,
+            "burnt_sugar": 2,
+            "caramel": 2,
+            "malty": 2,
+            "raisin_bread": 2,
+            "sweet": 2,
+            "toast": 1,
+            "toffee": 1
+        }
+    },
+    {
+        "name": "Caracrystal® Wheat Malt",
+        "brand": "Briess",
+        "potential": 1.0360,
+        "color": 55,
+        "max_percent": 25,
+        "category": "caramel",
+        "sensory": {
+            "burnt_sugar": 2,
+            "woody": 2,
+            "dark_toast": 3,
+            "toffee": 1,
+            "roasted_marshmallow": 1,
+            "malty": 1,
+            "sweet": 2,
+            "caramel": 2,
+            "bready": 1
+        }
+    },
+    {
+        "name": "Caramel Rye Malt",
+        "brand": "Briess",
+        "potential": 1.0370,
+        "color": 60,
+        "max_percent": 20,
+        "category": "caramel",
+        "sensory": {
+            "sweet": 2,
+            "toast": 1,
+            "bread_crust": 2,
+            "roasted": 1,
+            "burnt_sugar": 1,
+            "malty": 1,
+            "caramel": 2,
+            "toffee": 1
+        }
+    }, {
+        "name": "Victory® Malt",
+        "brand": "Briess",
+        "potential": 1.0347,
+        "color": 28,
+        "max_percent": 25,
+        "category": "specialty",
+        "sensory": {
+            "sweet": 2,
+            "nutty": 2,
+            "toast": 1,
+            "graham_cracker": 1,
+            "bread_crust": 2,
+            "biscuit": 2
+        }
     },
     {
         "name": "Chocolate Malt",
-        "potential": 1.028,
+        "brand": "Briess",
+        "potential": 1.035,
         "color": 350,
-        "max_percent": 15,
-        "sweetness": 6
+        "max_percent": 10,
+        "category": "roasted",
+        "sensory": {
+            "bitter": 2,
+            "burnt": 2,
+            "roasted": 3,
+            "coffee": 2,
+            "cocoa": 1,
+            "dark_chocolate": 2,
+            "milk_chocolate": 1
+        }
     },
     {
-        "name": "Melanoidin Malt",
-        "potential": 1.037,
-        "color": 25,
-        "max_percent": 20,
-        "sweetness": 6
-    },
-    {
-        "name": "Mild Malt",
-        "potential": 1.037,
-        "color": 3,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Munich Malt",
-        "potential": 1.037,
-        "color": 6,
-        "max_percent": 100,
-        "sweetness": 1.3
-    },
-    {
-        "name": "Munich Malt – 10L",
-        "potential": 1.035,
-        "color": 10,
-        "max_percent": 50,
-        "sweetness": 1.5
-    },
-    {
-        "name": "Munich Malt – 20L",
-        "potential": 1.035,
-        "color": 20,
-        "max_percent": 50,
-        "sweetness": 2
-    },
-    {
-        "name": "Oats, Flaked",
-        "potential": 1.037,
-        "color": 1,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Oats, Malted",
-        "potential": 1.037,
-        "color": 1,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Pale Malt (2 Row) Belgian",
-        "potential": 1.037,
-        "color": 2,
-        "max_percent": 100,
-        "sweetness": 1
-    },
-    {
-        "name": "Pale Malt (2 Row) UK",
-        "potential": 1.036,
-        "color": 2,
-        "max_percent": 100,
-        "sweetness": 1
-    },
-    {
-        "name": "Pale Malt (2 Row) US",
-        "potential": 1.036,
-        "color": 2,
-        "max_percent": 100,
-        "sweetness": 1
-    },
-    {
-        "name": "Pale Malt (6 Row) US",
-        "potential": 1.035,
-        "color": 1.8,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Peat Smoked Malt",
-        "potential": 1.034,
-        "color": 2.8,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Pilsner (2 Row) Belgian",
-        "potential": 1.036,
-        "color": 2,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Pilsner (2 Row) German",
-        "potential": 1.037,
-        "color": 2,
-        "max_percent": 100,
-        "sweetness": 0.8
-    },
-    {
-        "name": "Pilsner (2 Row) UK",
-        "potential": 1.036,
-        "color": 2,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Rice Hulls",
-        "potential": 1.000,
-        "color": 2,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Rice, Flaked",
-        "potential": 1.032,
-        "color": 1,
-        "max_percent": 0,
-        "sweetness": 0
+        "name": "Black Malt",
+        "brand": "Briess",
+        "potential": 1.0328,
+        "color": 500,
+        "max_percent": 10,
+        "category": "roasted",
+        "sensory": {
+            "bitter": 2,
+            "burnt": 2,
+            "roasted": 3,
+            "coffee": 2,
+            "cocoa": 1,
+            "dark_chocolate": 2
+        }
     },
     {
         "name": "Roasted Barley",
-        "potential": 1.025,
+        "brand": "Briess",
+        "potential": 1.0328,
         "color": 300,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Rye Malt",
-        "potential": 1.029,
-        "color": 3.5,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Rye, Flaked",
-        "potential": 1.036,
-        "color": 3.5,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Smoked Malt",
-        "potential": 1.037,
-        "color": 9,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Special B Malt",
-        "potential": 1.030,
-        "color": 330,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Special Roast",
-        "potential": 1.033,
-        "color": 375,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Victory Malt",
-        "potential": 1.034,
-        "color": 25,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Vienna Malt",
-        "potential": 1.036,
-        "color": 3.5,
-        "max_percent": 100,
-        "sweetness": 1.1,
-        "descriptors": [
-            "honey", "almond", "hazelnut"
-        ]
-    },
-    {
-        "name": "Wheat Malt, Belgian",
-        "potential": 1.037,
-        "color": 2.3,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Wheat Malt, Dark",
-        "potential": 1.039,
-        "color": 3,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Wheat Malt, German",
-        "potential": 1.039,
-        "color": 3,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Wheat, Flaked",
-        "potential": 1.035,
-        "color": 2,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Wheat, Roasted",
-        "potential": 1.025,
-        "color": 300,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "Wheat, Torrified",
-        "potential": 1.036,
-        "color": 1.7,
-        "max_percent": 0,
-        "sweetness": 0
-    },
-    {
-        "name": "White Wheat Malt",
-        "potential": 1.040,
-        "color": 2.8,
-        "max_percent": 0,
-        "sweetness": 0
+        "max_percent": 7,
+        "category": "roasted",
+        "sensory": {
+            "bitter": 2,
+            "burnt": 2,
+            "roasted": 3,
+            "coffee": 3,
+            "cocoa": 1,
+            "dark_chocolate": 2
+        }
     }
 ]
