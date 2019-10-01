@@ -1,0 +1,22 @@
+[
+    {
+        "name": "base",
+        "min_percent": 60,
+        "max_percent": 100
+    },
+    {
+        "name": "crystal",
+        "min_percent": 0,
+        "max_percent": 25
+    },
+    {
+        "name": "roasted",
+        "min_percent": 0,
+        "max_percent": 15
+    },
+    {
+        "name": "specialty",
+        "min_percent": 0,
+        "max_percent": 15
+    }
+]
