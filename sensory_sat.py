@@ -5,6 +5,7 @@ import copy
 import models
 
 SCALING = 100
+MAX_UNIQUE_GRAINS = 4
 
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
@@ -71,21 +72,6 @@ for grain in all_grains:
         'sensory_data': sensory_data
     })
 
-
-"""
-Model Details
-
-Constraints:
-    Total grain is 100%
-    Use between the min and max percent of each grain
-    Use less than the specified max for each grain category
-    Use less than the specified max for each grain
-
-Goals:
-    Return the minimum of each descriptor
-    Return the maximum of each descriptor
-"""
-
 # Create the model
 model = cp_model.CpModel()
 
@@ -93,11 +79,19 @@ model = cp_model.CpModel()
 grain_vars = [model.NewIntVar(0, 100, 'grain{}'.format(i)) for i in grain_range]
 category_vars = [model.NewIntVar(0, 100, 'category_{}'.format(category['category'])) for category in category_map]
 sensory_vars = [model.NewIntVar(0, 1000, 'sensory_{}'.format(key)) for key in sensory_keys]
+grain_used = [model.NewBoolVar('grain{}_used'.format(i)) for i in all_grains]
 
 # Add constraints
 # Grain usage total must be 100% - not sure why both of these are needed but it doens't work if they're not
 model.Add(sum(grain_vars) == 100)
 model.Add(sum(category_vars) == 100)
+
+# Limit the max number of grains to the specified limit
+for i in grain_range:
+    model.Add(grain_vars[i] == 0).OnlyEnforceIf(grain_used[i].Not())
+    model.Add(grain_vars[i] > 0).OnlyEnforceIf(grain_used[i])
+model.Add(sum(grain_used) <= MAX_UNIQUE_GRAINS)
+
 
 # Keep each grain under the max amount
 for i in grain_range:
@@ -131,7 +125,3 @@ for i in sensory_range:
     model.Minimize(sensory_vars[i])
     status = solver.Solve(model)
     print('  {}: {}'.format(sensory_keys[i], solver.Value(sensory_vars[i])))
-
-
-# Solve the problem
-#status = solver.SearchForAllSolutions(model, solution_printer)
