@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, send_from_directory
 from .models import grain, beer, category, equipment
 from flask_cors import CORS
 
@@ -10,8 +10,8 @@ all_grains = grain.GrainList()
 @app.route('/', methods=['GET'])
 def index():
     """Brewgen main page"""
-    #return render_template('brewgen.html', grain_categories=sorted(grain_categories), grain_data=grain_data)
-    pass
+    return send_from_directory('templates', 'index.html')
+
 
 @app.route('/api/v1/grains', methods=['GET'])
 def get_grains():
