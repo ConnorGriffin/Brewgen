@@ -221,15 +221,15 @@ random_closest = random.randrange(0, len(all_closest))
 # Print the chosen perfect beer
 print('Closest Beer: Beer {}'.format(closest_color +1))
 closest_beer = beers[closest_color]
-print('  Grain Weight: {:0.2f} pounds'.format(sum(grain['use_pounds']from ortools.sat.python import cp_modelest_beer['grain_bill'])))
+print('  Grain Weight: {:0.2f} pounds'.format(sum(grain['use_pounds'], closest_beer['grain_bill'])))
 print('  Color: {:0.1f}'.format(closest_beer['srm']))
 print('  Grains:')
 for grain in closest_beer['grain_bill']:
-    print('    {}: {:0.2f} pounds'.format(grain['grain_data']['name']from ortools.sat.python import cp_models']))
+    print('    {}: {:0.2f} pounds'.format(grain['grain_data']['name'], closest_beer['grain_bill']))
 print()
 
 # # Print the chosen close enough beer
-print('Random Close Enough: Close Beer {}'.format(random_closest +1))from ortools.sat.python import cp_model
+print('Random Close Enough: Close Beer {}'.format(random_closest +1))
 closest_beer = all_closest[random_closest]
 print('  Grain Weight: {:0.2f} pounds'.format(sum(grain['use_pounds'] for grain in closest_beer['grain_bill'])))
 print('  Color: {:0.1f}'.format(closest_beer['srm']))
