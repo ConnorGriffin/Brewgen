@@ -47,3 +47,10 @@ class CategoryModel:
     def get_category(self, category_names):
         return [category for category in self.category_list if category.name in category_names]
 
+
+class CategoryProfile(CategoryModel):
+    """Defines a list of categories and their properties to create a profile."""
+
+    def __init__(self, categories):
+        self.category_list = list(categories)
+
