@@ -74,9 +74,9 @@ class GrainModel:
 
 
     def get_all_categories(self):
-        """Return a list of unique grain categories, optionally filtered on a list of grains."""
-        # TODO: Complete this. Not sure if grain_list should be a list of objects or a list of slugs.
-        pass
+        """Return a list of unique grain categories."""
+        return list(set(grain.category for grain in self.grain_list))
+
 
 
     def get_sensory_keywords(self):
@@ -268,7 +268,7 @@ class GrainList(GrainModel):
             max_unique_grains = max_unique_grains,
             grain_list = self,
             category_model = category_model,
-            sensory_model = sensory_model,
+            sensory_model = sensory_model
         )
 
         # Create a grain bill object for each one
