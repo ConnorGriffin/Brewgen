@@ -41,7 +41,12 @@
               v-on:click="toggleGrain(grain.slug)"
               v-bind:key="grain.slug"
               v-for="grain in grains"
-            >{{ grain.name }}</b-list-group-item>
+            >
+              <span>
+                <strong>{{ grain.name }}</strong>
+              </span>
+              <span class="float-right">Up to {{ grain.max_percent }}%</span>
+            </b-list-group-item>
           </b-list-group>
         </b-col>
       </b-row>

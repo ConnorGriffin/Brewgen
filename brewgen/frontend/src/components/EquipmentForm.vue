@@ -1,5 +1,5 @@
 <template>
-  <div class="ml-2 mr-2 mb-2">
+  <div class="m-2 mt-3">
     <h5 class="mb-3">Settings</h5>
     <b-input-group prepend="Max Unique Grains" class="mb-3">
       <b-form-input type="number" id="max_unique_grains" min="1" max="7" step="1" value="4" />
