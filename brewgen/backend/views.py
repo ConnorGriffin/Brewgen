@@ -1,16 +1,20 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, render_template
 from .models import grain, beer, category, equipment
 from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__,
+    static_folder = '../dist/static',
+    template_folder = '../dist'
+)
 CORS(app)
 
 all_grains = grain.GrainList()
+category_model = category.CategoryModel()
 
-@app.route('/', methods=['GET'])
-def index():
-    """Brewgen main page"""
-    return send_from_directory('templates', 'index.html')
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    return render_template("index.html")
 
 
 @app.route('/api/v1/grains', methods=['GET'])
@@ -27,8 +31,8 @@ def get_grains():
 @app.route('/api/v1/grains/<grain>', methods=['GET'])
 def get_grain():
     """Details for a single grain"""
-    #return jsonify(grain_data)
     pass
+
 
 @app.route('/api/v1/grains/categories', methods=['GET'])
 def get_grain_categories():
@@ -36,8 +40,29 @@ def get_grain_categories():
     return jsonify(sorted(all_grains.get_all_categories())), 200
 
 
-@app.route('/api/v1/grains/categories/<category>', methods=['GET'])
-def get_grain_category(category):
+@app.route('/api/v1/grains/categories/<category_name>', methods=['GET'])
+def get_grains_in_category(category_name):
+    """All grains in a category_name"""
+    category_grains = [grain.get_grain_data() for grain in all_grains.get_grain_by_category(category_name)]
+    return jsonify(category_grains), 200
+
+
+@app.route('/api/v1/style-data/grains/categories', methods=['GET'])
+def get_grain_categories_style_data():
+    # TODO: Develop this properly, add styles and add a style-data/<style> endpoint
+    """Style data for all grain categories"""
+    return jsonify(category_model.get_category_list()), 200
+
+
+@app.route('/api/v1/style-data/grains/categories/<category_name>', methods=['GET'])
+def get_grain_category_style_data(category_name):
+    """Style details for a single category"""
+    category_data = category_model.get_category(category_name).get_category_data()
+    return jsonify(category_data), 200
+
+
+@app.route('/api/v1/grains/categories/<category_name>', methods=['GET'])
+def get_grain_category(category_name):
     """Grains for a single category"""
     pass
 
@@ -73,11 +98,11 @@ def get_grain_list_sensory_values():
     categories = []
     for category_data in data.get('category_model', []):
         categories.append(category.Category(category_data['name'], category_data['min_percent'], category_data['max_percent']))
-    category_model = category.CategoryProfile(categories)
+    category_profile = category.CategoryProfile(categories)
 
     # Get the profile list and return to the client
     profiles = grain_list.get_sensory_profiles(
-        category_model = category_model,
+        category_model = category_profile,
        # sensory_model = data.get('sensory_model'),
         max_unique_grains = data.get('max_unique_grains')
     )

@@ -45,7 +45,15 @@ class CategoryModel:
 
 
     def get_category(self, category_names):
-        return [category for category in self.category_list if category.name in category_names]
+        """Return a single or list of category objects based on an input list of names"""
+        category_match = [category for category in self.category_list if category.name in category_names]
+        if type(category_names) is list:
+            return category_match
+        else:
+            return category_match[0]
+
+    def get_category_data(self, category_name):
+        """Return category data for a single category_name."""
 
 
 class CategoryProfile(CategoryModel):
