@@ -154,7 +154,7 @@ def get_grain_list_recipes():
     # Create a beer profile from the parameters
     beer_profile = beer.BeerProfile(
         min_color_srm=data.get('beer_profile').get('min_color_srm', 0),
-        max_color_srm=data.get('beer_profile').get('min_color_srm', 255),
+        max_color_srm=data.get('beer_profile').get('max_color_srm', 255),
         original_sg=data.get('beer_profile').get('original_sg', 1.05)
     )
 

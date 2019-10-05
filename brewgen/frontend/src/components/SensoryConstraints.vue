@@ -1,7 +1,7 @@
 <template>
   <div>
     <b-col class="mt-3">
-      <h5 class="mb-3">Sensory Possibilities</h5>
+      <h5 class="mb-3">Sensory Constraints</h5>
     </b-col>
     <b-col>
       <b-row

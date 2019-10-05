@@ -19,6 +19,16 @@
         v-model="targetVolumeGallons"
       />
     </b-input-group>
+    <b-input-group prepend="Mash Efficiency" append="%" class="mb-3">
+      <b-form-input
+        type="number"
+        id="original_sg"
+        min="1"
+        max="100"
+        step="1"
+        v-model="mashEfficiency"
+      />
+    </b-input-group>
     <b-input-group prepend="Original Gravity" append="SG (1.xxx)" class="mb-3">
       <b-form-input
         type="number"
@@ -30,9 +40,9 @@
       />
     </b-input-group>
     <b-input-group prepend="Target Color" append="SRM" class="mb-3">
-      <b-form-input type="number" id="target_srm" min="1" max="255" step="1" v-model="targetSrm" />
+      <b-form-input type="number" id="minSrm" min="1" max="255" step="1" v-model="minSrm" />
+      <b-form-input type="number" id="maxSrm" min="1" max="255" step="1" v-model="maxSrm" />
     </b-input-group>
-    <b-button @click="fetchSensoryData">Update Sensory Info</b-button>
   </div>
 </template>
 
@@ -72,6 +82,17 @@ export default {
         });
       }
     },
+    mashEfficiency: {
+      get() {
+        return this.$store.state.brewgen.equipmentProfile.mashEfficiency;
+      },
+      set(value) {
+        this.$store.commit("setEquipmentSetting", {
+          key: "mashEfficiency",
+          value
+        });
+      }
+    },
     originalSg: {
       get() {
         return this.$store.state.brewgen.equipmentProfile.originalSg;
@@ -83,13 +104,24 @@ export default {
         });
       }
     },
-    targetSrm: {
+    minSrm: {
       get() {
-        return this.$store.state.brewgen.equipmentProfile.targetSrm;
+        return this.$store.state.brewgen.equipmentProfile.minSrm;
       },
       set(value) {
         this.$store.commit("setEquipmentSetting", {
-          key: "targetSrm",
+          key: "minSrm",
+          value
+        });
+      }
+    },
+    maxSrm: {
+      get() {
+        return this.$store.state.brewgen.equipmentProfile.maxSrm;
+      },
+      set(value) {
+        this.$store.commit("setEquipmentSetting", {
+          key: "maxSrm",
           value
         });
       }

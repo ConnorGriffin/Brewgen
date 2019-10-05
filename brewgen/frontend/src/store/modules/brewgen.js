@@ -6,11 +6,14 @@ const state = {
   equipmentProfile: {
     maxUniqueGrains: 4,
     targetVolumeGallons: 5.5,
+    mashEfficiency: 75,
     originalSg: 1.050,
-    targetSrm: 6
+    minSrm: 3,
+    maxSrm: 10
   },
   sensoryData: [],
-  sensoryModel: []
+  sensoryModel: [],
+  recipeData: []
 };
 
 const getters = {
@@ -20,7 +23,8 @@ const getters = {
   sensoryModel: (state) => state.sensoryModel,
   getGrainEnabled: (state) => (slug) => {
     return state.allGrains.find(grain => grain.slug == slug).enabled
-  }
+  },
+  recipeData: (state) => state.recipeData
 };
 
 const actions = {
@@ -66,6 +70,31 @@ const actions = {
         throw err
       })
   },
+  async fetchRecipeData({ commit }) {
+    return axios
+      .post("http://localhost:5000/api/v1/grains/recipes", {
+        grain_list: state.allGrains.filter(grain => grain.enabled).map(grain => grain.slug),
+        category_model: state.grainCategories,
+        sensory_model: state.sensoryModel,
+        max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains),
+        equipment_profile: {
+          target_volume_gallons: Number(state.equipmentProfile.targetVolumeGallons),
+          mash_efficiency: Number(state.equipmentProfile.mashEfficiency)
+        },
+        beer_profile: {
+          min_color_srm: Number(state.equipmentProfile.minSrm),
+          max_color_srm: Number(state.equipmentProfile.maxSrm),
+          original_sg: Number(state.equipmentProfile.originalSg)
+        }
+      })
+      .then(response => {
+        commit('setRecipeData', response.data)
+        Promise.resolve()
+      })
+      .catch(err => {
+        throw err
+      })
+  },
   removeSensoryFromModel({ commit }, name) {
     commit('removeSensoryFromModel', name)
   },
@@ -86,6 +115,7 @@ const mutations = {
   },
   setEquipmentSetting: (state, { key, value }) => (state.equipmentProfile[key] = value),
   setSensoryData: (state, sensoryData) => state.sensoryData = sensoryData,
+  setRecipeData: (state, recipeData) => state.recipeData = recipeData,
   setGrainEnabled: (state, { slug, enabled }) => {
     var matchGrain = state.allGrains.find(grain => grain.slug == slug)
     Object.assign(matchGrain, { enabled })

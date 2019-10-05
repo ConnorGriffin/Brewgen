@@ -24,6 +24,8 @@
       </b-col>
       <b-col md="6">
         <EquipmentForm />
+        <b-button @click="fetchSensoryData" class="mr-3 ml-2">Update Sensory Info</b-button>
+        <b-button @click="fetchRecipeData" variant="success">Get Recipes!</b-button>
       </b-col>
     </b-row>
     <b-row>
@@ -34,6 +36,11 @@
     <b-row>
       <b-col>
         <SensoryConstraints :sensoryData="sensoryData" />
+      </b-col>
+    </b-row>
+    <b-row>
+      <b-col>
+        <RecipeChart :chartData="recipeChartData" />
       </b-col>
     </b-row>
   </b-container>
@@ -47,6 +54,7 @@ import EquipmentForm from "@/components/EquipmentForm.vue";
 import GrainModal from "@/components/GrainModal.vue";
 import SensoryRadar from "@/components/SensoryRadar.vue";
 import SensoryConstraints from "@/components/SensoryConstraints.vue";
+import RecipeChart from "@/components/RecipeChart.vue";
 
 export default {
   name: "Home",
@@ -55,7 +63,8 @@ export default {
     EquipmentForm,
     GrainModal,
     SensoryRadar,
-    SensoryConstraints
+    SensoryConstraints,
+    RecipeChart
   },
   filters: {
     inCategory: function(value, categoryName) {
@@ -66,11 +75,17 @@ export default {
     ...mapActions([
       "fetchGrainCategories",
       "fetchAllGrains",
-      "fetchSensoryData"
+      "fetchSensoryData",
+      "fetchRecipeData"
     ])
   },
   computed: {
-    ...mapGetters(["grainCategories", "allGrains", "sensoryData"]),
+    ...mapGetters([
+      "grainCategories",
+      "allGrains",
+      "sensoryData",
+      "recipeData"
+    ]),
     sensoryChartData: function() {
       // Get the labels in deslugged title-case
       var chartLabels = this.sensoryData.map(element => {
@@ -109,6 +124,21 @@ export default {
           {
             name: "Maximum",
             data: maxData
+          }
+        ]
+      };
+    },
+    recipeChartData: function() {
+      // Return the data formatted for ApexCharts
+      return {
+        options: {
+          chart: {
+            id: "recipe-srm-distribution"
+          }
+        },
+        series: [
+          {
+            data: this.recipeData.map(recipe => recipe.srm)
           }
         ]
       };
