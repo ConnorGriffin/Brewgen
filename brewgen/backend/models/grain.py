@@ -124,7 +124,7 @@ class GrainList(GrainModel):
 
             def OnSolutionCallback(self):
                 grain_bill = [self.Value(
-                    grain) / 100 for grain in self.__grains]
+                    grain) for grain in self.__grains]
                 grain_bills.append(grain_bill)
                 self.__solution_count += 1
 
@@ -284,7 +284,7 @@ class GrainList(GrainModel):
             color = grain_bill.get_beer_srm(
                 beer_profile.original_sg, equipment_profile)
             if beer_profile.min_color_srm < color < beer_profile.max_color_srm:
-                valid_grain_bills.append(self)
+                valid_grain_bills.append(grain_bill)
 
         return valid_grain_bills
 
@@ -337,7 +337,7 @@ class GrainBill(GrainModel):
         # Get grain pounds, calculate mcu, then apply Morey Equation and return the result
         use_pounds = self.__get_grain_pounds(original_sg, equipment_profile)
         mash_color_units = sum(
-            self.grain_list[i].color * use_pounds[i] / original_sg for i in self.__grain_range)
+            self.grain_list[i].color * use_pounds[i] / equipment_profile.target_volume_gallons for i in self.__grain_range)
         return 1.4922 * mash_color_units ** 0.6859
 
     def __get_grain_pounds(self, original_sg, equipment_profile):
@@ -345,9 +345,33 @@ class GrainBill(GrainModel):
             original_sg) * equipment_profile.target_volume_gallons
         average_ppg = sum(
             self.grain_list[i].ppg * (self.use_percent[i] / 100) for i in self.__grain_range)
+
         use_pounds = []
         for i in self.__grain_range:
             use_pounds.append(sg_points_needed / (average_ppg *
-                                                  equipment_profile.mash_efficiency) * (self.use_percent[i] / 100))
-
+                                                  equipment_profile.mash_efficiency) * (self.use_percent[i]))
         return use_pounds
+
+    def get_recipe(self, original_sg, equipment_profile):
+        """Return the recipe as a dict
+        Args:
+            original_sg
+            equipment_profile
+        """
+
+        use_pounds = self.__get_grain_pounds(original_sg, equipment_profile)
+        grain_list = []
+
+        for i in self.__grain_range:
+            if self.use_percent[i] > 0:
+                grain_dict = {
+                    "slug": self.grain_list[i].slug,
+                    "use_percent": self.use_percent[i],
+                    "use_pounds": use_pounds[i]
+                }
+                grain_list.append(grain_dict)
+
+        return {
+            "grains": grain_list,
+            "srm": self.get_beer_srm(original_sg, equipment_profile)
+        }

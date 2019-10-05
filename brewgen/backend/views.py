@@ -115,3 +115,61 @@ def get_grain_list_sensory_values():
     )
 
     return jsonify(profiles), 200
+
+
+@app.route('/api/v1/grains/recipes', methods=['POST'])
+def get_grain_list_recipes():
+    """Return all (or up to limit) possible recipies for the given parameters.
+    POST format:
+    {
+        "grain_list": [grain1, grain2],
+        "category_model": CategoryModel,
+        "sensory_model": SensoryModel,
+        "max_unique_grains": int,
+        "equipment_profile": EquipmentProfile
+    }
+    """
+    data = request.json
+
+    print(data)
+
+    # Create a grain object from the list of slugs
+    grain_list = grain.GrainList(data.get('grain_list', []))
+
+    # Create a category profile from the category data provided
+    categories = []
+    for category_data in data.get('category_model', []):
+        categories.append(category.Category(
+            category_data['name'], category_data['min_percent'], category_data['max_percent']))
+    category_profile = category.CategoryProfile(categories)
+
+    # Create an equipment profile from the parameters
+    equipment_profile = equipment.EquipmentProfile(
+        target_volume_gallons=data.get('equipment_profile').get(
+            'target_volume_gallons', 5.5),
+        mash_efficiency=data.get('equipment_profile').get(
+            'mash_efficiency', 75)
+    )
+
+    # Create a beer profile from the parameters
+    beer_profile = beer.BeerProfile(
+        min_color_srm=data.get('beer_profile').get('min_color_srm', 0),
+        max_color_srm=data.get('beer_profile').get('min_color_srm', 255),
+        original_sg=data.get('beer_profile').get('original_sg', 1.05)
+    )
+
+    # Get the recipe list and return to the client
+    recipes = grain_list.get_grain_bills(
+        category_model=category_profile,
+        sensory_model=data.get('sensory_model'),
+        max_unique_grains=data.get('max_unique_grains'),
+        equipment_profile=equipment_profile,
+        beer_profile=beer_profile
+    )
+
+    recipe_response = []
+    for recipe in recipes:
+        recipe_response.append(recipe.get_recipe(
+            beer_profile.original_sg, equipment_profile))
+
+    return jsonify(recipe_response), 200

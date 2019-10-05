@@ -5,7 +5,7 @@ class EquipmentProfile:
         target_volume_gallons (float): Target final kettle volume in gallons
     """
 
-    def __init__(self, mash_efficiency, target_volume_gallons, ):
+    def __init__(self, mash_efficiency, target_volume_gallons):
         # Accept mash efficiency as percent (.73) or whole number (73)
         if mash_efficiency > 1:
             self.mash_efficiency = mash_efficiency
