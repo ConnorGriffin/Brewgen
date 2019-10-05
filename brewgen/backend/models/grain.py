@@ -3,6 +3,7 @@ import os.path
 import copy
 from ortools.sat.python import cp_model
 
+
 class Grain:
     """Defines a grain and all of its properties."""
 
@@ -16,7 +17,6 @@ class Grain:
         self.category = category
         self.sensory_data = sensory_data or []
         self.ppg = ppg
-
 
     def get_grain_data(self):
         """Return grain data as a dict."""
@@ -47,37 +47,31 @@ class GrainModel:
             grain_data = json.load(f)
         for grain in grain_data:
             self.grain_list.append(Grain(
-                name = grain['name'],
-                slug = grain['slug'],
-                brand = grain['brand'],
-                potential = grain['potential'],
-                color = grain['color'],
-                max_percent = grain['max_percent'],
-                category = grain['category'],
-                sensory_data = grain['sensory'],
-                ppg = grain['ppg']
+                name=grain['name'],
+                slug=grain['slug'],
+                brand=grain['brand'],
+                potential=grain['potential'],
+                color=grain['color'],
+                max_percent=grain['max_percent'],
+                category=grain['category'],
+                sensory_data=grain['sensory'],
+                ppg=grain['ppg']
             ))
-
 
     def get_grain_list(self):
         """Return a list of all grains as a list of dicts."""
         return [grain.get_grain_data() for grain in self.grain_list]
 
-
     def get_grain_by_category(self, category):
         """Return a list of grain objects belonging to the specified categories."""
         return [grain for grain in self.grain_list if grain.category in category]
 
-
     def get_grain_by_slug(self, grain_slugs):
         return [grain for grain in self.grain_list if grain.slug in grain_slugs]
-
 
     def get_all_categories(self):
         """Return a list of unique grain categories."""
         return list(set(grain.category for grain in self.grain_list))
-
-
 
     def get_sensory_keywords(self):
         """Return a list of unique sensory keywords, optionally filtered on a list of grains."""
@@ -89,7 +83,6 @@ class GrainModel:
                 if key not in sensory_keys:
                     sensory_keys.append(key)
         return sensory_keys
-
 
     def get_grain_slugs(self):
         """Return a list of grain slugs inside the class"""
@@ -107,7 +100,6 @@ class GrainList(GrainModel):
         if grain_slugs:
             self.grain_list = self.get_grain_by_slug(grain_slugs)
 
-
     def __calculate_wort_properties(self, mode, max_unique_grains, grain_list, category_model, sensory_model):
         """Return a beer grain bill or sensory data based on input data.
         Args:
@@ -119,6 +111,7 @@ class GrainList(GrainModel):
             sensory_model (SensoryModel)
         """
 
+        max_unique_grains = int(max_unique_grains)
         grain_bills = []
 
         class SolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -130,13 +123,13 @@ class GrainList(GrainModel):
                 self.__solution_count = 0
 
             def OnSolutionCallback(self):
-                grain_bill = [self.Value(grain) / 100 for grain in self.__grains]
+                grain_bill = [self.Value(
+                    grain) / 100 for grain in self.__grains]
                 grain_bills.append(grain_bill)
                 self.__solution_count += 1
 
             def SolutionCount(self):
                 return self.__solution_count
-
 
         scaling = 10000
 
@@ -155,7 +148,8 @@ class GrainList(GrainModel):
             # Build a list of sensory data, add every possible keyword, set to zero if not mapped already
             sensory_data = {}
             for key in sensory_keys:
-                sensory_data[key] = int(grain['sensory_data'].get(key, 0) * scaling)
+                sensory_data[key] = int(
+                    grain['sensory_data'].get(key, 0) * scaling)
 
             grain_map.append({
                 'category': grain['category'],
@@ -167,9 +161,12 @@ class GrainList(GrainModel):
         model = cp_model.CpModel()
 
         # Define model variables
-        grain_vars = [model.NewIntVar(0, 100, 'grain{}'.format(i)) for i in grain_range]
-        category_vars = [model.NewIntVar(0, 100, 'category_{}'.format(category['name'])) for category in category_data]
-        grain_used = [model.NewBoolVar('grain{}_used'.format(i)) for i in grain_map]
+        grain_vars = [model.NewIntVar(
+            0, 100, 'grain{}'.format(i)) for i in grain_range]
+        category_vars = [model.NewIntVar(0, 100, 'category_{}'.format(
+            category['name'])) for category in category_data]
+        grain_used = [model.NewBoolVar(
+            'grain{}_used'.format(i)) for i in grain_map]
 
         # Define constraints
         # Grain usage total must be 100% - not sure why both of these are needed but it doens't work if they're not
@@ -189,7 +186,8 @@ class GrainList(GrainModel):
         # Keep each grain category at or above the min and at or below the max amounts
         for i in category_range:
             category = category_data[i]
-            model.Add(category_vars[i] == sum(grain_vars[k] for k in grain_range if grain_map[k]['category'] == category['name']))
+            model.Add(category_vars[i] == sum(
+                grain_vars[k] for k in grain_range if grain_map[k]['category'] == category['name']))
 
             model.Add(category_vars[i] <= category['max_percent'])
             model.Add(category_vars[i] >= category['min_percent'])
@@ -198,7 +196,8 @@ class GrainList(GrainModel):
         if sensory_model:
             sensory_model_scaled = copy.deepcopy(sensory_model)
             sensory_model_range = range(len(sensory_model))
-            sensory_model_vars = [model.NewIntVar(0, 5 * 100 * scaling, 'sensory_model_{}'.format(i['name'])) for i in sensory_model]
+            sensory_model_vars = [model.NewIntVar(
+                0, 5 * 100 * scaling, 'sensory_model_{}'.format(i['name'])) for i in sensory_model]
 
             # Scale the sensory data provided
             for descriptor in sensory_model_scaled:
@@ -208,13 +207,17 @@ class GrainList(GrainModel):
             # Ensure the grain bill stays within the sensory boundaries for each descriptor
             for i in sensory_model_range:
                 sensory_key = sensory_model_scaled[i]['name']
-                model.Add(sensory_model_vars[i] * 100 == sum(grain_map[k]['sensory_data'][sensory_key] * grain_vars[k] for k in grain_range))
-                model.Add(sensory_model_vars[i] >= sensory_model_scaled[i]['min'])
-                model.Add(sensory_model_vars[i] <= sensory_model_scaled[i]['max'])
+                model.Add(sensory_model_vars[i] * 100 == sum(
+                    grain_map[k]['sensory_data'][sensory_key] * grain_vars[k] for k in grain_range))
+                model.Add(sensory_model_vars[i] >=
+                          sensory_model_scaled[i]['min'])
+                model.Add(sensory_model_vars[i] <=
+                          sensory_model_scaled[i]['max'])
 
         # If the goal is to return a sensory model we need to adjust our model
         if mode == 'sensory_data':
-            sensory_vars = [model.NewIntVar(0, 5 * 100 * scaling, 'sensory_{}'.format(key)) for key in sensory_keys]
+            sensory_vars = [model.NewIntVar(
+                0, 5 * 100 * scaling, 'sensory_{}'.format(key)) for key in sensory_keys]
             sensory_range = range(len(sensory_keys))
 
             # Solve for minimizing and maximizing each descriptor
@@ -223,7 +226,8 @@ class GrainList(GrainModel):
             for i in sensory_range:
                 sensory_key = sensory_keys[i]
                 # Assign sensory var = Sum of all grains (sensory key * usage percent)
-                model.Add(sensory_vars[i] * 100 == sum(grain_map[k]['sensory_data'][sensory_key] * grain_vars[k] for k in grain_range))
+                model.Add(sensory_vars[i] * 100 == sum(grain_map[k]['sensory_data']
+                                                       [sensory_key] * grain_vars[k] for k in grain_range))
 
                 model.Maximize(sensory_vars[i])
                 status = solver.Solve(model)
@@ -251,7 +255,6 @@ class GrainList(GrainModel):
 
             return grain_bills
 
-
     def get_grain_bills(self, beer_profile, equipment_profile, category_model, sensory_model=None, max_unique_grains=4):
         """Return a list of GrainBill objects for valid recipes given the input parameters.
         Args:
@@ -264,25 +267,26 @@ class GrainList(GrainModel):
 
         # Get grain bill percent arrays for all possible grain bills given the input parameters
         grain_bill_percents = self.__calculate_wort_properties(
-            mode = 'grain_bill',
-            max_unique_grains = max_unique_grains,
-            grain_list = self,
-            category_model = category_model,
-            sensory_model = sensory_model
+            mode='grain_bill',
+            max_unique_grains=max_unique_grains,
+            grain_list=self,
+            category_model=category_model,
+            sensory_model=sensory_model
         )
 
         # Create a grain bill object for each one
-        grain_bills = [GrainBill(self.grain_list, grain_percents) for grain_percents in grain_bill_percents]
+        grain_bills = [GrainBill(self.grain_list, grain_percents)
+                       for grain_percents in grain_bill_percents]
 
         # Calculate the color of each grain bill given the equipment profile, only return if within the specified color range
         valid_grain_bills = []
         for grain_bill in grain_bills:
-            color = grain_bill.get_beer_srm(beer_profile.original_sg, equipment_profile)
+            color = grain_bill.get_beer_srm(
+                beer_profile.original_sg, equipment_profile)
             if beer_profile.min_color_srm < color < beer_profile.max_color_srm:
                 valid_grain_bills.append(self)
 
         return valid_grain_bills
-
 
     def get_sensory_profiles(self, category_model, sensory_model=None, max_unique_grains=4):
         """Return a sensory model (min and max descriptor values) for valid recipes given the input parameters.
@@ -292,15 +296,13 @@ class GrainList(GrainModel):
             max_unique_grains (int): defaults to 4
         """
         sensory_model = self.__calculate_wort_properties(
-            mode = 'sensory_data',
-            sensory_model = sensory_model,
-            category_model = category_model,
-            max_unique_grains = max_unique_grains,
-            grain_list = self
+            mode='sensory_data',
+            sensory_model=sensory_model,
+            category_model=category_model,
+            max_unique_grains=max_unique_grains,
+            grain_list=self
         )
         return sensory_model
-
-
 
     def add_grain(self, grain):
         """Adds a grain to the grain list object.
@@ -323,10 +325,8 @@ class GrainBill(GrainModel):
         self.use_percent = use_percent
         self.__grain_range = range(len(grain_list))
 
-
     def __sg_to_ppg(self, sg):
         return (sg - 1) * 1000
-
 
     def get_beer_srm(self, original_sg, equipment_profile):
         """Calculate the resulting beer's color from this grain bill based on equipment profile and target gravity.
@@ -336,15 +336,18 @@ class GrainBill(GrainModel):
         """
         # Get grain pounds, calculate mcu, then apply Morey Equation and return the result
         use_pounds = self.__get_grain_pounds(original_sg, equipment_profile)
-        mash_color_units = sum(self.grain_list[i].color * use_pounds[i] / original_sg for i in self.__grain_range)
+        mash_color_units = sum(
+            self.grain_list[i].color * use_pounds[i] / original_sg for i in self.__grain_range)
         return 1.4922 * mash_color_units ** 0.6859
 
-
     def __get_grain_pounds(self, original_sg, equipment_profile):
-        sg_points_needed = self.__sg_to_ppg(original_sg) * equipment_profile.target_volume_gallons
-        average_ppg = sum(self.grain_list[i].ppg * (self.use_percent[i] / 100) for i in self.__grain_range)
+        sg_points_needed = self.__sg_to_ppg(
+            original_sg) * equipment_profile.target_volume_gallons
+        average_ppg = sum(
+            self.grain_list[i].ppg * (self.use_percent[i] / 100) for i in self.__grain_range)
         use_pounds = []
         for i in self.__grain_range:
-            use_pounds.append(sg_points_needed / (average_ppg * equipment_profile.mash_efficiency) * (self.use_percent[i] / 100))
+            use_pounds.append(sg_points_needed / (average_ppg *
+                                                  equipment_profile.mash_efficiency) * (self.use_percent[i] / 100))
 
         return use_pounds

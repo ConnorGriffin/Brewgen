@@ -3,13 +3,14 @@ from .models import grain, beer, category, equipment
 from flask_cors import CORS
 
 app = Flask(__name__,
-    static_folder = '../dist/static',
-    template_folder = '../dist'
-)
+            static_folder='../dist/static',
+            template_folder='../dist'
+            )
 CORS(app)
 
 all_grains = grain.GrainList()
 category_model = category.CategoryModel()
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -43,7 +44,8 @@ def get_grain_categories():
 @app.route('/api/v1/grains/categories/<category_name>', methods=['GET'])
 def get_grains_in_category(category_name):
     """All grains in a category_name"""
-    category_grains = [grain.get_grain_data() for grain in all_grains.get_grain_by_category(category_name)]
+    category_grains = [grain.get_grain_data()
+                       for grain in all_grains.get_grain_by_category(category_name)]
     return jsonify(category_grains), 200
 
 
@@ -57,7 +59,8 @@ def get_grain_categories_style_data():
 @app.route('/api/v1/style-data/grains/categories/<category_name>', methods=['GET'])
 def get_grain_category_style_data(category_name):
     """Style details for a single category"""
-    category_data = category_model.get_category(category_name).get_category_data()
+    category_data = category_model.get_category(
+        category_name).get_category_data()
     return jsonify(category_data), 200
 
 
@@ -78,6 +81,7 @@ def get_grain_list_sensory_keywords():
         # TODO: Return all possible sensory keywords for the posted grain list
         pass
 
+
 @app.route('/api/v1/grains/sensory-profiles', methods=['POST'])
 def get_grain_list_sensory_values():
     """Return all possible sensory value min/max data for the given parameters.
@@ -91,21 +95,23 @@ def get_grain_list_sensory_values():
     """
     data = request.json
 
+    print(data)
+
     # Create a grain object from the list of slugs
     grain_list = grain.GrainList(data.get('grain_list', []))
 
     # Create a category profile from the category data provided
     categories = []
     for category_data in data.get('category_model', []):
-        categories.append(category.Category(category_data['name'], category_data['min_percent'], category_data['max_percent']))
+        categories.append(category.Category(
+            category_data['name'], category_data['min_percent'], category_data['max_percent']))
     category_profile = category.CategoryProfile(categories)
 
     # Get the profile list and return to the client
     profiles = grain_list.get_sensory_profiles(
-        category_model = category_profile,
-       # sensory_model = data.get('sensory_model'),
-        max_unique_grains = data.get('max_unique_grains')
+        category_model=category_profile,
+        # sensory_model = data.get('sensory_model'),
+        max_unique_grains=data.get('max_unique_grains')
     )
 
     return jsonify(profiles), 200
-

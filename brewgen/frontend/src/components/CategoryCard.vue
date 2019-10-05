@@ -7,8 +7,6 @@
 </template>
 
 <script>
-import GrainModal from "./GrainModal";
-
 export default {
   name: "CategoryCard",
   props: ["category", "grains"],

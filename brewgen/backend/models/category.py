@@ -1,14 +1,14 @@
 import json
 import os.path
 
+
 class Category:
     """Defines a category and all of its properties."""
 
     def __init__(self, name, min_percent, max_percent):
         self.name = name
-        self.min_percent = min_percent
-        self.max_percent = max_percent
-
+        self.min_percent = int(min_percent)
+        self.max_percent = int(max_percent)
 
     def get_category_data(self):
         """Return category data as a dict."""
@@ -33,20 +33,19 @@ class CategoryModel:
             category_data = json.load(f)
         for category in category_data:
             self.category_list.append(Category(
-                name = category['name'],
-                min_percent = category['min_percent'],
-                max_percent = category['max_percent']
+                name=category['name'],
+                min_percent=category['min_percent'],
+                max_percent=category['max_percent']
             ))
-
 
     def get_category_list(self):
         """Return all categories as a list of dicts."""
         return [category.get_category_data() for category in self.category_list]
 
-
     def get_category(self, category_names):
         """Return a single or list of category objects based on an input list of names"""
-        category_match = [category for category in self.category_list if category.name in category_names]
+        category_match = [
+            category for category in self.category_list if category.name in category_names]
         if type(category_names) is list:
             return category_match
         else:
@@ -61,4 +60,3 @@ class CategoryProfile(CategoryModel):
 
     def __init__(self, categories):
         self.category_list = list(categories)
-
