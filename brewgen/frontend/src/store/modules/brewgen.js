@@ -9,13 +9,15 @@ const state = {
     originalSg: 1.050,
     targetSrm: 6
   },
-  sensoryData: []
+  sensoryData: [],
+  sensoryModel: []
 };
 
 const getters = {
   grainCategories: (state) => state.grainCategories,
   allGrains: (state) => state.allGrains,
   sensoryData: (state) => state.sensoryData,
+  sensoryModel: (state) => state.sensoryModel,
   getGrainEnabled: (state) => (slug) => {
     return state.allGrains.find(grain => grain.slug == slug).enabled
   }
@@ -53,7 +55,7 @@ const actions = {
       .post("http://localhost:5000/api/v1/grains/sensory-profiles", {
         grain_list: state.allGrains.filter(grain => grain.enabled).map(grain => grain.slug),
         category_model: state.grainCategories,
-        sensory_model: null,
+        sensory_model: state.sensoryModel,
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
       })
       .then(response => {
@@ -64,8 +66,11 @@ const actions = {
         throw err
       })
   },
-  setGrainEnabled({ commit }, slug, value) {
-
+  removeSensoryFromModel({ commit }, name) {
+    commit('removeSensoryFromModel', name)
+  },
+  addSensoryToModel({ commit }, name, min, max) {
+    commit('addSensoryToModel', name), min, max
   }
 };
 
@@ -84,6 +89,27 @@ const mutations = {
   setGrainEnabled: (state, { slug, enabled }) => {
     var matchGrain = state.allGrains.find(grain => grain.slug == slug)
     Object.assign(matchGrain, { enabled })
+  },
+  removeSensoryFromModel(state, name) {
+    var modelObject = state.sensoryModel.find(object => object.name == name)
+    if (modelObject !== undefined) {
+      var index = state.sensoryModel.indexOf(modelObject)
+      state.sensoryModel.splice(index)
+    }
+  },
+  addSensoryToModel(state, { name, min, max }) {
+    // Remove if already exists, just to be safe
+    var modelObject = state.sensoryModel.find(object => object.name == name)
+    if (modelObject !== undefined) {
+      var index = state.sensoryModel.indexOf(modelObject)
+      state.sensoryModel.splice(index)
+    }
+    // Add to the model
+    state.sensoryModel.push({
+      name,
+      min: parseFloat(min),
+      max: parseFloat(max)
+    })
   }
 };
 

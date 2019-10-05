@@ -26,9 +26,16 @@
         <EquipmentForm />
       </b-col>
     </b-row>
-    <!-- <SensoryList :sensoryData="sensoryData" /> -->
-    <!-- <SensoryTable :sensoryData="sensoryData" /> -->
-    <SensoryRadar :sensoryChartData="sensoryChartData" />
+    <b-row>
+      <b-col>
+        <SensoryRadar :sensoryChartData="sensoryChartData" />
+      </b-col>
+    </b-row>
+    <b-row>
+      <b-col>
+        <SensoryConstraints :sensoryData="sensoryData" />
+      </b-col>
+    </b-row>
   </b-container>
 </template>
 
@@ -38,9 +45,8 @@ import { mapGetters, mapActions } from "vuex";
 import CategoryCard from "@/components/CategoryCard.vue";
 import EquipmentForm from "@/components/EquipmentForm.vue";
 import GrainModal from "@/components/GrainModal.vue";
-import SensoryList from "@/components/SensoryList.vue";
-import SensoryTable from "@/components/SensoryTable.vue";
 import SensoryRadar from "@/components/SensoryRadar.vue";
+import SensoryConstraints from "@/components/SensoryConstraints.vue";
 
 export default {
   name: "Home",
@@ -48,9 +54,8 @@ export default {
     CategoryCard,
     EquipmentForm,
     GrainModal,
-    SensoryList,
-    SensoryTable,
-    SensoryRadar
+    SensoryRadar,
+    SensoryConstraints
   },
   filters: {
     inCategory: function(value, categoryName) {

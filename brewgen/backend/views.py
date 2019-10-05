@@ -110,7 +110,7 @@ def get_grain_list_sensory_values():
     # Get the profile list and return to the client
     profiles = grain_list.get_sensory_profiles(
         category_model=category_profile,
-        # sensory_model = data.get('sensory_model'),
+        sensory_model=data.get('sensory_model'),
         max_unique_grains=data.get('max_unique_grains')
     )
 
