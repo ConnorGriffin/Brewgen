@@ -25,7 +25,7 @@
       <b-col md="6">
         <EquipmentForm />
         <b-button @click="fetchSensoryData" class="mr-3 ml-2">Update Sensory Info</b-button>
-        <b-button @click="fetchRecipeData" variant="success">Update Recipe Data</b-button>
+        <b-button @click="fetchRecipeData({colorOnly: true})" variant="success">Update Recipe Data</b-button>
       </b-col>
     </b-row>
     <b-row>
@@ -42,6 +42,16 @@
       <b-col>
         <h5 class="mb-3 ml-3 mt-3">Recipe Distribution</h5>
         <RecipeChart :chartData="recipeChartData" />
+      </b-col>
+    </b-row>
+    <b-row>
+      <b-col class="ml-3 mr-3">
+        <h5 class="mb-3">Recipes</h5>
+        <b-button @click="fetchRecipeData">Get Recipes!</b-button>
+        <!-- TODO:
+          Create a component that returns a recipe or list of recipes and its details
+          Modify the recipe generation API call to limit total recipes returned, maybe return a closest/ideal and then some randoms
+        -->
       </b-col>
     </b-row>
   </b-container>
