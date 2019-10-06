@@ -95,8 +95,6 @@ def get_grain_list_sensory_values():
     """
     data = request.json
 
-    print(data)
-
     # Create a grain object from the list of slugs
     grain_list = grain.GrainList(data.get('grain_list', []))
 
@@ -119,7 +117,9 @@ def get_grain_list_sensory_values():
 
 @app.route('/api/v1/grains/recipes', methods=['POST'])
 def get_grain_list_recipes():
-    """Return all (or up to limit) possible recipies for the given parameters.
+    """Return all (or up to limit) possible recipies for the given parameters. Optionally return color distribution only.
+    Parameters:
+        coloronly=true: Return only color distribution data
     POST format:
     {
         "grain_list": [grain1, grain2],
@@ -130,8 +130,6 @@ def get_grain_list_recipes():
     }
     """
     data = request.json
-
-    print(data)
 
     # Create a grain object from the list of slugs
     grain_list = grain.GrainList(data.get('grain_list', []))
@@ -172,4 +170,22 @@ def get_grain_list_recipes():
         recipe_response.append(recipe.get_recipe(
             beer_profile.original_sg, equipment_profile))
 
-    return jsonify(recipe_response), 200
+    color_only = request.args.get('coloronly')
+    if color_only == 'true':
+        srm_data = [int(recipe['srm']) for recipe in recipe_response]
+        lowest = int(min(srm_data))
+        highest = int(max(srm_data))
+        srm_ints = list(range(lowest, highest+1))
+        srm_dist = []
+        for i in range(len(srm_ints)):
+            srm_count = sum(
+                1 for srm_value in srm_data if srm_value == srm_ints[i])
+            srm_dist.append({
+                "srm": srm_ints[i],
+                "count": srm_count
+            })
+        response = srm_dist
+    else:
+        response = recipe_response
+
+    return jsonify(response), 200

@@ -25,7 +25,7 @@
       <b-col md="6">
         <EquipmentForm />
         <b-button @click="fetchSensoryData" class="mr-3 ml-2">Update Sensory Info</b-button>
-        <b-button @click="fetchRecipeData" variant="success">Get Recipes!</b-button>
+        <b-button @click="fetchRecipeData" variant="success">Update Recipe Data</b-button>
       </b-col>
     </b-row>
     <b-row>
@@ -40,6 +40,7 @@
     </b-row>
     <b-row>
       <b-col>
+        <h5 class="mb-3 ml-3 mt-3">Recipe Distribution</h5>
         <RecipeChart :chartData="recipeChartData" />
       </b-col>
     </b-row>
@@ -48,6 +49,7 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
+
 // @ is an alias to /src
 import CategoryCard from "@/components/CategoryCard.vue";
 import EquipmentForm from "@/components/EquipmentForm.vue";
@@ -84,7 +86,8 @@ export default {
       "grainCategories",
       "allGrains",
       "sensoryData",
-      "recipeData"
+      "recipeData",
+      "recipeColorData"
     ]),
     sensoryChartData: function() {
       // Get the labels in deslugged title-case
@@ -134,11 +137,29 @@ export default {
         options: {
           chart: {
             id: "recipe-srm-distribution"
+          },
+          xaxis: {
+            title: {
+              text: "SRM",
+              style: {
+                fontSize: "1.25rem"
+              }
+            },
+            categories: this.recipeColorData.map(recipe => recipe.srm)
+          },
+          yaxis: {
+            title: {
+              text: "Recipe Count",
+              style: {
+                fontSize: "1.25rem"
+              }
+            }
           }
         },
         series: [
           {
-            data: this.recipeData.map(recipe => recipe.srm)
+            name: "SRM",
+            data: this.recipeColorData.map(recipe => recipe.count)
           }
         ]
       };
@@ -149,6 +170,7 @@ export default {
     var prom2 = this.$store.dispatch("fetchAllGrains");
     Promise.all([prom1, prom2]).then(() => {
       this.fetchSensoryData();
+      this.fetchRecipeData({ colorOnly: true });
     });
   }
 };

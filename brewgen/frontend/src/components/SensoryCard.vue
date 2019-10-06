@@ -86,7 +86,7 @@
     <b-card-title>
       {{ sensoryData.name | deslug | titleCase }}
       <span class="float-right">
-        <b-button variant="outline">
+        <b-button variant="outline" disabled>
           <font-awesome-icon icon="lock" class="card-disabled"></font-awesome-icon>
         </b-button>
       </span>
@@ -157,7 +157,8 @@ export default {
     ...mapActions([
       "fetchSensoryData",
       "removeSensoryFromModel",
-      "addSensoryToModel"
+      "addSensoryToModel",
+      "fetchRecipeData"
     ]),
     updateSliders: function() {
       // Set the slider initial values to the min and max possible
@@ -176,6 +177,7 @@ export default {
         });
       }
       this.fetchSensoryData();
+      this.fetchRecipeData({ colorOnly: true });
     },
     inModel: function() {
       // Return true if value is in the model, false if not

@@ -13,7 +13,8 @@ const state = {
   },
   sensoryData: [],
   sensoryModel: [],
-  recipeData: []
+  recipeData: [],
+  recipeColorData: []
 };
 
 const getters = {
@@ -24,7 +25,8 @@ const getters = {
   getGrainEnabled: (state) => (slug) => {
     return state.allGrains.find(grain => grain.slug == slug).enabled
   },
-  recipeData: (state) => state.recipeData
+  recipeData: (state) => state.recipeData,
+  recipeColorData: (state) => state.recipeColorData
 };
 
 const actions = {
@@ -70,9 +72,9 @@ const actions = {
         throw err
       })
   },
-  async fetchRecipeData({ commit }) {
+  async fetchRecipeData({ commit }, { colorOnly }) {
     return axios
-      .post("http://localhost:5000/api/v1/grains/recipes", {
+      .post("http://localhost:5000/api/v1/grains/recipes?coloronly=" + colorOnly, {
         grain_list: state.allGrains.filter(grain => grain.enabled).map(grain => grain.slug),
         category_model: state.grainCategories,
         sensory_model: state.sensoryModel,
@@ -82,14 +84,20 @@ const actions = {
           mash_efficiency: Number(state.equipmentProfile.mashEfficiency)
         },
         beer_profile: {
-          min_color_srm: Number(state.equipmentProfile.minSrm),
-          max_color_srm: Number(state.equipmentProfile.maxSrm),
+          // min_color_srm: Number(state.equipmentProfile.minSrm),
+          // max_color_srm: Number(state.equipmentProfile.maxSrm),
           original_sg: Number(state.equipmentProfile.originalSg)
         }
       })
       .then(response => {
-        commit('setRecipeData', response.data)
-        Promise.resolve()
+        if (colorOnly === undefined || colorOnly == false) {
+          commit('setRecipeData', response.data)
+          Promise.resolve()
+        } else if (colorOnly == true) {
+          commit('setRecipeColorData', response.data)
+        } else {
+          throw "invalid colorOnly parameter value, must be true or undefined"
+        }
       })
       .catch(err => {
         throw err
@@ -116,6 +124,7 @@ const mutations = {
   setEquipmentSetting: (state, { key, value }) => (state.equipmentProfile[key] = value),
   setSensoryData: (state, sensoryData) => state.sensoryData = sensoryData,
   setRecipeData: (state, recipeData) => state.recipeData = recipeData,
+  setRecipeColorData: (state, recipeColorData) => state.recipeColorData = recipeColorData,
   setGrainEnabled: (state, { slug, enabled }) => {
     var matchGrain = state.allGrains.find(grain => grain.slug == slug)
     Object.assign(matchGrain, { enabled })
