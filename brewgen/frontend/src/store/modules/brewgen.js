@@ -73,8 +73,23 @@ const actions = {
       })
   },
   async fetchRecipeData({ commit }, { colorOnly }) {
+    if (colorOnly == true) {
+      var uri = "http://localhost:5000/api/v1/grains/recipes?coloronly=true"
+      var commitAction = 'setRecipeColorData'
+      var beerProfile = {
+        original_sg: Number(state.equipmentProfile.originalSg)
+      }
+    } else {
+      var uri = "http://localhost:5000/api/v1/grains/recipes"
+      var commitAction = 'setRecipeData'
+      var beerProfile = {
+        min_color_srm: Number(state.equipmentProfile.minSrm),
+        max_color_srm: Number(state.equipmentProfile.maxSrm),
+        original_sg: Number(state.equipmentProfile.originalSg)
+      }
+    }
     return axios
-      .post("http://localhost:5000/api/v1/grains/recipes?coloronly=" + colorOnly, {
+      .post(uri, {
         grain_list: state.allGrains.filter(grain => grain.enabled).map(grain => grain.slug),
         category_model: state.grainCategories,
         sensory_model: state.sensoryModel,
@@ -83,21 +98,11 @@ const actions = {
           target_volume_gallons: Number(state.equipmentProfile.targetVolumeGallons),
           mash_efficiency: Number(state.equipmentProfile.mashEfficiency)
         },
-        beer_profile: {
-          // min_color_srm: Number(state.equipmentProfile.minSrm),
-          // max_color_srm: Number(state.equipmentProfile.maxSrm),
-          original_sg: Number(state.equipmentProfile.originalSg)
-        }
+        beer_profile: beerProfile
       })
       .then(response => {
-        if (colorOnly === undefined || colorOnly == false) {
-          commit('setRecipeData', response.data)
-          Promise.resolve()
-        } else if (colorOnly == true) {
-          commit('setRecipeColorData', response.data)
-        } else {
-          throw "invalid colorOnly parameter value, must be true or undefined"
-        }
+        commit(commitAction, response.data)
+        Promise.resolve()
       })
       .catch(err => {
         throw err

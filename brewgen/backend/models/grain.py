@@ -283,7 +283,7 @@ class GrainList(GrainModel):
         for grain_bill in grain_bills:
             color = grain_bill.get_beer_srm(
                 beer_profile.original_sg, equipment_profile)
-            if beer_profile.min_color_srm < color < beer_profile.max_color_srm:
+            if beer_profile.min_color_srm <= color <= beer_profile.max_color_srm:
                 valid_grain_bills.append(grain_bill)
 
         return valid_grain_bills
