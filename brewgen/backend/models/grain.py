@@ -1,22 +1,25 @@
 import json
 import os.path
 import copy
+
+from slugify import slugify
 from ortools.sat.python import cp_model
 
 
 class Grain:
     """Defines a grain and all of its properties."""
 
-    def __init__(self, name, slug, brand, potential, color, max_percent, category, sensory_data, ppg):
+    def __init__(self, name, brand, potential, color, max_percent, category, sensory_data):
         self.name = name
-        self.slug = slug
+        self.slug = slugify('{}_{}'.format(brand, name),
+                            replacements=[["'", ''], ['®', '']])
         self.brand = brand
         self.potential = potential
         self.color = color
         self.max_percent = max_percent
         self.category = category
-        self.sensory_data = sensory_data or []
-        self.ppg = ppg
+        self.sensory_data = sensory_data or {}
+        self.ppg = (self.potential - 1) * 1000
 
     def get_grain_data(self):
         """Return grain data as a dict."""
@@ -48,14 +51,12 @@ class GrainModel:
         for grain in grain_data:
             self.grain_list.append(Grain(
                 name=grain['name'],
-                slug=grain['slug'],
                 brand=grain['brand'],
                 potential=grain['potential'],
                 color=grain['color'],
                 max_percent=grain['max_percent'],
                 category=grain['category'],
                 sensory_data=grain['sensory'],
-                ppg=grain['ppg']
             ))
 
     def get_grain_list(self):
@@ -78,10 +79,11 @@ class GrainModel:
         # TODO: Add the filtering part, same as above, not sure if filtering on slugs or what
         sensory_keys = []
         for grain in self.grain_list:
-            grain_keys = [key for key in grain.sensory_data.keys()]
-            for key in grain_keys:
-                if key not in sensory_keys:
-                    sensory_keys.append(key)
+            if grain.sensory_data:
+                grain_keys = [key for key in grain.sensory_data.keys()]
+                for key in grain_keys:
+                    if key not in sensory_keys:
+                        sensory_keys.append(key)
         return sensory_keys
 
     def get_grain_slugs(self):

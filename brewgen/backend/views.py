@@ -94,6 +94,7 @@ def get_grain_list_sensory_values():
     }
     """
     data = request.json
+    print(data)
 
     # Create a grain object from the list of slugs
     grain_list = grain.GrainList(data.get('grain_list', []))
@@ -143,17 +144,17 @@ def get_grain_list_recipes():
 
     # Create an equipment profile from the parameters
     equipment_profile = equipment.EquipmentProfile(
-        target_volume_gallons=data.get('equipment_profile').get(
+        target_volume_gallons=data.get('equipment_profile', {}).get(
             'target_volume_gallons', 5.5),
-        mash_efficiency=data.get('equipment_profile').get(
+        mash_efficiency=data.get('equipment_profile', {}).get(
             'mash_efficiency', 75)
     )
 
     # Create a beer profile from the parameters
     beer_profile = beer.BeerProfile(
-        min_color_srm=data.get('beer_profile').get('min_color_srm', 0),
-        max_color_srm=data.get('beer_profile').get('max_color_srm', 255),
-        original_sg=data.get('beer_profile').get('original_sg', 1.05)
+        min_color_srm=data.get('beer_profile', {}).get('min_color_srm', 0),
+        max_color_srm=data.get('beer_profile', {}).get('max_color_srm', 255),
+        original_sg=data.get('beer_profile', {}).get('original_sg', 1.05)
     )
 
     # Get the recipe list and return to the client
