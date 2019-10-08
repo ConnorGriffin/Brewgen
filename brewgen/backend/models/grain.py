@@ -9,13 +9,14 @@ from ortools.sat.python import cp_model
 class Grain:
     """Defines a grain and all of its properties."""
 
-    def __init__(self, name, brand, potential, color, max_percent, category, sensory_data):
+    def __init__(self, name, brand, potential, color, category, sensory_data, min_percent=0, max_percent=100):
         self.name = name
         self.slug = slugify('{}_{}'.format(brand, name),
                             replacements=[["'", ''], ['®', '']])
         self.brand = brand
         self.potential = potential
         self.color = color
+        self.min_percent = min_percent
         self.max_percent = max_percent
         self.category = category
         self.sensory_data = sensory_data or {}
@@ -30,6 +31,7 @@ class Grain:
             'potential': self.potential,
             'color': self.color,
             'max_percent': self.max_percent,
+            'min_percent': self.min_percent,
             'category': self.category,
             'sensory_data': self.sensory_data,
             'ppg': self.ppg
@@ -56,7 +58,7 @@ class GrainModel:
                 color=grain['color'],
                 max_percent=grain['max_percent'],
                 category=grain['category'],
-                sensory_data=grain['sensory'],
+                sensory_data=grain['sensory']
             ))
 
     def get_grain_list(self):
@@ -69,6 +71,9 @@ class GrainModel:
 
     def get_grain_by_slug(self, grain_slugs):
         return [grain for grain in self.grain_list if grain.slug in grain_slugs]
+
+    def get_grain_by_name(self, grain_name):
+        return [grain for grain in self.grain_list if grain.name in grain_name]
 
     def get_all_categories(self):
         """Return a list of unique grain categories."""
@@ -94,12 +99,15 @@ class GrainModel:
 class GrainList(GrainModel):
     """Creates a Grain List object, a list of grains and data about them.
     Args:
+        grain_objects (list): A list of grain objects used to initialize this object. If provided grain_slugs is ignored.
         grain_slugs (list): A list of grain slugs used to initialize this object
     """
 
-    def __init__(self, grain_slugs=None):
+    def __init__(self, grain_objects=None, grain_slugs=None):
         GrainModel.__init__(self)
-        if grain_slugs:
+        if grain_objects:
+            self.grain_list = grain_objects
+        elif grain_slugs:
             self.grain_list = self.get_grain_by_slug(grain_slugs)
 
     def __calculate_wort_properties(self, mode, max_unique_grains, grain_list, category_model, sensory_model):
@@ -155,6 +163,7 @@ class GrainList(GrainModel):
 
             grain_map.append({
                 'category': grain['category'],
+                'min_percent': grain['min_percent'],
                 'max_percent': grain['max_percent'],
                 'sensory_data': sensory_data
             })
@@ -181,9 +190,12 @@ class GrainList(GrainModel):
             model.Add(grain_vars[i] > 0).OnlyEnforceIf(grain_used[i])
         model.Add(sum(grain_used) <= max_unique_grains)
 
-        # Keep each grain under the max amount
+        # Keep each grain between the min and max percents, but only if they're in use
         for i in grain_range:
-            model.Add(grain_vars[i] <= grain_map[i]['max_percent'])
+            model.Add(grain_vars[i] <= grain_map[i]
+                      ['max_percent']).OnlyEnforceIf(grain_used[i])
+            model.Add(grain_vars[i] >= grain_map[i]
+                      ['min_percent']).OnlyEnforceIf(grain_used[i])
 
         # Keep each grain category at or above the min and at or below the max amounts
         for i in category_range:
@@ -251,7 +263,7 @@ class GrainList(GrainModel):
         if mode == 'grain_bill':
             # Find all solutions with a time limit, return the usage_percent for each solution
             solver = cp_model.CpSolver()
-            solver.parameters.max_time_in_seconds = 2
+            solver.parameters.max_time_in_seconds = 1
             solution_printer = SolutionPrinter(grain_vars)
             status = solver.SearchForAllSolutions(model, solution_printer)
 

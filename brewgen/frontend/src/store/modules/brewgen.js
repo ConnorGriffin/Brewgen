@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from 'axios';
 
 const state = {
   grainCategories: [],
@@ -7,153 +7,210 @@ const state = {
     maxUniqueGrains: 4,
     targetVolumeGallons: 5.5,
     mashEfficiency: 75,
-    originalSg: 1.050,
+    originalSg: 1.05,
     minSrm: 3,
     maxSrm: 10
   },
   sensoryData: [],
   sensoryModel: [],
   recipeData: [],
-  recipeColorData: []
+  recipeColorData: [],
+  styles: [],
+  currentStyle: 'None Selected'
 };
 
 const getters = {
-  grainCategories: (state) => state.grainCategories,
-  allGrains: (state) => state.allGrains,
-  sensoryData: (state) => state.sensoryData,
-  sensoryModel: (state) => state.sensoryModel,
-  getGrainEnabled: (state) => (slug) => {
-    return state.allGrains.find(grain => grain.slug == slug).enabled
+  grainCategories: state => state.grainCategories,
+  allGrains: state => state.allGrains,
+  sensoryData: state => state.sensoryData,
+  sensoryModel: state => state.sensoryModel,
+  getGrainEnabled: state => slug => {
+    return state.allGrains.find(grain => grain.slug == slug).enabled;
   },
-  recipeData: (state) => state.recipeData,
-  recipeColorData: (state) => state.recipeColorData
+  recipeData: state => state.recipeData,
+  recipeColorData: state => state.recipeColorData,
+  styles: state => state.styles,
+  currentStyle: state => state.currentStyle
 };
 
 const actions = {
   async fetchGrainCategories({ commit }) {
-    return axios.get('http://localhost:5000/api/v1/style-data/grains/categories')
+    return axios
+      .get('http://localhost:5000/api/v1/style-data/grains/categories')
       .then(response => {
-        commit('setGrainCategories', response.data)
-        Promise.resolve()
+        commit('setGrainCategories', response.data);
+        Promise.resolve();
       })
       .catch(err => {
-        throw err
-      })
+        throw err;
+      });
   },
   updateGrainCategoryValue({ commit }, grainCategory, key, value) {
-    commit('setGrainCategoryValue', grainCategory, key, value)
+    commit('setGrainCategoryValue', grainCategory, key, value);
   },
   async fetchAllGrains({ commit }) {
-    return axios.get('http://localhost:5000/api/v1/grains')
+    return axios
+      .get('http://localhost:5000/api/v1/grains')
       .then(response => {
-        commit('setAllGrains', response.data)
-        Promise.resolve()
+        commit('setAllGrains', response.data);
+        Promise.resolve();
       })
       .catch(err => {
-        throw err
-      })
+        throw err;
+      });
   },
   setEquipmentSetting({ commit }, key, value) {
-    commit('setEquipmentSetting', key, value)
+    commit('setEquipmentSetting', key, value);
   },
   async fetchSensoryData({ commit }) {
     return axios
-      .post("http://localhost:5000/api/v1/grains/sensory-profiles", {
-        grain_list: state.allGrains.filter(grain => grain.enabled).map(grain => grain.slug),
+      .post('http://localhost:5000/api/v1/grains/sensory-profiles', {
+        grain_list: state.allGrains
+          .filter(grain => grain.enabled)
+          .map(grain => grain.slug),
         category_model: state.grainCategories,
         sensory_model: state.sensoryModel,
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
       })
       .then(response => {
-        commit('setSensoryData', response.data)
-        Promise.resolve()
+        commit('setSensoryData', response.data);
+        Promise.resolve();
       })
       .catch(err => {
-        throw err
-      })
+        throw err;
+      });
   },
   async fetchRecipeData({ commit }, { colorOnly }) {
     if (colorOnly == true) {
-      var uri = "http://localhost:5000/api/v1/grains/recipes?coloronly=true"
-      var commitAction = 'setRecipeColorData'
+      var uri = 'http://localhost:5000/api/v1/grains/recipes?coloronly=true';
+      var commitAction = 'setRecipeColorData';
       var beerProfile = {
         original_sg: Number(state.equipmentProfile.originalSg)
-      }
+      };
     } else {
-      var uri = "http://localhost:5000/api/v1/grains/recipes"
-      var commitAction = 'setRecipeData'
+      var uri = 'http://localhost:5000/api/v1/grains/recipes';
+      var commitAction = 'setRecipeData';
       var beerProfile = {
         min_color_srm: Number(state.equipmentProfile.minSrm),
         max_color_srm: Number(state.equipmentProfile.maxSrm),
         original_sg: Number(state.equipmentProfile.originalSg)
-      }
+      };
     }
     return axios
       .post(uri, {
-        grain_list: state.allGrains.filter(grain => grain.enabled).map(grain => grain.slug),
+        grain_list: state.allGrains
+          .filter(grain => grain.enabled)
+          .map(grain => grain.slug),
         category_model: state.grainCategories,
         sensory_model: state.sensoryModel,
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains),
         equipment_profile: {
-          target_volume_gallons: Number(state.equipmentProfile.targetVolumeGallons),
+          target_volume_gallons: Number(
+            state.equipmentProfile.targetVolumeGallons
+          ),
           mash_efficiency: Number(state.equipmentProfile.mashEfficiency)
         },
         beer_profile: beerProfile
       })
       .then(response => {
-        commit(commitAction, response.data)
-        Promise.resolve()
+        commit(commitAction, response.data);
+        Promise.resolve();
       })
       .catch(err => {
-        throw err
+        throw err;
+      });
+  },
+  async fetchStyles({ commit }) {
+    return axios
+      .get('http://localhost:5000/api/v1/styles')
+      .then(response => {
+        commit('setStyles', response.data);
+        Promise.resolve();
       })
+      .catch(err => {
+        throw err;
+      });
+  },
+  async setGrainDataFromStyle({ commit }, styleSlug) {
+    return axios
+      .get('http://localhost:5000/api/v1/styles/' + styleSlug)
+      .then(response => {
+        commit('setAllGrainsFromStyle', response.data.grain_usage);
+        Promise.resolve();
+      })
+      .catch(err => {
+        throw err;
+      });
   },
   removeSensoryFromModel({ commit }, name) {
-    commit('removeSensoryFromModel', name)
+    commit('removeSensoryFromModel', name);
   },
   addSensoryToModel({ commit }, name, min, max) {
-    commit('addSensoryToModel', name), min, max
+    commit('addSensoryToModel', name), min, max;
   }
 };
 
 const mutations = {
-  setGrainCategories: (state, grainCategories) => (state.grainCategories = grainCategories),
+  setGrainCategories: (state, grainCategories) =>
+    (state.grainCategories = grainCategories),
   setGrainCategoryValue: (state, { grainCategory, key, value }) => {
-    var matchCategory = state.grainCategories.find(category => category.name == grainCategory)
-    Object.assign(matchCategory, { [key]: value })
+    var matchCategory = state.grainCategories.find(
+      category => category.name == grainCategory
+    );
+    Object.assign(matchCategory, { [key]: value });
   },
   setAllGrains: (state, allGrains) => {
-    allGrains.forEach(grain => (grain["enabled"] = true));
+    allGrains.forEach(grain => (grain['enabled'] = true));
     state.allGrains = allGrains;
   },
-  setEquipmentSetting: (state, { key, value }) => (state.equipmentProfile[key] = value),
-  setSensoryData: (state, sensoryData) => state.sensoryData = sensoryData,
-  setRecipeData: (state, recipeData) => state.recipeData = recipeData,
-  setRecipeColorData: (state, recipeColorData) => state.recipeColorData = recipeColorData,
+  setAllGrainsFromStyle: (state, styleGrains) => {
+    // Iterate over every grain in allGrains, set the grain properties from the provided style data
+    state.allGrains.forEach(stateGrain => {
+      var styleGrain = styleGrains.find(g => g.slug == stateGrain.slug)
+      // If the grain isn't in the style data at all, set to disabled and set min and max to 0
+      if (styleGrain === undefined) {
+        Object.assign(stateGrain, { enabled: false, min_percent: 0, max_percent: 0 })
+      } else {
+        Object.assign(stateGrain, { enabled: true, min_percent: styleGrain.min_percent, max_percent: styleGrain.max_percent })
+      }
+    })
+  },
+  setEquipmentSetting: (state, { key, value }) =>
+    (state.equipmentProfile[key] = value),
+  setSensoryData: (state, sensoryData) => (state.sensoryData = sensoryData),
+  setRecipeData: (state, recipeData) => (state.recipeData = recipeData),
+  setRecipeColorData: (state, recipeColorData) =>
+    (state.recipeColorData = recipeColorData),
   setGrainEnabled: (state, { slug, enabled }) => {
-    var matchGrain = state.allGrains.find(grain => grain.slug == slug)
-    Object.assign(matchGrain, { enabled })
+    var matchGrain = state.allGrains.find(grain => grain.slug == slug);
+    Object.assign(matchGrain, { enabled });
   },
   removeSensoryFromModel(state, name) {
-    var modelObject = state.sensoryModel.find(object => object.name == name)
+    var modelObject = state.sensoryModel.find(object => object.name == name);
     if (modelObject !== undefined) {
-      var index = state.sensoryModel.indexOf(modelObject)
-      state.sensoryModel.splice(index)
+      var index = state.sensoryModel.indexOf(modelObject);
+      state.sensoryModel.splice(index);
     }
   },
   addSensoryToModel(state, { name, min, max }) {
     // Remove if already exists, just to be safe
-    var modelObject = state.sensoryModel.find(object => object.name == name)
+    var modelObject = state.sensoryModel.find(object => object.name == name);
     if (modelObject !== undefined) {
-      var index = state.sensoryModel.indexOf(modelObject)
-      state.sensoryModel.splice(index)
+      var index = state.sensoryModel.indexOf(modelObject);
+      state.sensoryModel.splice(index);
     }
     // Add to the model
     state.sensoryModel.push({
       name,
       min: parseFloat(min),
       max: parseFloat(max)
-    })
+    });
+  },
+  setStyles(state, value) {
+    state.styles = value
+  },
+  setCurrentStyle(state, value) {
+    state.currentStyle = value
   }
 };
 

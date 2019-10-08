@@ -23,6 +23,7 @@
         </div>
       </b-col>
       <b-col md="6">
+        <StyleDropdown :styles="styles" />
         <EquipmentForm />
         <b-button @click="fetchSensoryData" class="mr-3 ml-2">Update Sensory Info</b-button>
         <b-button @click="fetchRecipeData({colorOnly: true})" variant="success">Update Recipe Data</b-button>
@@ -67,6 +68,7 @@ import GrainModal from "@/components/GrainModal.vue";
 import SensoryRadar from "@/components/SensoryRadar.vue";
 import SensoryConstraints from "@/components/SensoryConstraints.vue";
 import RecipeChart from "@/components/RecipeChart.vue";
+import StyleDropdown from "@/components/StyleDropdown.vue";
 
 export default {
   name: "Home",
@@ -76,7 +78,8 @@ export default {
     GrainModal,
     SensoryRadar,
     SensoryConstraints,
-    RecipeChart
+    RecipeChart,
+    StyleDropdown
   },
   filters: {
     inCategory: function(value, categoryName) {
@@ -88,7 +91,8 @@ export default {
       "fetchGrainCategories",
       "fetchAllGrains",
       "fetchSensoryData",
-      "fetchRecipeData"
+      "fetchRecipeData",
+      "fetchStyles"
     ])
   },
   computed: {
@@ -97,7 +101,8 @@ export default {
       "allGrains",
       "sensoryData",
       "recipeData",
-      "recipeColorData"
+      "recipeColorData",
+      "styles"
     ]),
     sensoryChartData: function() {
       // Get the labels in deslugged title-case
@@ -176,6 +181,7 @@ export default {
     }
   },
   created() {
+    this.fetchStyles();
     var prom1 = this.$store.dispatch("fetchGrainCategories");
     var prom2 = this.$store.dispatch("fetchAllGrains");
     Promise.all([prom1, prom2]).then(() => {

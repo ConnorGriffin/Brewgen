@@ -4,6 +4,7 @@
 # In[13]:
 
 
+from brewgen.backend.models import grain
 from pathlib import Path
 from os import listdir
 from os.path import isfile, join
@@ -14,7 +15,6 @@ import numpy as np
 import re
 from matplotlib import pyplot as plt
 sys.path.append('../')
-from brewgen.backend.models import grain
 
 # In[ ]:
 
@@ -93,19 +93,52 @@ rewrites = [
         'match': '^.*Chocolate.*$',
         'max_color': 360
     },
+    # Dark chocolate as the chocolate catchall
     {
         'name': "Dark Chocolate Malt",
         'match': '^.*Chocolate.*$',
-        'max_color': 430
+    },
+    {
+        'name': "Special B",
+        'match': '^.*Special (W|B).*$'
+    },
+    {
+        'name': "Wheat Malt, White",
+        'match': '^.*(White Wheat|Pale Wheat|Wheat Malt|Light Wheat|Wheat \\(US\\)).*$'
+    },
+    {
+        'name': "Wheat Malt, Red",
+        'match': '^.*(Red.*Wheat|Wheat.*Red|).*$'
+    },
+    {
+        'name': "Brewers Torrified Wheat",
+        'match': '^.*(Wheat.*Torrified|Torrified Wheat).*$'
+    },
+    {
+        'name': "Weyermann Pale Wheat Malt",
+        'match': '^.*((Belgian|German).*Wheat|Wheat.*(DE|BE|Belgian|German)).*$'
+    },
+    {
+        'name': "Dextrose (Corn Sugar)",
+        'match': '^.*(Corn Sugar|Dextrose).*$'
+    },
+    {
+        'name': "Brewers Barley Flakes",
+        'match': '^.*(Barley.*Flaked|Flaked.*Barley).*$'
+    },
+    {
+        'name': "Brewers Oat Flakes",
+        'match': '^.*(Oat.*Flaked|Flaked.*Oat).*$'
+    },
+    {
+        'name': "Honey Malt",
+        'match': '^.*(Honey.*Malt|Malt.*Honey).*$'
+    },
+    {
+        'name': 'Victory Malt',
+        'match': '^.*Victory.*$'
     }
 ]
-
-# Add rewrites for each Crystal malt
-for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
-    rewrites.append({
-        'name': 'Caramel Malt {}L'.format(lov),
-        'match': '^.*(Caramel|Crystal).*{}.*$'.format(lov)
-    })
 
 # Add rewrites for each Crystal malt
 for lov in [10, 20, 30, 40, 60, 80, 90, 120]:

@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, render_template
-from .models import grain, beer, category, equipment
+from .models import grain, beer, category, equipment, style
 from flask_cors import CORS
 
 app = Flask(__name__,
@@ -10,6 +10,7 @@ CORS(app)
 
 all_grains = grain.GrainList()
 category_model = category.CategoryModel()
+all_styles = style.StyleModel()
 
 
 @app.route('/', defaults={'path': ''})
@@ -56,6 +57,31 @@ def get_grain_categories_style_data():
     return jsonify(category_model.get_category_list()), 200
 
 
+@app.route('/api/v1/styles', methods=['GET'])
+def get_styles():
+    """List of style slugs"""
+    return jsonify(all_styles.get_style_names_and_slugs()), 200
+
+
+@app.route('/api/v1/styles/<style_slug>', methods=['GET'])
+def get_style_data(style_slug):
+    """Data for a single style"""
+    style_object = all_styles.get_style_by_slug(style_slug)
+
+    return jsonify({
+        'name': style_object.name,
+        'slug': style_object.slug,
+        'grain_usage': style_object.get_grain_usage()
+    }), 200
+
+
+@app.route('/api/v1/styles/<style_slug>/grains', methods=['GET'])
+def get_style_grain_data(style_slug):
+    """Grain data for a single style"""
+    style_object = all_styles.get_style_by_slug(style_slug)
+    return jsonify(style_object.grain_list.get_grain_list(), 200)
+
+
 @app.route('/api/v1/style-data/grains/categories/<category_name>', methods=['GET'])
 def get_grain_category_style_data(category_name):
     """Style details for a single category"""
@@ -97,7 +123,7 @@ def get_grain_list_sensory_values():
     print(data)
 
     # Create a grain object from the list of slugs
-    grain_list = grain.GrainList(data.get('grain_list', []))
+    grain_list = grain.GrainList(grain_slugs=data.get('grain_list', []))
 
     # Create a category profile from the category data provided
     categories = []
@@ -133,7 +159,7 @@ def get_grain_list_recipes():
     data = request.json
 
     # Create a grain object from the list of slugs
-    grain_list = grain.GrainList(data.get('grain_list', []))
+    grain_list = grain.GrainList(grain_slugs=data.get('grain_list', []))
 
     # Create a category profile from the category data provided
     categories = []

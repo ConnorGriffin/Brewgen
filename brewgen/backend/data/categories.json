@@ -20,8 +20,23 @@
     "max_percent": 15
   },
   {
+    "name": "flakes and adjuncts",
+    "min_percent": 0,
+    "max_percent": 40
+  },
+  {
     "name": "sugar",
     "min_percent": 0,
     "max_percent": 40
+  },
+  {
+    "name": "rye",
+    "min_percent": 0,
+    "max_percent": 40
+  },
+  {
+    "name": "wheat",
+    "min_percent": 0,
+    "max_percent": 100
   }
 ]
