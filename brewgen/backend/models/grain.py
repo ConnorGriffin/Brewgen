@@ -73,7 +73,16 @@ class GrainModel:
         return [grain for grain in self.grain_list if grain.slug in grain_slugs]
 
     def get_grain_by_name(self, grain_name):
-        return [grain for grain in self.grain_list if grain.name in grain_name]
+        if type(grain_name) is str:
+            result = [
+                grain for grain in self.grain_list if grain.name in [grain_name]]
+            if result:
+                return result[0]
+        elif type(grain_name) is dict:
+            result = [
+                grain for grain in self.grain_list if grain.name in grain_name]
+            if result:
+                return result
 
     def get_all_categories(self):
         """Return a list of unique grain categories."""

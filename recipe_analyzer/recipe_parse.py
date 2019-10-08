@@ -55,7 +55,7 @@ rewrites = [
     # No sensory available for Maris Otter so lumping that in with Pale Ale Malt
     {
         'name': "Pale Ale Malt",
-        'match': '^.*(Pale Ale|Maris).*$',
+        'match': '^.*(Pale Ale|Maris|Marris).*$',
         'max_color': 5
     },
     {
@@ -144,7 +144,7 @@ for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
         'match': '^.*(Caramel|Crystal).*{}.*$'.format(lov)
     })
 
-for beerxml_file in beerxml_list[0:100000]:
+for beerxml_file in beerxml_list[0:1000000]:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
     except:
@@ -161,14 +161,15 @@ for beerxml_file in beerxml_list[0:100000]:
                 fermentable_name = fermentable.name
                 # Remove all LME/DME
                 extract = re.match(
-                    "^.*(CBW|DME|LME|Extract|Malt Syrup).*$", fermentable_name)
+                    "^.*(CBW|DME|LME|Extract|Malt Syrup).*$", fermentable_name, flags=re.IGNORECASE)
                 if extract:
                     #print('Skipping extract: {}'.format(fermentable_name))
                     break
 
                 # Rewrite fermentable names
                 for rule in rewrites:
-                    match = re.match(rule['match'], fermentable.name)
+                    match = re.match(
+                        rule['match'], fermentable.name, flags=re.IGNORECASE)
                     if match and fermentable.color <= rule.get('max_color', 999):
                         #print('Rewriting {} -> {}'.format(fermentable_name, rule['name']))
                         fermentable_name = rule['name']
@@ -230,36 +231,32 @@ for style in range(len(styles)):
 
     # Get unique fermentable names
     names = [fermentable['name']
-             for fermentable in fermentable_data[style]]
+                for fermentable in fermentable_data[style]]
     unique_names = list(set(names))
 
     fermentable_usage = []
     for name in range(len(unique_names)):
         usage_list = [fermentable['percent'] for fermentable in fermentable_data[style]
-                      if fermentable['name'] == unique_names[name]]
+                        if fermentable['name'] == unique_names[name]]
         fermentable_usage.append((unique_names[name], usage_list))
 
-        # Sort by the most common grain names
-        sorted_usage = sorted(
-            fermentable_usage, key=lambda tup: len(tup[1]), reverse=True)
+    for fermentable_use in fermentable_usage:
+        # Histogram for the grain usage
+        #plt.title('{} in {}'.format(unique_names[name], styles[style]))
+        grain = all_grains.get_grain_by_name(fermentable_use[0])
+        #print(fermentable_use)
+        if grain:
+            std_dev = np.std(fermentable_use[1])
+            mean = np.mean(fermentable_use[1])
 
-        for fermentable_use in sorted_usage:
-            # Histogram for the grain usage
-            #plt.title('{} in {}'.format(unique_names[name], styles[style]))
-            grain = all_grains.get_grain_by_name(fermentable_use[0])
-
-            if grain:
-                std_dev = np.std(fermentable_use[1])
-                mean = np.mean(fermentable_use[1])
-
-                style_grain_usage.append({
-                    'slug': grain[0].slug,
-                    'mean': mean,
-                    'std_dev': std_dev,
-                    'usage': {
-                        'min': max(0, int(mean - 3 * std_dev)),
-                        'max': min(100, int(mean + 3 * std_dev))
-                    }
+            style_grain_usage.append({
+                'slug': grain.slug,
+                'mean': mean,
+                'std_dev': std_dev,
+                'usage': {
+                    'min': max(0, int(mean - 3 * std_dev)),
+                    'max': min(100, int(mean + 3 * std_dev))
+                }
                 })
     all_styles_grain_usage.append({
         'style': styles[style],
