@@ -163,7 +163,7 @@ fermentable_rewrites = [
         'name': "Munich Malt 20L",
         'match': '^.*Aromatic.*$',
         'min_color': 15,
-        'max_color': 25
+        'max_color': 30
     },
     {
         'name': "Brewers Oat Flakes",
@@ -214,7 +214,7 @@ fermentable_rewrites = [
         'match': '^.*Roast.*Barley.*$'
     },
     {
-        'name': "Pale Wheat Malt",
+        'name': "Weyermann Pale Wheat Malt",
         'match': '^.*Weyermann Pale Wheat Malt.*$'
     },
     {
@@ -337,7 +337,7 @@ for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
 
 unmatched = []
 
-for beerxml_file in beerxml_list[0: 500000]:
+for beerxml_file in beerxml_list[0: 1000000]:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
     except:
@@ -366,15 +366,9 @@ for beerxml_file in beerxml_list[0: 500000]:
 
                 # Only include recipes with a to-style OG and color
                 if og_match and srm_match and ibu_match:
-                    fermentables = []
-                    # Ignore Rice Hulls, they don't do anything in a recipe
-                    total_amount = sum(
-                        fermentable.amount for fermentable in recipe.fermentables if fermentable.name not in fermentable_bypass)
+                    fermentables = []      
                     for fermentable in recipe.fermentables:
-                        if fermentable.name in fermentable_bypass:
-                            break
-
-                        fermentable_name = fermentable.name
+                        fermentable_name = fermentable.name.strip()
                         # Remove all LME/DME by raising an exception and killing all future parsing of the recipe
                         extract = re.match(
                             "^.*(CBW|DME|LME|Extract|Malt Syrup).*$", fermentable_name, flags=re.IGNORECASE)
@@ -390,9 +384,12 @@ for beerxml_file in beerxml_list[0: 500000]:
                                 # print('Rewriting {} -> {}'.format(fermentable_name, rule['name']))
                                 fermentable_name = rule['name']
                                 break
+                        
+                        # Don't worry about malts in our bypass list, pretend they don't exist and go to the next one
+                        if fermentable.name in fermentable_bypass:
+                            break
 
-                        matched_fermentable = all_grains.get_grain_by_name(
-                            fermentable_name)
+                        matched_fermentable = all_grains.get_grain_by_name(fermentable_name)
                         if not matched_fermentable:
                             unmatched.append({
                                 'name': fermentable_name,
@@ -401,6 +398,9 @@ for beerxml_file in beerxml_list[0: 500000]:
                             raise Exception(
                                 'Recipe contains unmatched fermentable: {}'.format(fermentable_name))
 
+                        # Calculate total amount of grains ignoring the bypass list
+                        total_amount = sum(
+                            fermentable.amount for fermentable in recipe.fermentables if fermentable_name not in fermentable_bypass)
                         fermentables.append({
                             'name': fermentable_name,
                             'category': matched_fermentable.category,
