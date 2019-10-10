@@ -23,10 +23,13 @@
         </div>
       </b-col>
       <b-col md="6">
-        <StyleDropdown :styles="styles" />
+        <StyleDropdown :styles="sortedStyles" />
         <EquipmentForm />
         <b-button @click="fetchSensoryData" class="mr-3 ml-2">Update Sensory Info</b-button>
         <b-button @click="fetchRecipeData({colorOnly: true})" variant="success">Update Recipe Data</b-button>
+        <div class="mt-3">
+          <RecipeChart :chartData="recipeChartData" />
+        </div>
       </b-col>
     </b-row>
     <b-row>
@@ -37,12 +40,6 @@
     <b-row>
       <b-col>
         <SensoryConstraints :sensoryData="sensoryData" />
-      </b-col>
-    </b-row>
-    <b-row>
-      <b-col>
-        <h5 class="mb-3 ml-3 mt-3">Recipe Distribution</h5>
-        <RecipeChart :chartData="recipeChartData" />
       </b-col>
     </b-row>
     <b-row>
@@ -178,6 +175,9 @@ export default {
           }
         ]
       };
+    },
+    sortedStyles: function() {
+      return this.styles.sort((a, b) => (a.name > b.name ? 1 : -1));
     }
   },
   created() {

@@ -5,6 +5,11 @@
     "max_percent": 100
   },
   {
+    "name": "munich",
+    "min_percent": 0,
+    "max_percent": 100
+  },
+  {
     "name": "crystal",
     "min_percent": 0,
     "max_percent": 25

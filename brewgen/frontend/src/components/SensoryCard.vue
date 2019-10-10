@@ -24,7 +24,7 @@
           type="range"
           :min="sensoryData.min"
           :max="sensoryData.max"
-          step=".001"
+          step=".01"
           disabled
         ></b-form-input>
         <b-form-input
@@ -33,7 +33,7 @@
           type="range"
           :min="sensoryData.min"
           :max="sensoryData.max"
-          step=".001"
+          step=".01"
           disabled
         ></b-form-input>
       </b-col>
@@ -64,7 +64,7 @@
           type="range"
           :min="sensoryData.min"
           :max="sensoryData.max"
-          step=".001"
+          step=".01"
         ></b-form-input>
         <b-form-input
           id="range-1"
@@ -72,7 +72,7 @@
           type="range"
           :min="sensoryData.min"
           :max="sensoryData.max"
-          step=".001"
+          step=".01"
         ></b-form-input>
       </b-col>
     </b-row>
@@ -106,7 +106,7 @@
           type="range"
           :min="sensoryData.min"
           :max="sensoryData.max"
-          step=".001"
+          step=".01"
           disabled
         ></b-form-input>
         <b-form-input
@@ -115,7 +115,7 @@
           type="range"
           :min="sensoryData.min"
           :max="sensoryData.max"
-          step=".001"
+          step=".01"
           disabled
         ></b-form-input>
       </b-col>

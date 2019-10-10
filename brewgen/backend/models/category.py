@@ -53,6 +53,11 @@ class CategoryModel:
 
     def get_category_data(self, category_name):
         """Return category data for a single category_name."""
+        pass
+
+    def get_category_names(self):
+        """Return a list of category names"""
+        return [category.name for category in self.category_list]
 
 
 class CategoryProfile(CategoryModel):

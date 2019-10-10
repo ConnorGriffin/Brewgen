@@ -7,12 +7,13 @@ import re
 import json
 
 sys.path.append('../')
-from brewgen.backend.models import grain
+from brewgen.backend.models import grain, category
 
 # Get all recipe paths
 beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))
 
 all_grains = grain.GrainModel()
+category_model = category.CategoryModel()
 parser = Parser()
 recipe_db = []
 
@@ -144,7 +145,7 @@ for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
         'match': '^.*(Caramel|Crystal).*{}.*$'.format(lov)
     })
 
-for beerxml_file in beerxml_list[0:1000000]:
+for beerxml_file in beerxml_list[0:50000]:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
     except:
@@ -192,62 +193,76 @@ for beerxml_file in beerxml_list[0:1000000]:
         except:
             print("Failed to parse recipe in ./{}".format(str(beerxml_file)))
 
-# Get an array of styles and color histogram data
-styles = np.unique(np.array([recipe['style'] for recipe in recipe_db]))
-color_data = [[recipe['color']
-               for recipe in recipe_db if recipe['style'] == style] for style in styles]
+# Get a list of style and grain category games
+styles = list(set([recipe['style'] for recipe in recipe_db]))
+categories = category_model.get_category_names()
 
-# Create a list of list of dicts containing grains and their usage percents for every style and recipe
-# [Style:[Grains:{Name, Usage Percent}]]
-fermentable_data = []
-for i in range(len(styles)):
-    fermentable_style_data = []
+# Create a list of list of dicts containing grains and their usage percents for every style
+style_data = []
+for style in styles:
+    fermentable_list = []
+    fermentable_usage = []
+    style_grain_usage = []
+    style_category_data = []
+    style_category_usage = []
+
+    # Calculate the average grain usage from each category, only use recipes with 100% grain coverage, remove any recipes that use extracts
+    for recipe in recipe_db:
+        if recipe['style'] == style and int(sum(fermentable['percent'] for fermentable in recipe['fermentables'])) == 100:
+            # Look up each grain in the recipe and match to a grain in the grain database, remove items with no match (None)
+            recipe_fermentables =  [all_grains.get_grain_by_name(fermentable['name']) for fermentable in recipe['fermentables']]
+            matched_fermentables = [fermentable for fermentable in recipe_fermentables if fermentable != None]
+            
+            # We only want recipes with 100% grain coverage to count towards our data, otherwise numbers won't be reliable
+            if len(recipe['fermentables']) == len(matched_fermentables):
+                for category_name in categories:
+                    category_usage = sum(fermentable['percent'] for fermentable in recipe['fermentables'] if all_grains.get_grain_by_name(
+                        fermentable['name']).category == category_name)
+                    style_category_data.append((category_name, category_usage))
+    
+    # Get the average fermentable category usage for the style
+    for category_name in categories:
+        category_usage = [usage for name, usage in style_category_data if name == category_name]
+        if category_usage == []:
+            category_usage = [0]
+
+        std_dev = np.std(category_usage)
+        mean = np.mean(category_usage)
+
+        style_category_usage.append({
+            'name': category_name,
+            'mean': mean,
+            'std_dev': std_dev,
+            'usage': {
+                'min': max(0, int(mean - 3 * std_dev)),
+                'max': min(100, int(mean + 3 * std_dev))
+            }
+        })
+
+
+    # Add fermentables for each recipe in the style to fermentable_data
     recipe_fermentables = [recipe['fermentables']
-                           for recipe in recipe_db if recipe['style'] == styles[i]]
+                           for recipe in recipe_db if recipe['style'] == style]
     for recipe in recipe_fermentables:
         for fermentable in recipe:
-            fermentable_style_data.append(fermentable)
-    fermentable_data.append(fermentable_style_data)
-
-# # Histograms for the SRM data for each style
-# plt.xlabel('SRM')
-# plt.ylabel('Counts')
-# bins = range(0, 101)
-# for i in range(len(styles)):
-#     data = color_data[i]
-#     plt.title(styles[i])
-#     plt.hist(color_data[i], bins=bins)
-#     plt.show()
-#     std_dev = np.std(color_data[i])
-#     mean = np.mean(color_data[i])
-#     print('Mean: {}'.format(mean))
-#     print('Standard Dev: {}'.format(std_dev))
-#     print('Range (1 std dev): {} - {}'.format(mean - .5 * std_dev, mean + .5 * std_dev))
-
-# Plot grain usage for each style
-all_styles_grain_usage = []
-for style in range(len(styles)):
-    style_grain_usage = []
+            fermentable_list.append(fermentable)
 
     # Get unique fermentable names
     names = [fermentable['name']
-                for fermentable in fermentable_data[style]]
+             for fermentable in fermentable_list]
     unique_names = list(set(names))
 
-    fermentable_usage = []
-    for name in range(len(unique_names)):
-        usage_list = [fermentable['percent'] for fermentable in fermentable_data[style]
-                        if fermentable['name'] == unique_names[name]]
-        fermentable_usage.append((unique_names[name], usage_list))
-
-    for fermentable_use in fermentable_usage:
-        # Histogram for the grain usage
-        #plt.title('{} in {}'.format(unique_names[name], styles[style]))
-        grain = all_grains.get_grain_by_name(fermentable_use[0])
-        #print(fermentable_use)
+    # Iterate over each fermentable, getting its average usage and adding to the style database
+    for fermentable_name in unique_names:
+        # Check if the name exists in our grain db, only add to the database if we have it
+        grain = all_grains.get_grain_by_name(fermentable_name)
         if grain:
-            std_dev = np.std(fermentable_use[1])
-            mean = np.mean(fermentable_use[1])
+            # Get the fermentable usage
+            usage = [fermentable['percent'] for fermentable in fermentable_list
+                     if fermentable['name'] == fermentable_name]
+            std_dev = np.std(usage)
+            mean = np.mean(usage)
+
 
             style_grain_usage.append({
                 'slug': grain.slug,
@@ -257,11 +272,13 @@ for style in range(len(styles)):
                     'min': max(0, int(mean - 3 * std_dev)),
                     'max': min(100, int(mean + 3 * std_dev))
                 }
-                })
-    all_styles_grain_usage.append({
-        'style': styles[style],
-        'grain_usage': style_grain_usage
+            })
+
+    style_data.append({
+        'style': style,
+        'grain_usage': style_grain_usage,
+        'category_usage': style_category_usage
     })
 
 with open('styles.json', 'w') as f:
-    json.dump(all_styles_grain_usage, f)
+    json.dump(style_data, f)

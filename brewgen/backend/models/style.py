@@ -1,23 +1,25 @@
 import json
 import os.path
 from slugify import slugify
-from . import grain
+from . import grain, category
 
 
 class Style:
     """Defines a style and all of its properties."""
 
-    def __init__(self, name, grain_list):
+    def __init__(self, name, grain_list, category_list):
         self.name = name
         self.slug = slugify(name, replacements=[["'", ''], ['®', '']])
         self.grain_list = grain_list
+        self.category_list = category_list
 
     def get_style_data(self):
         """Return the style in dict format"""
         return {
             'name': self.name,
             'slug': self.slug,
-            'grain_list': [grain_object.get_grain_data() for grain_object in self.grain_list]
+            'grain_list': [grain_object.get_grain_data() for grain_object in self.grain_list],
+            'category_list': [category_object.get_category_data() for category_object in self.category_list]
         }
 
     def get_grain_usage(self):
@@ -31,6 +33,17 @@ class Style:
                 'max_percent': grain_object.max_percent
             })
         return grain_data
+
+    def get_category_usage(self):
+        """Return categories and their min/max usage"""
+        category_data = []
+        for category_object in self.category_list:
+            category_data.append({
+                'name': category_object.name,
+                'min_percent': category_object.min_percent,
+                'max_percent': category_object.max_percent
+            })
+        return category_data
 
 
 class StyleModel:
@@ -47,6 +60,8 @@ class StyleModel:
             style_data = json.load(f)
         for style in style_data:
             style_grain_list = []
+            style_category_list = []
+
             for grain_data in style['grain_usage']:
                 matching_grain = grain.GrainModel.get_grain_by_slug(grain.GrainModel(), grain_data['slug'])[
                     0]
@@ -61,9 +76,17 @@ class StyleModel:
                     sensory_data=matching_grain.sensory_data
                 ))
 
+            for category_data in style['category_usage']:
+                style_category_list.append(category.Category(
+                    name=category_data['name'],
+                    min_percent=category_data['usage']['min'],
+                    max_percent=category_data['usage']['max']
+                ))
+
             self.style_list.append(Style(
                 name=style['style'],
-                grain_list=grain.GrainList(style_grain_list)
+                grain_list=grain.GrainList(style_grain_list),
+                category_list=style_category_list
                 # TODO: Add BJCP data, OG, color and stuff
             ))
 

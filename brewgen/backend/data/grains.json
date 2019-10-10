@@ -73,6 +73,19 @@
     }
   },
   {
+    "name": "Honey",
+    "brand": "Generic",
+    "note": "Totally guessing here, honey usually ferments a lot so not adding a lot of sweetness.",
+    "potential": 1.035,
+    "color": 1,
+    "max_percent": 30,
+    "category": "sugar",
+    "sensory": {
+      "sweet": 1,
+      "honey": 2
+    }
+  },
+  {
     "name": "Brewers Barley Flakes",
     "brand": "Briess",
     "note": "Sensory copied from Pilsen Malt.",
@@ -163,6 +176,9 @@
   {
     "name": "Pale Ale Malt",
     "brand": "Briess",
+    "alternatives": [
+      "Maris Otter"
+    ],
     "potential": 1.0363,
     "color": 3.5,
     "max_percent": 100,
@@ -175,6 +191,26 @@
       "honey": 2,
       "biscuit": 1,
       "nutty": 1,
+      "toast": 1,
+      "grainy": 1
+    }
+  },
+  {
+    "name": "Golden Promise",
+    "brand": "Generic",
+    "note": "No sensory data available, copied Maris Otter profile, added 1 to nutty.",
+    "potential": 1.0374,
+    "color": 2.5,
+    "max_percent": 100,
+    "category": "base",
+    "sensory": {
+      "sweet": 3,
+      "malty": 3,
+      "bready": 2,
+      "graham_cracker": 2,
+      "honey": 2,
+      "biscuit": 1,
+      "nutty": 2,
       "toast": 1,
       "grainy": 1
     }
@@ -506,6 +542,27 @@
     }
   },
   {
+    "name": "Brown Malt",
+    "brand": "Generic",
+    "notes": "No sensory data available, essentially the same as Special Roast with more chocolate, coffee flavors.",
+    "potential": 1.0351,
+    "color": 65,
+    "max_percent": 10,
+    "category": "specialty",
+    "sensory": {
+      "coffee": 1,
+      "nutty": 3,
+      "toast": 2,
+      "dark_chocolate": 1,
+      "sweet": 3,
+      "biscuit": 2,
+      "caramel": 2,
+      "burnt_sugar": 1,
+      "sourdough": 1,
+      "toffee": 1
+    }
+  },
+  {
     "name": "Chocolate Malt",
     "brand": "Briess",
     "potential": 1.035,
@@ -675,7 +732,7 @@
     "potential": 1.036,
     "color": 7,
     "max_percent": 100,
-    "category": "base",
+    "category": "munich",
     "sensory": {
       "sweet": 3.9,
       "bitter": 0.4,
@@ -707,7 +764,7 @@
     "potential": 1.036,
     "color": 8.5,
     "max_percent": 100,
-    "category": "base",
+    "category": "munich",
     "sensory": {
       "sweet": 3.9,
       "bitter": 0.4,
@@ -739,7 +796,7 @@
     "potential": 1.036,
     "color": 10,
     "max_percent": 50,
-    "category": "specialty",
+    "category": "munich",
     "sensory": {
       "sweet": 2,
       "malty": 3,
@@ -758,7 +815,7 @@
     "potential": 1.0356,
     "color": 20,
     "max_percent": 50,
-    "category": "specialty",
+    "category": "munich",
     "sensory": {
       "sweet": 1,
       "malty": 3,
@@ -776,7 +833,7 @@
     "potential": 1.036,
     "color": 30,
     "max_percent": 50,
-    "category": "specialty",
+    "category": "munich",
     "sensory": {
       "sweet": 2,
       "malty": 3,
@@ -802,7 +859,7 @@
       "coffee": 0.2,
       "cocoa": 0.2,
       "dark_chocolate": 0.2,
-      "roasted_almond": 6,
+      "roasted_almond": 0.6,
       "dried_fruit": 0.8,
       "bready": 1.6,
       "wood_smoke": 0.2,
@@ -819,6 +876,37 @@
       "caramel": 1.4,
       "dark_caramel": 0.6,
       "sour": 0.4
+    }
+  },
+  {
+    "name": "Weyermann Melanoidin Malt",
+    "brand": "Weyermann",
+    "potential": 1.0347,
+    "color": 27,
+    "max_percent": 20,
+    "category": "specialty",
+    "sensory": {
+      "sweet": 2,
+      "bitter": 2.3,
+      "coffee": 0.6,
+      "cocoa": 0.8,
+      "dark_chocolate": 1.4,
+      "roasted_almond": 0.8,
+      "dried_fruit": 0.6,
+      "bready": 1.2,
+      "clove": 0.2,
+      "almond": 1,
+      "hazelnut": 1,
+      "raisin": 1,
+      "vanilla": 0.6,
+      "honey": 2.6,
+      "biscuit": 2.2,
+      "marmalade": 1.4,
+      "malty": 3.2,
+      "toffee": 0.8,
+      "caramel": 0.8,
+      "dark_caramel": 0.7,
+      "sour": 1
     }
   },
   {
@@ -879,10 +967,112 @@
   {
     "name": "Dextrose (Corn Sugar)",
     "brand": "Generic",
+    "potential": 1.042,
+    "color": 0,
+    "max_percent": 40,
+    "category": "sugar",
+    "sensory": {}
+  },
+  {
+    "name": "Sucrose (Table Sugar)",
+    "brand": "Generic",
     "potential": 1.046,
     "color": 0,
     "max_percent": 40,
     "category": "sugar",
     "sensory": {}
+  },
+  {
+    "name": "Candi Sugar, Clear",
+    "brand": "Generic",
+    "potential": 1.036,
+    "color": 0.5,
+    "max_percent": 40,
+    "category": "sugar",
+    "sensory": {}
+  },
+  {
+    "name": "Brown Sugar, Light",
+    "brand": "Generic",
+    "potential": 1.046,
+    "color": 8,
+    "max_percent": 20,
+    "category": "sugar",
+    "sensory": {
+      "molasses": 1,
+      "caramel": 1
+    }
+  },
+  {
+    "name": "Brown Sugar, Dark",
+    "brand": "Generic",
+    "potential": 1.046,
+    "color": 50,
+    "max_percent": 20,
+    "category": "sugar",
+    "sensory": {
+      "raisin": 2,
+      "dried_fruit": 3,
+      "molasses": 3,
+      "caramel": 2
+    }
+  },
+  {
+    "name": "Turbinado",
+    "brand": "Generic",
+    "potential": 1.044,
+    "color": 10,
+    "max_percent": 20,
+    "category": "sugar",
+    "sensory": {
+      "molasses": 1,
+      "caramel": 1
+    }
+  },
+  {
+    "name": "Lactose (Milk Sugar)",
+    "brand": "Generic",
+    "potential": 1.035,
+    "color": 0,
+    "max_percent": 20,
+    "category": "sugar",
+    "sensory": {
+      "sweet": 3,
+      "creamy": 2
+    }
+  },
+  {
+    "name": "Honey Malt",
+    "brand": "Gambrinus",
+    "potential": 1.0370,
+    "color": 20,
+    "max_percent": 20,
+    "category": "specialty",
+    "sensory": {
+      "grainy": 2,
+      "honey": 5,
+      "bread_crust": 3,
+      "toast": 4,
+      "pretzel": 3.5,
+      "tart": 2
+    }
+  },
+  {
+    "name": "6-Row Brewers Malt",
+    "brand": "Generic",
+    "note": "No sensory available, just taking the Briess Brewer's 2-Row sensory and upping Grainy and lowering sweet.",
+    "potential": 1.0370,
+    "color": 2.2,
+    "max_percent": 100,
+    "category": "base",
+    "sensory": {
+      "sweet": 2,
+      "malty": 2,
+      "graham_cracker": 1,
+      "biscuit": 1,
+      "nutty": 1,
+      "toast": 1,
+      "grainy": 3
+    }
   }
 ]

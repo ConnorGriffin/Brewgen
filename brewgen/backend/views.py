@@ -71,7 +71,8 @@ def get_style_data(style_slug):
     return jsonify({
         'name': style_object.name,
         'slug': style_object.slug,
-        'grain_usage': style_object.get_grain_usage()
+        'grain_usage': style_object.get_grain_usage(),
+        'category_usage': style_object.get_category_usage()
     }), 200
 
 

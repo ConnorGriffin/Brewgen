@@ -136,6 +136,7 @@ const actions = {
       .get('http://localhost:5000/api/v1/styles/' + styleSlug)
       .then(response => {
         commit('setAllGrainsFromStyle', response.data.grain_usage);
+        commit('setGrainCategories', response.data.category_usage);
         Promise.resolve();
       })
       .catch(err => {
