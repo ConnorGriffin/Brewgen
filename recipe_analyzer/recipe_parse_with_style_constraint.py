@@ -3,6 +3,7 @@ from pybeerxml import Parser
 import sys
 import numpy as np
 import re
+import csv
 import json
 
 sys.path.append('../')
@@ -23,7 +24,7 @@ def bjcp_name(name):
             for style_category in bev_class['category']:
                 for subcat in style_category['subcategory']:
                     if subcat['name'] == name:
-                        return subcat['stats']
+                        return subcat.get('stats', {})
 
 
 def bjcp_id(id):
@@ -35,9 +36,6 @@ def bjcp_id(id):
                     if subcat['id'] == id:
                         return subcat['stats']
 
-
-# Get all recipe paths
-beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))
 
 all_grains = grain.GrainModel()
 category_model = category.CategoryModel()
@@ -99,7 +97,7 @@ fermentable_rewrites = [
     },
     {
         'name': "Pilsen Malt",
-        'match': '^.*(Pilsen|US.*Pilsner|Pilsner.*US).*$',
+        'match': '^.*(Pilsen|US.*Pilsner|Pilsner.*US|Lager).*$',
         'max_color': 3
     },
     # Weyermann as the catchall for Pilsner
@@ -128,12 +126,37 @@ fermentable_rewrites = [
         'match': '^.*Special (W|B).*$'
     },
     {
+        'name': "Weyermann Caramunich I",
+        'match': '^.*Cara ?munich(( I)?|.*Type 1).*$',
+        'max_color': 40
+    },
+    {
+        'name': "Weyermann Caramunich II",
+        'match': '^.*Cara ?munich(( II)?|.*Type 2).*$',
+        'max_color': 50
+    },
+    {
+        'name': "Weyermann Caramunich III",
+        'match': '^.*Cara ?munich(( III)?|.*Type 3).*$',
+        'max_color': 60
+    },
+    {
+        'name': "Weyermann Pale Wheat Malt",
+        'match': '^.*((Belgian|German).*Wheat|Wheat.*(DE|BE|Belgian|German)).*$'
+    },
+    {
         'name': "Wheat Malt, White",
         'match': '^.*(White Wheat|Pale Wheat|Wheat Malt|Light Wheat|Wheat.*US).*$'
     },
     {
+        'name': "Brewers Red Wheat Flakes",
+        'match': '^.*(Flak.*Wheat|Wheat.*Flak).*$'
+    },
+    # Red wheat as the wheat catchall
+    {
         'name': "Wheat Malt, Red",
-        'match': '^.*(Red.*Wheat|Wheat.*Red).*$'
+        'match': '^.*Wheat.*$',
+        'max_color': 4
     },
     {
         'name': "Lactose (Milk Sugar)",
@@ -142,10 +165,6 @@ fermentable_rewrites = [
     {
         'name': "Brewers Torrified Wheat",
         'match': '^.*(Wheat.*Torrified|Torrified Wheat).*$'
-    },
-    {
-        'name': "Weyermann Pale Wheat Malt",
-        'match': '^.*((Belgian|German).*Wheat|Wheat.*(DE|BE|Belgian|German)).*$'
     },
     {
         'name': "Dextrose (Corn Sugar)",
@@ -163,7 +182,25 @@ fermentable_rewrites = [
         'name': "Munich Malt 20L",
         'match': '^.*Aromatic.*$',
         'min_color': 15,
-        'max_color': 30
+        'max_color': 25
+    },
+    {
+        'name': "Weyermann Melanoidin Malt",
+        'match': '^.*Aromatic.*$',
+        'min_color': 25,
+        'max_color': 65
+    },
+    {
+        'name': 'Smoked Malt, Mesquite',
+        'match': '^.*Smoked Malt.*$',
+        'min_color': 4,
+        'max_color': 6
+    },
+    {
+        'name': 'Weyermann Beech Smoked Barley Malt',
+        'match': '^.*Smoked Malt.*$',
+        'min_color': 1,
+        'max_color': 4
     },
     {
         'name': "Brewers Oat Flakes",
@@ -174,12 +211,8 @@ fermentable_rewrites = [
         'match': '^.*((Corn|Maize).*Flaked|Flaked.*(Corn|Maize)).*$'
     },
     {
-        'name': "Brewers Red Wheat Flakes",
-        'match': '^.*(Flaked.*Wheat|Wheat.*Flaked).*$'
-    },
-    {
         'name': "Black Malt",
-        'match': '^((?!de-?bittered)).*(Black Malt|Black Patent).*$',
+        'match': '^.*((?!de-?bittered)).*(Black Malt|Black Patent).*$',
         'min_color': 400,
         'max_color': 650
     },
@@ -194,11 +227,11 @@ fermentable_rewrites = [
     },
     {
         'name': 'Brown Malt',
-        'match': '^.*Brown Malt.*$'
+        'match': '^.*Brown Malt.*$|^Brown$'
     },
     {
         'name': 'Rye Malt',
-        'match': '^.*(US.*Rye|Rye.*US).*$'
+        'match': '^.*(US.*Rye|Rye.*US).*$|^Rye$'
     },
     {
         'name': "6-Row Brewers Malt",
@@ -242,6 +275,46 @@ fermentable_rewrites = [
 ]
 
 style_rewrites = [
+    {
+        'new': 'California Common',
+        'old': '^.*California Common Beer.*$'
+    },
+    {
+        'new': 'Historical Beer: Gose',
+        'old': '^.*Gose.*$'
+    },
+    {
+        'new': 'International Dark Lager',
+        'old': '^.*Dark American Lager.*$'
+    },
+    {
+        'new': 'Specialty Smoked Beer',
+        'old': '^Other Smoked Beer$'
+    },
+    {
+        'new': 'Historical Beer: Pre-Prohibition Lager',
+        'old': '^.*(Classic American Pilsner|Pre-Prohibition Lager).*$'
+    },
+    {
+        'new': 'Historical Beer: Kentucky Common',
+        'old': '^.*Kentucky Common.*$'
+    },
+    {
+        'new': 'Winter Seasonal Beer',
+        'old': '^.*Holiday/Winter Special Spiced Beer.*$'
+    },
+    {
+        'new': 'Ordinary Bitter',
+        'old': '^.*Standard/Ordinary Bitter.*$'
+    },
+    {
+        'new': 'British Brown Ale',
+        'old': '^.*English Brown.*$'
+    },
+    {
+        'new': 'International Lager',
+        'old': '^.*Premium American Lager.*$'
+    },
     {
         'new': 'Strong Bitter',
         'old': '^.*Strong Bitter.*$'
@@ -316,12 +389,24 @@ style_rewrites = [
         'old': '^.*Strong Scotch.*$'
     },
     {
+        'new': 'American Lager',
+        'old': '^.*Standard American Lager.*$'
+    },
+    {
         'new': 'American Light Lager',
-        'old': '^.*Lite American Lager.*$'
+        'old': '^.*Li(ght|te) American Lager.*$'
+    },
+    {
+        'new': 'American Light Lager',
+        'old': '^.*American Lite Lager.*$'
     },
     {
         'new': 'Czech Premium Pale Lager',
         'old': '^.*Bohemian Pils.*$'
+    },
+    {
+        'new': 'British Brown Ale',
+        'old': 'Brown Porter'
     }
 ]
 
@@ -336,8 +421,14 @@ for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
     })
 
 unmatched = []
+not_to_style = 0
+unmatched_fermentable = 0
+unmatched_style = 0
 
-for beerxml_file in beerxml_list[0: 1000000]:
+# Get all recipe paths
+#beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))
+beerxml_list = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))
+for beerxml_file in beerxml_list:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
     except:
@@ -351,22 +442,22 @@ for beerxml_file in beerxml_list[0: 1000000]:
             for rule in style_rewrites:
                 match = re.match(rule['old'], style, flags=re.IGNORECASE)
                 if match:
+                    #print('Rewriting style: {} -> {}'.format(style, rule['new']))
                     style = rule['new']
                     break
 
             specs = bjcp_name(style)
             if specs:
-
-                og_match = points(float(specs.get('og', {}).get('low', 1))) <= points(
-                    recipe.og) <= points(float(specs.get('og', {}).get('high', 1.200)))
-                srm_match = float(specs.get('srm', {}).get('low', 0)) <= recipe.color <= float(
-                    specs.get('srm', {}).get('high', 999))
-                ibu_match = float(specs.get('ibu', {}).get('low', 0)) <= recipe.ibu <= float(
-                    specs.get('ibu', {}).get('high', 999))
+                og_match = points(float(specs.get('og', {}).get('low', 1)))*.5 <= points(
+                    recipe.og) <= points(float(specs.get('og', {}).get('high', 1.200)))*1.5
+                srm_match = float(specs.get('srm', {}).get('low', 0))*.5 <= recipe.color <= float(
+                    specs.get('srm', {}).get('high', 999))*1.5
+                ibu_match = float(specs.get('ibu', {}).get('low', 0))*.5 <= recipe.ibu <= float(
+                    specs.get('ibu', {}).get('high', 999))*1.5
 
                 # Only include recipes with a to-style OG and color
                 if og_match and srm_match and ibu_match:
-                    fermentables = []      
+                    fermentables = []
                     for fermentable in recipe.fermentables:
                         fermentable_name = fermentable.name.strip()
                         # Remove all LME/DME by raising an exception and killing all future parsing of the recipe
@@ -384,13 +475,15 @@ for beerxml_file in beerxml_list[0: 1000000]:
                                 # print('Rewriting {} -> {}'.format(fermentable_name, rule['name']))
                                 fermentable_name = rule['name']
                                 break
-                        
+
                         # Don't worry about malts in our bypass list, pretend they don't exist and go to the next one
-                        if fermentable.name in fermentable_bypass:
+                        if fermentable_name in fermentable_bypass:
                             break
 
-                        matched_fermentable = all_grains.get_grain_by_name(fermentable_name)
+                        matched_fermentable = all_grains.get_grain_by_name(
+                            fermentable_name)
                         if not matched_fermentable:
+                            unmatched_fermentable += 1
                             unmatched.append({
                                 'name': fermentable_name,
                                 'type': 'fermentable'
@@ -417,7 +510,27 @@ for beerxml_file in beerxml_list[0: 1000000]:
                         'color': recipe.color,
                         'fermentables': fermentables
                     })
+                else: 
+                    style_spec = {
+                        'og': {
+                            'low': points(float(specs.get('og', {}).get('low', 1))),
+                            'high': points(float(specs.get('og', {}).get('high', 1.200))),
+                            'recipe': points(recipe.og)
+                        },
+                        'srm': {
+                            'low': float(specs.get('srm', {}).get('low', 0)),
+                            'high': float(specs.get('srm', {}).get('high', 999)),
+                            'recipe': recipe.color
+                        },
+                        'ibu': {
+                            'low': float(specs.get('ibu', {}).get('low', 0)),
+                            'high': float(specs.get('ibu', {}).get('high', 999)),
+                            'recipe': recipe.ibu
+                        }
+                    }
+                    not_to_style += 1
             else:
+                unmatched_style += 1
                 unmatched.append({
                     'name': style,
                     'type': 'style'
@@ -426,12 +539,16 @@ for beerxml_file in beerxml_list[0: 1000000]:
 
         except Exception as err:
             pass
-            # print(err)
+            #print(err)
             # print("Failed to parse recipe in ./{}".format(str(beerxml_file)))
 
     # Get a list of style and grain category games
     styles = list(set([recipe['style'] for recipe in recipe_db]))
     categories = category_model.get_category_names()
+
+print('Unmatched Style:       {}'.format(unmatched_style))
+print('Unmatched Fermentable: {}'.format(unmatched_fermentable))
+print('Not to Style:          {}'.format(not_to_style))
 
 # Create a list of list of dicts containing grains and their usage percents for every style
 style_data = []
@@ -526,5 +643,7 @@ for style in styles:
 with open('styles.json', 'w') as f:
     json.dump(style_data, f)
 
-with open('unmatched.json', 'w') as f:
-    json.dump(unmatched, f)
+with open('unmatched.csv', 'w') as f:
+    writer = csv.DictWriter(f, fieldnames=['name', 'type'])
+    writer.writeheader()
+    writer.writerows(unmatched)

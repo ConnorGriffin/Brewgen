@@ -43,5 +43,10 @@
     "name": "wheat",
     "min_percent": 0,
     "max_percent": 100
+  },
+  {
+    "name": "smoked",
+    "min_percent": 0,
+    "max_percent": 100
   }
 ]

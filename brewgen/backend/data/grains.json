@@ -37,6 +37,38 @@
     }
   },
   {
+    "name": "Weyermann Beech Smoked Barley Malt",
+    "brand": "Weyermann",
+    "potential": 1.0356,
+    "color": 3,
+    "max_percent": 100,
+    "category": "smoked",
+    "sensory": {
+      "sweet": 2.6,
+      "bitter": 0.4,
+      "coffee": 0.4,
+      "cocoa": 0.4,
+      "dark_chocolate": 0.2,
+      "roasted_almond": 0,
+      "dried_fruit": 0.4,
+      "bready": 1.2,
+      "wood_smoke": 3,
+      "clove": 1.8,
+      "almond": 1.4,
+      "hazelnut": 1,
+      "raisin": 0.6,
+      "vanilla": 0.8,
+      "honey": 1,
+      "biscuit": 0.6,
+      "marmalade": 1,
+      "malty": 2.4,
+      "toffee": 1,
+      "caramel": 1.6,
+      "dark_caramel": 0.6,
+      "sour": 1
+    }
+  },
+  {
     "name": "Brewer's Malt",
     "brand": "Briess",
     "potential": 1.0374,
@@ -1018,6 +1050,20 @@
     }
   },
   {
+    "name": "Molasses",
+    "brand": "Generic",
+    "potential": 1.036,
+    "color": 80,
+    "max_percent": 10,
+    "category": "sugar",
+    "sensory": {
+      "raisin": 3,
+      "dried_fruit": 3,
+      "molasses": 5,
+      "caramel": 3
+    }
+  },
+  {
     "name": "Turbinado",
     "brand": "Generic",
     "potential": 1.044,
@@ -1073,6 +1119,117 @@
       "nutty": 1,
       "toast": 1,
       "grainy": 3
+    }
+  },
+  {
+    "name": "Smoked Malt, Mesquite",
+    "brand": "Briess",
+    "potential": 1.0372,
+    "color": 5,
+    "max_percent": 60,
+    "category": "smoked",
+    "sensory": {
+      "malty": 1,
+      "sweet": 2,
+      "wood_smoke": 4,
+      "ash": 2,
+      "barbeque": 4
+    }
+  },
+  {
+    "name": "Weyermann Caramunich I",
+    "brand": "Weyermann",
+    "potential": 1.0337,
+    "color": 35,
+    "max_percent": 10,
+    "category": "crystal",
+    "sensory": {
+      "sweet": 2,
+      "bitter": 2.2,
+      "coffee": 2.6,
+      "cocoa": 3,
+      "dark_chocolate": 2.2,
+      "roasted_almond": 2,
+      "dried_fruit": 2,
+      "bready": 3.2,
+      "wood_smoke": 0.6,
+      "clove": 0.7,
+      "almond": 1.4,
+      "hazelnut": 1.2,
+      "raisin": 2,
+      "vanilla": 1.2,
+      "honey": 0.5,
+      "biscuit": 2.4,
+      "marmalade": 1,
+      "malty": 3,
+      "toffee": 2.3,
+      "caramel": 2,
+      "dark_caramel": 3,
+      "sour": 3
+    }
+  },
+  {
+    "name": "Weyermann Caramunich II",
+    "brand": "Weyermann",
+    "potential": 1.0337,
+    "color": 45,
+    "max_percent": 10,
+    "category": "crystal",
+    "sensory": {
+      "sweet": 2,
+      "bitter": 2.2,
+      "coffee": 2.6,
+      "cocoa": 3,
+      "dark_chocolate": 2.2,
+      "roasted_almond": 2,
+      "dried_fruit": 2,
+      "bready": 3.2,
+      "wood_smoke": 0.6,
+      "clove": 0.7,
+      "almond": 1.4,
+      "hazelnut": 1.2,
+      "raisin": 2,
+      "vanilla": 1.2,
+      "honey": 0.5,
+      "biscuit": 2.4,
+      "marmalade": 1,
+      "malty": 3,
+      "toffee": 2.3,
+      "caramel": 2,
+      "dark_caramel": 3,
+      "sour": 3
+    }
+  },
+  {
+    "name": "Weyermann Caramunich III",
+    "brand": "Weyermann",
+    "potential": 1.0337,
+    "color": 55,
+    "max_percent": 10,
+    "category": "crystal",
+    "sensory": {
+      "sweet": 2,
+      "bitter": 2.2,
+      "coffee": 2.6,
+      "cocoa": 3,
+      "dark_chocolate": 2.2,
+      "roasted_almond": 2,
+      "dried_fruit": 2,
+      "bready": 3.2,
+      "wood_smoke": 0.6,
+      "clove": 0.7,
+      "almond": 1.4,
+      "hazelnut": 1.2,
+      "raisin": 2,
+      "vanilla": 1.2,
+      "honey": 0.5,
+      "biscuit": 2.4,
+      "marmalade": 1,
+      "malty": 3,
+      "toffee": 2.3,
+      "caramel": 2,
+      "dark_caramel": 3,
+      "sour": 3
     }
   }
 ]
