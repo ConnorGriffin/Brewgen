@@ -16,7 +16,8 @@ const state = {
   recipeData: [],
   recipeColorData: [],
   styles: [],
-  currentStyle: 'None Selected'
+  currentStyleName: 'None Selected',
+  currentStyleStats: ''
 };
 
 const getters = {
@@ -30,7 +31,8 @@ const getters = {
   recipeData: state => state.recipeData,
   recipeColorData: state => state.recipeColorData,
   styles: state => state.styles,
-  currentStyle: state => state.currentStyle
+  currentStyleName: state => state.currentStyleName,
+  currentStyleStats: state => state.currentStyleStats
 };
 
 const actions = {
@@ -80,9 +82,14 @@ const actions = {
         throw err;
       });
   },
-  async fetchRecipeData({ commit }, { colorOnly }) {
+  async fetchRecipeData({ commit }, { colorOnly, chartMin, chartMax }) {
     if (colorOnly == true) {
-      var uri = 'http://localhost:5000/api/v1/grains/recipes?coloronly=true';
+      if (chartMin !== undefined && chartMax !== undefined) {
+        var params = '&chartrange=' + chartMin + ', ' + chartMax
+      } else {
+        var params = ''
+      }
+      var uri = 'http://localhost:5000/api/v1/grains/recipes?coloronly=true' + params;
       var commitAction = 'setRecipeColorData';
       var beerProfile = {
         original_sg: Number(state.equipmentProfile.originalSg)
@@ -131,12 +138,13 @@ const actions = {
         throw err;
       });
   },
-  async setGrainDataFromStyle({ commit }, styleSlug) {
+  async setDataFromStyle({ commit }, styleSlug) {
     return axios
       .get('http://localhost:5000/api/v1/styles/' + styleSlug)
       .then(response => {
         commit('setAllGrainsFromStyle', response.data.grain_usage);
         commit('setGrainCategories', response.data.category_usage);
+        commit('setCurrentStyleStats', response.data.stats);
         Promise.resolve();
       })
       .catch(err => {
@@ -210,8 +218,11 @@ const mutations = {
   setStyles(state, value) {
     state.styles = value
   },
-  setCurrentStyle(state, value) {
-    state.currentStyle = value
+  setCurrentStyleName(state, value) {
+    state.currentStyleName = value
+  },
+  setCurrentStyleStats(state, value) {
+    state.currentStyleStats = value
   }
 };
 

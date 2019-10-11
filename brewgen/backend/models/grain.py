@@ -272,7 +272,8 @@ class GrainList(GrainModel):
         if mode == 'grain_bill':
             # Find all solutions with a time limit, return the usage_percent for each solution
             solver = cp_model.CpSolver()
-            solver.parameters.max_time_in_seconds = 1
+            # TODO: Accept max_time_in_seconds as a parameter, adjust upwards for initial load
+            solver.parameters.max_time_in_seconds = 2
             solution_printer = SolutionPrinter(grain_vars)
             status = solver.SearchForAllSolutions(model, solution_printer)
 

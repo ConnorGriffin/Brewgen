@@ -71,6 +71,7 @@ def get_style_data(style_slug):
     return jsonify({
         'name': style_object.name,
         'slug': style_object.slug,
+        'stats': style_object.get_stats(),
         'grain_usage': style_object.get_grain_usage(),
         'category_usage': style_object.get_category_usage()
     }), 200
@@ -148,13 +149,15 @@ def get_grain_list_recipes():
     """Return all (or up to limit) possible recipies for the given parameters. Optionally return color distribution only.
     Parameters:
         coloronly=true: Return only color distribution data
+        chartrange=x1,x2: Returns color data that contains at least x1 through x2, even if values are 0
     POST format:
     {
         "grain_list": [grain1, grain2],
         "category_model": CategoryModel,
         "sensory_model": SensoryModel,
         "max_unique_grains": int,
-        "equipment_profile": EquipmentProfile
+        "equipment_profile": EquipmentProfile,
+        "style": str(style-slug)
     }
     """
     data = request.json
@@ -199,10 +202,20 @@ def get_grain_list_recipes():
             beer_profile.original_sg, equipment_profile))
 
     color_only = request.args.get('coloronly')
+
     if color_only == 'true':
         srm_data = [int(recipe['srm']) for recipe in recipe_response]
-        lowest = int(min(srm_data))
-        highest = int(max(srm_data))
+
+        chart_range = request.args.get('chartrange')
+        if chart_range:
+            # Set the return x data points to at least the provided chart range
+            chart_range = chart_range.split(',')
+            lowest = min(int(chart_range[0]), int(min(srm_data)))
+            highest = max(int(chart_range[1]), int(max(srm_data)))
+        else:
+            lowest = int(min(srm_data))
+            highest = int(max(srm_data))
+
         srm_ints = list(range(lowest, highest+1))
         srm_dist = []
         for i in range(len(srm_ints)):

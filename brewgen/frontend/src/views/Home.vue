@@ -26,7 +26,7 @@
         <StyleDropdown :styles="sortedStyles" />
         <EquipmentForm />
         <b-button @click="fetchSensoryData" class="mr-3 ml-2">Update Sensory Info</b-button>
-        <b-button @click="fetchRecipeData({colorOnly: true})" variant="success">Update Recipe Data</b-button>
+        <b-button @click="updateRecipeData" variant="success">Update Recipe Data</b-button>
         <div class="mt-3">
           <RecipeChart :chartData="recipeChartData" />
         </div>
@@ -90,7 +90,17 @@ export default {
       "fetchSensoryData",
       "fetchRecipeData",
       "fetchStyles"
-    ])
+    ]),
+    updateRecipeData: function() {
+      var params = {
+        colorOnly: true
+      };
+      if (this.currentStyleStats != "") {
+        params["chartMin"] = this.currentStyleStats.srm.low;
+        params["chartMax"] = this.currentStyleStats.srm.high;
+      }
+      this.fetchRecipeData(params);
+    }
   },
   computed: {
     ...mapGetters([
@@ -99,7 +109,8 @@ export default {
       "sensoryData",
       "recipeData",
       "recipeColorData",
-      "styles"
+      "styles",
+      "currentStyleStats"
     ]),
     sensoryChartData: function() {
       // Get the labels in deslugged title-case
@@ -144,6 +155,23 @@ export default {
       };
     },
     recipeChartData: function() {
+      if (this.currentStyleStats != "") {
+        var annotations = {
+          xaxis: [
+            {
+              x: this.currentStyleStats.srm.low,
+              x2: this.currentStyleStats.srm.high,
+              fillColor: "#98C9A3",
+              opacity: 0.4,
+              label: {
+                text: "Style Range"
+              }
+            }
+          ]
+        };
+      } else {
+        var annotations = {};
+      }
       // Return the data formatted for ApexCharts
       return {
         options: {
@@ -166,7 +194,8 @@ export default {
                 fontSize: "1.25rem"
               }
             }
-          }
+          },
+          annotations
         },
         series: [
           {

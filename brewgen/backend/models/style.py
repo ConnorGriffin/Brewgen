@@ -7,11 +7,25 @@ from . import grain, category
 class Style:
     """Defines a style and all of its properties."""
 
-    def __init__(self, name, grain_list, category_list):
+    def __init__(self, name, bjcp_id, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list):
         self.name = name
         self.slug = slugify(name, replacements=[["'", ''], ['®', '']])
+        self.id = bjcp_id
+        self.impression = impression
+        self.aroma = aroma
+        self.appearance = appearance
+        self.flavor = flavor
+        self.mouthfeel = mouthfeel
+        self.comments = comments
+        self.history = history
+        self.ingredients = ingredients
+        self.comparison = comparison
+        self.examples = examples
+        self.tags = tags
+        self.stats = stats
         self.grain_list = grain_list
         self.category_list = category_list
+        self.exceptions = self.stats.get('exceptions', None)
 
     def get_style_data(self):
         """Return the style in dict format"""
@@ -45,6 +59,72 @@ class Style:
             })
         return category_data
 
+    def og_range(self):
+        """Return OG range as a tuple, may also return an exception if style is variable."""
+        if self.exceptions:
+            return self.exceptions
+        else:
+            return (float(self.stats['og']['low']), float(self.stats['og']['high']))
+
+    def fg_range(self):
+        """Return FG range as a tuple, may also return an exception if style is variable."""
+        if self.exceptions:
+            return self.exceptions
+        else:
+            return (float(self.stats['fg']['low']), float(self.stats['fg']['high']))
+
+    def ibu_range(self):
+        """Return IBU range as a tuple, may also return an exception if style is variable."""
+        if self.exceptions:
+            return self.exceptions
+        else:
+            return (float(self.stats['ibu']['low']), float(self.stats['ibu']['high']))
+
+    def srm_range(self):
+        """Return SRM range as a tuple, may also return an exception if style is variable."""
+        if self.exceptions:
+            return self.exceptions
+        else:
+            return (float(self.stats['srm']['low']), float(self.stats['srm']['high']))
+
+    def abv_range(self):
+        """Return ABV range as a tuple, may also return an exception if style is variable."""
+        if self.exceptions:
+            return self.exceptions
+        else:
+            return (float(self.stats['abv']['low']), float(self.stats['abv']['high']))
+
+    def get_stats(self):
+        """Return stats as a dict with float converted data"""
+        if not self.exceptions:
+            og = self.og_range()
+            fg = self.fg_range()
+            ibu = self.ibu_range()
+            srm = self.srm_range()
+            abv = self.abv_range()
+            return {
+                'og': {
+                    'low': og[0],
+                    'high': og[1]
+                },
+                'fg': {
+                    'low': fg[0],
+                    'high': fg[1]
+                },
+                'ibu': {
+                    'low': ibu[0],
+                    'high': ibu[1]
+                },
+                'srm': {
+                    'low': srm[0],
+                    'high': srm[1]
+                },
+                'abv': {
+                    'low': abv[0],
+                    'high': abv[1]
+                }
+            }
+
 
 class StyleModel:
     """Defines a Style Model, used to access data about styles in the style database."""
@@ -55,10 +135,17 @@ class StyleModel:
         # Populate grains_list with all details from the database as objects
         path_list = os.path.abspath(__file__).split(os.sep)
         script_directory = path_list[0:len(path_list)-2]
-        path = "/".join(script_directory) + "/data/styles.json"
-        with open(path, 'r') as f:
+        style_usage_path = "/".join(script_directory) + "/data/styles.json"
+        bjcp_path = "/".join(script_directory) + "/data/bjcp-2015.json"
+
+        with open(bjcp_path, 'r') as f:
+            self.bjcp_data = json.load(f)
+
+        with open(style_usage_path, 'r') as f:
             style_data = json.load(f)
+
         for style in style_data:
+            bjcp_style = self.__bjcp_name(style['style'])
             style_grain_list = []
             style_category_list = []
 
@@ -85,10 +172,31 @@ class StyleModel:
 
             self.style_list.append(Style(
                 name=style['style'],
+                bjcp_id=bjcp_style.get('id'),
+                impression=bjcp_style.get('impression'),
+                aroma=bjcp_style.get('aroma'),
+                appearance=bjcp_style.get('appearance'),
+                flavor=bjcp_style.get('flavor'),
+                mouthfeel=bjcp_style.get('mouthfeel'),
+                comments=bjcp_style.get('comments'),
+                history=bjcp_style.get('history'),
+                ingredients=bjcp_style.get('ingredients'),
+                comparison=bjcp_style.get('comparison'),
+                examples=bjcp_style.get('examples'),
+                tags=bjcp_style.get('tags'),
+                stats=bjcp_style.get('stats'),
                 grain_list=grain.GrainList(style_grain_list),
                 category_list=style_category_list
-                # TODO: Add BJCP data, OG, color and stuff
             ))
+
+    def __bjcp_name(self, name,):
+        """Return bjcp data for a style name"""
+        for bev_class in self.bjcp_data['styleguide']['class']:
+            if bev_class['type'] == 'beer':
+                for style_category in bev_class['category']:
+                    for subcat in style_category['subcategory']:
+                        if subcat['name'] == name:
+                            return subcat
 
     def get_style_names(self):
         """Return a list of style names"""

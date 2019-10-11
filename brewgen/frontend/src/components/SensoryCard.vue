@@ -177,7 +177,11 @@ export default {
         });
       }
       this.fetchSensoryData();
-      this.fetchRecipeData({ colorOnly: true });
+      this.fetchRecipeData({
+        colorOnly: true,
+        chartMin: this.currentStyleStats.srm.low,
+        chartMax: this.currentStyleStats.srm.high
+      });
     },
     inModel: function() {
       // Return true if value is in the model, false if not
@@ -192,7 +196,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(["sensoryModel"])
+    ...mapGetters(["sensoryModel", "currentStyleStats"])
   },
   watch: {
     sensoryData: function(value) {
