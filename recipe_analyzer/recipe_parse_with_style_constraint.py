@@ -426,8 +426,8 @@ unmatched_fermentable = 0
 unmatched_style = 0
 
 # Get all recipe paths
-#beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))
-beerxml_list = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))
+beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:120000]
+#beerxml_list = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))
 for beerxml_file in beerxml_list:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
@@ -448,12 +448,13 @@ for beerxml_file in beerxml_list:
 
             specs = bjcp_name(style)
             if specs:
-                og_match = points(float(specs.get('og', {}).get('low', 1)))*.5 <= points(
-                    recipe.og) <= points(float(specs.get('og', {}).get('high', 1.200)))*1.5
-                srm_match = float(specs.get('srm', {}).get('low', 0))*.5 <= recipe.color <= float(
-                    specs.get('srm', {}).get('high', 999))*1.5
-                ibu_match = float(specs.get('ibu', {}).get('low', 0))*.5 <= recipe.ibu <= float(
-                    specs.get('ibu', {}).get('high', 999))*1.5
+                og_match = points(float(specs.get('og', {}).get('low', 1)))*.85 <= points(
+                    recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.15
+                srm_match = float(specs.get('srm', {}).get('low', 0))*.85 <= recipe.color <= float(
+                    specs.get('srm', {}).get('high', 999))*1.15
+                # ibu_match = float(specs.get('ibu', {}).get('low', 0))*.5 <= recipe.ibu <= float(
+                #     specs.get('ibu', {}).get('high', 999))*1.5
+                ibu_match = True
 
                 # Only include recipes with a to-style OG and color
                 if og_match and srm_match and ibu_match:
