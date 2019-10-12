@@ -1,9 +1,11 @@
 <template>
-  <b-navbar class="has-background-primary">
+  <b-navbar type="is-primary" wrapper-class="container" shadow>
     <template slot="brand">
-      <b-navbar-item>
-        <span class="is-size-5 has-text-weight-bold" href="https://brewgen.io">Brewgen</span>
-      </b-navbar-item>
+      <b-navbar-item
+        tag="a"
+        class="is-size-5 has-text-weight-bold"
+        href="http://localhost:8080"
+      >Brewgen</b-navbar-item>
     </template>
     <template slot="start">
       <b-navbar-item href="#">Home</b-navbar-item>

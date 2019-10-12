@@ -10,6 +10,7 @@
 
 <script>
 </script>
+
 <style lang="scss">
 // Import Bulma's core
 @import '~bulma/sass/utilities/_all';
@@ -91,4 +92,3 @@ $link-focus-border: $primary;
 @import '~bulma';
 @import '~buefy/src/scss/buefy';
 </style>
-

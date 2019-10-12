@@ -3,14 +3,18 @@
     <!-- Nav bar -->
     <Navbar />
     <!-- Equipment profile and beer style setup -->
-    <section class="section">
-      <div class="columns">
-        <div class="column">Style Placeholder</div>
-        <div class="column">
-          <EquipmentField />
+    <div class="container">
+      <section class="section">
+        <div class="columns">
+          <div class="column">
+            <StyleField />
+          </div>
+          <div class="column">
+            <EquipmentField />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
     <!-- Footer -->
     <Footer />
   </div>
@@ -21,13 +25,15 @@ import { mapGetters, mapActions } from 'vuex';
 import Navbar from '@/components/Navbar.vue';
 import Footer from '@/components/Footer.vue';
 import EquipmentField from '@/components/EquipmentField.vue';
+import StyleField from '@/components/StyleField.vue';
 
 export default {
   name: 'Home',
   components: {
     Navbar,
     Footer,
-    EquipmentField
+    EquipmentField,
+    StyleField
   },
   filters: {
     inCategory: function(value, categoryName) {

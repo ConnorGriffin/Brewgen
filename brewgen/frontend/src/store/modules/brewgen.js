@@ -36,7 +36,7 @@ const getters = {
 }
 
 const actions = {
-  async fetchGrainCategories ({ commit }) {
+  async fetchGrainCategories({ commit }) {
     return axios
       .get('http://localhost:5000/api/v1/style-data/grains/categories')
       .then(response => {
@@ -47,10 +47,10 @@ const actions = {
         throw err
       })
   },
-  updateGrainCategoryValue ({ commit }, grainCategory, key, value) {
+  updateGrainCategoryValue({ commit }, grainCategory, key, value) {
     commit('setGrainCategoryValue', grainCategory, key, value)
   },
-  async fetchAllGrains ({ commit }) {
+  async fetchAllGrains({ commit }) {
     return axios
       .get('http://localhost:5000/api/v1/grains')
       .then(response => {
@@ -61,10 +61,10 @@ const actions = {
         throw err
       })
   },
-  setEquipmentSetting ({ commit }, key, value) {
-    commit('setEquipmentSetting', key, value)
+  updateEquipmentProfile({ commit }, maxUniqueGrains, targetVolumeGallons, mashEfficiency) {
+    commit('updateEquipmentProfile', maxUniqueGrains, targetVolumeGallons, mashEfficiency)
   },
-  async fetchSensoryData ({ commit }) {
+  async fetchSensoryData({ commit }) {
     return axios
       .post('http://localhost:5000/api/v1/grains/sensory-profiles', {
         grain_list: state.allGrains
@@ -82,7 +82,7 @@ const actions = {
         throw err
       })
   },
-  async fetchRecipeData ({ commit }, { colorOnly, chartMin, chartMax }) {
+  async fetchRecipeData({ commit }, { colorOnly, chartMin, chartMax }) {
     if (colorOnly == true) {
       if (chartMin !== undefined && chartMax !== undefined) {
         var params = '&chartrange=' + chartMin + ',' + chartMax
@@ -127,7 +127,7 @@ const actions = {
         throw err
       })
   },
-  async fetchStyles ({ commit }) {
+  async fetchStyles({ commit }) {
     return axios
       .get('http://localhost:5000/api/v1/styles')
       .then(response => {
@@ -138,7 +138,7 @@ const actions = {
         throw err
       })
   },
-  async setDataFromStyle ({ commit }, styleSlug) {
+  async setDataFromStyle({ commit }, styleSlug) {
     return axios
       .get('http://localhost:5000/api/v1/styles/' + styleSlug)
       .then(response => {
@@ -151,10 +151,10 @@ const actions = {
         throw err
       })
   },
-  removeSensoryFromModel ({ commit }, name) {
+  removeSensoryFromModel({ commit }, name) {
     commit('removeSensoryFromModel', name)
   },
-  addSensoryToModel ({ commit }, name, min, max) {
+  addSensoryToModel({ commit }, name, min, max) {
     commit('addSensoryToModel', name), min, max
   }
 }
@@ -184,8 +184,9 @@ const mutations = {
       }
     })
   },
-  setEquipmentSetting: (state, { key, value }) =>
-    (state.equipmentProfile[key] = value),
+  updateEquipmentProfile: (state, { maxUniqueGrains, targetVolumeGallons, mashEfficiency }) => {
+    Object.assign(state.equipmentProfile, { maxUniqueGrains, targetVolumeGallons, mashEfficiency })
+  },
   setSensoryData: (state, sensoryData) => (state.sensoryData = sensoryData),
   setRecipeData: (state, recipeData) => (state.recipeData = recipeData),
   setRecipeColorData: (state, recipeColorData) =>
@@ -194,14 +195,14 @@ const mutations = {
     var matchGrain = state.allGrains.find(grain => grain.slug == slug)
     Object.assign(matchGrain, { enabled })
   },
-  removeSensoryFromModel (state, name) {
+  removeSensoryFromModel(state, name) {
     var modelObject = state.sensoryModel.find(object => object.name == name)
     if (modelObject !== undefined) {
       var index = state.sensoryModel.indexOf(modelObject)
       state.sensoryModel.splice(index)
     }
   },
-  addSensoryToModel (state, { name, min, max }) {
+  addSensoryToModel(state, { name, min, max }) {
     // Remove if already exists, just to be safe
     var modelObject = state.sensoryModel.find(object => object.name == name)
     if (modelObject !== undefined) {
@@ -215,13 +216,13 @@ const mutations = {
       max: parseFloat(max)
     })
   },
-  setStyles (state, value) {
+  setStyles(state, value) {
     state.styles = value
   },
-  setCurrentStyleName (state, value) {
+  setCurrentStyleName(state, value) {
     state.currentStyleName = value
   },
-  setCurrentStyleStats (state, value) {
+  setCurrentStyleStats(state, value) {
     state.currentStyleStats = value
   }
 }

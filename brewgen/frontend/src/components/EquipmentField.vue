@@ -1,16 +1,14 @@
 <template>
   <div class="container">
-    <nav class="level">
-      <div class="level-left">
-        <h1 class="title is-size-5">Equipment Profile</h1>
+    <h1 class="title is-size-5">
+      Equipment Profile
+      <div class="buttons is-pulled-right">
+        <b-button size="is-small" @click="showEditEquipmentModal = true">Edit</b-button>
+        <b-modal :active.sync="showEditEquipmentModal" has-modal-card trap-focus>
+          <EquipmentForm />
+        </b-modal>
       </div>
-      <div class="level-right">
-        <div class="buttons">
-          <b-button size="is-small" @click="clickMe">Change</b-button>
-          <b-button size="is-small" @click="clickMe">Edit</b-button>
-        </div>
-      </div>
-    </nav>
+    </h1>
     <p>
       <span class="has-text-weight-semibold">Batch Volume:</span>
       <span>&nbsp;{{ targetVolumeGallons }} gal</span>
@@ -27,8 +25,18 @@
 </template>
 
 <script>
+import EquipmentForm from '@/components/EquipmentForm.vue';
+
 export default {
   name: 'EquipmentField',
+  components: {
+    EquipmentForm
+  },
+  data() {
+    return {
+      showEditEquipmentModal: false
+    };
+  },
   computed: {
     maxUniqueGrains: {
       get() {
