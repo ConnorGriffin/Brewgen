@@ -16,25 +16,22 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { mapActions, mapGetters } from 'vuex'
 export default {
-  name: "StyleDropdown",
-  props: ["styles"],
+  name: 'StyleDropdown',
+  props: ['styles'],
   methods: {
-    ...mapActions(["setDataFromStyle", "setCurrentStyleStats"]),
-    setCurrentStyleName: function(style) {
-      this.$store.commit("setCurrentStyleName", style.name);
-      this.setDataFromStyle(style.slug);
+    ...mapActions(['setDataFromStyle', 'setCurrentStyleStats']),
+    setCurrentStyleName: function (style) {
+      this.$store.commit('setCurrentStyleName', style.name)
+      this.setDataFromStyle(style.slug)
     }
   },
   computed: {
-    ...mapGetters(["currentStyleName"])
+    ...mapGetters(['currentStyleName'])
   }
-};
+}
 </script>
 
 <style>
 </style>
-
-
-

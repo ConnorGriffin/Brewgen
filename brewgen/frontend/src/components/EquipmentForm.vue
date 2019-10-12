@@ -47,88 +47,88 @@
 </template>
 
 <script>
-import { mapActions } from "vuex";
+import { mapActions } from 'vuex'
 
 export default {
-  name: "EquipmentForm",
+  name: 'EquipmentForm',
   // data() {
   //   return {
   //     maxUniqueGrains:
   //   };
   // },
   methods: {
-    ...mapActions(["fetchSensoryData"])
+    ...mapActions(['fetchSensoryData'])
   },
   computed: {
     maxUniqueGrains: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.maxUniqueGrains;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.maxUniqueGrains
       },
-      set(value) {
-        this.$store.commit("setEquipmentSetting", {
-          key: "maxUniqueGrains",
+      set (value) {
+        this.$store.commit('setEquipmentSetting', {
+          key: 'maxUniqueGrains',
           value
-        });
+        })
       }
     },
     targetVolumeGallons: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.targetVolumeGallons;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.targetVolumeGallons
       },
-      set(value) {
-        this.$store.commit("setEquipmentSetting", {
-          key: "targetVolumeGallons",
+      set (value) {
+        this.$store.commit('setEquipmentSetting', {
+          key: 'targetVolumeGallons',
           value
-        });
+        })
       }
     },
     mashEfficiency: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.mashEfficiency;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.mashEfficiency
       },
-      set(value) {
-        this.$store.commit("setEquipmentSetting", {
-          key: "mashEfficiency",
+      set (value) {
+        this.$store.commit('setEquipmentSetting', {
+          key: 'mashEfficiency',
           value
-        });
+        })
       }
     },
     originalSg: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.originalSg;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.originalSg
       },
-      set(value) {
-        this.$store.commit("setEquipmentSetting", {
-          key: "originalSg",
+      set (value) {
+        this.$store.commit('setEquipmentSetting', {
+          key: 'originalSg',
           value
-        });
+        })
       }
     },
     minSrm: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.minSrm;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.minSrm
       },
-      set(value) {
-        this.$store.commit("setEquipmentSetting", {
-          key: "minSrm",
+      set (value) {
+        this.$store.commit('setEquipmentSetting', {
+          key: 'minSrm',
           value
-        });
+        })
       }
     },
     maxSrm: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.maxSrm;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.maxSrm
       },
-      set(value) {
-        this.$store.commit("setEquipmentSetting", {
-          key: "maxSrm",
+      set (value) {
+        this.$store.commit('setEquipmentSetting', {
+          key: 'maxSrm',
           value
-        });
+        })
       }
     }
   },
-  created() {}
-};
+  created () {}
+}
 </script>
 
 <style>

@@ -15,9 +15,9 @@
 
 <script>
 export default {
-  name: "SensoryRadar",
-  props: ["sensoryChartData"]
-};
+  name: 'SensoryRadar',
+  props: ['sensoryChartData']
+}
 </script>
 
 <style>

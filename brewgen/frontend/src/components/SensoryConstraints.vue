@@ -18,19 +18,19 @@
 </template>
 
 <script>
-import _ from "lodash";
-import SensoryCard from "@/components/SensoryCard.vue";
+import _ from 'lodash'
+import SensoryCard from '@/components/SensoryCard.vue'
 
 export default {
-  name: "SensoryList",
-  props: ["sensoryData"],
+  name: 'SensoryList',
+  props: ['sensoryData'],
   components: { SensoryCard },
   methods: {
-    sensoryChunks() {
-      return _.chunk(this.sensoryData, 3);
+    sensoryChunks () {
+      return _.chunk(this.sensoryData, 3)
     }
   }
-};
+}
 </script>
 
 <style>

@@ -6,9 +6,9 @@
 
 <script>
 export default {
-  name: "RecipeChart",
-  props: ["chartData"]
-};
+  name: 'RecipeChart',
+  props: ['chartData']
+}
 </script>
 
 <style>

@@ -16,42 +16,42 @@
 </template>
 
 <script>
-import _ from "lodash";
+import _ from 'lodash'
 
 export default {
-  name: "SensoryTable",
-  props: ["sensoryData"],
-  data() {
+  name: 'SensoryTable',
+  props: ['sensoryData'],
+  data () {
     return {
       fields: [
         {
-          key: "name",
-          label: "Descriptor",
+          key: 'name',
+          label: 'Descriptor',
           sortable: true,
           formatter: value => {
-            value = value.toString();
+            value = value.toString()
             value = value
-              .replace("_", " ")
+              .replace('_', ' ')
               .toLowerCase()
-              .split(" ");
+              .split(' ')
             for (var i = 0; i < value.length; i++) {
-              value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1);
+              value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1)
             }
-            return value.join(" ");
+            return value.join(' ')
           }
         },
         {
-          key: "min",
+          key: 'min',
           sortable: true
         },
         {
-          key: "max",
+          key: 'max',
           sortable: true
         }
       ]
-    };
+    }
   }
-};
+}
 </script>
 
 <style>

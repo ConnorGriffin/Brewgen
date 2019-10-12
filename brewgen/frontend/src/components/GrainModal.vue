@@ -45,66 +45,66 @@
 
 <script>
 export default {
-  name: "GrainModal",
-  props: ["grains", "id", "category", "index"],
+  name: 'GrainModal',
+  props: ['grains', 'id', 'category', 'index'],
   filters: {
-    capitalize: function(value) {
-      if (!value) return "";
-      value = value.toString();
-      return value.charAt(0).toUpperCase() + value.slice(1);
+    capitalize: function (value) {
+      if (!value) return ''
+      value = value.toString()
+      return value.charAt(0).toUpperCase() + value.slice(1)
     },
-    isDisabled: function(grain) {
-      if (grain["enabled"] == false) {
-        return " disabled-grain";
+    isDisabled: function (grain) {
+      if (grain['enabled'] == false) {
+        return ' disabled-grain'
       }
     }
   },
   methods: {
-    toggleGrain: function(grain) {
+    toggleGrain: function (grain) {
       if (grain.enabled == true) {
-        this.$store.commit("setGrainEnabled", {
+        this.$store.commit('setGrainEnabled', {
           slug: grain.slug,
           enabled: false
-        });
+        })
       } else {
-        this.$store.commit("setGrainEnabled", {
+        this.$store.commit('setGrainEnabled', {
           slug: grain.slug,
           enabled: true
-        });
+        })
       }
     }
   },
   computed: {
     minPercent: {
-      get() {
+      get () {
         return this.$store.state.brewgen.grainCategories.find(
           category => category.name == this.category.name
-        ).min_percent;
+        ).min_percent
       },
-      set(value) {
-        this.$store.commit("setGrainCategoryValue", {
+      set (value) {
+        this.$store.commit('setGrainCategoryValue', {
           grainCategory: this.category.name,
-          key: "min_percent",
+          key: 'min_percent',
           value
-        });
+        })
       }
     },
     maxPercent: {
-      get() {
+      get () {
         return this.$store.state.brewgen.grainCategories.find(
           category => category.name == this.category.name
-        ).max_percent;
+        ).max_percent
       },
-      set(value) {
-        this.$store.commit("setGrainCategoryValue", {
+      set (value) {
+        this.$store.commit('setGrainCategoryValue', {
           grainCategory: this.category.name,
-          key: "max_percent",
+          key: 'max_percent',
           value
-        });
+        })
       }
     }
   }
-};
+}
 </script>
 
 <style scoped>

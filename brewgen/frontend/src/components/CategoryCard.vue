@@ -8,16 +8,16 @@
 
 <script>
 export default {
-  name: "CategoryCard",
-  props: ["category", "grains"],
+  name: 'CategoryCard',
+  props: ['category', 'grains'],
   filters: {
-    capitalize: function(value) {
-      if (!value) return "";
-      value = value.toString();
-      return value.charAt(0).toUpperCase() + value.slice(1);
+    capitalize: function (value) {
+      if (!value) return ''
+      value = value.toString()
+      return value.charAt(0).toUpperCase() + value.slice(1)
     }
   }
-};
+}
 </script>
 
 <style>

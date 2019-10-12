@@ -124,14 +124,14 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { mapActions, mapGetters } from 'vuex';
 export default {
-  name: "SensoryCard",
-  props: ["sensoryData"],
+  name: 'SensoryCard',
+  props: ['sensoryData'],
   data() {
     return {
-      minValue: "",
-      maxValue: ""
+      minValue: '',
+      maxValue: ''
     };
   },
   created() {
@@ -139,26 +139,26 @@ export default {
   },
   filters: {
     titleCase: function(value) {
-      value = value.toLowerCase().split(" ");
+      value = value.toLowerCase().split(' ');
       for (var i = 0; i < value.length; i++) {
         value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1);
       }
-      return value.join(" ");
+      return value.join(' ');
     },
     deslug: function(value) {
       // toasted_marshmallow -> toasted marshmallow
-      if (!value) return "";
+      if (!value) return '';
       value = value.toString();
-      value = value.replace("_", " ");
+      value = value.replace('_', ' ');
       return value.charAt(0).toUpperCase() + value.slice(1);
     }
   },
   methods: {
     ...mapActions([
-      "fetchSensoryData",
-      "removeSensoryFromModel",
-      "addSensoryToModel",
-      "fetchRecipeData"
+      'fetchSensoryData',
+      'removeSensoryFromModel',
+      'addSensoryToModel',
+      'fetchRecipeData'
     ]),
     updateSliders: function() {
       // Set the slider initial values to the min and max possible
@@ -196,7 +196,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(["sensoryModel", "currentStyleStats"])
+    ...mapGetters(['sensoryModel', 'currentStyleStats'])
   },
   watch: {
     sensoryData: function(value) {

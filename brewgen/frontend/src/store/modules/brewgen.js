@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from 'axios'
 
 const state = {
   grainCategories: [],
@@ -18,7 +18,7 @@ const state = {
   styles: [],
   currentStyleName: 'None Selected',
   currentStyleStats: ''
-};
+}
 
 const getters = {
   grainCategories: state => state.grainCategories,
@@ -26,45 +26,45 @@ const getters = {
   sensoryData: state => state.sensoryData,
   sensoryModel: state => state.sensoryModel,
   getGrainEnabled: state => slug => {
-    return state.allGrains.find(grain => grain.slug == slug).enabled;
+    return state.allGrains.find(grain => grain.slug == slug).enabled
   },
   recipeData: state => state.recipeData,
   recipeColorData: state => state.recipeColorData,
   styles: state => state.styles,
   currentStyleName: state => state.currentStyleName,
   currentStyleStats: state => state.currentStyleStats
-};
+}
 
 const actions = {
-  async fetchGrainCategories({ commit }) {
+  async fetchGrainCategories ({ commit }) {
     return axios
       .get('http://localhost:5000/api/v1/style-data/grains/categories')
       .then(response => {
-        commit('setGrainCategories', response.data);
-        Promise.resolve();
+        commit('setGrainCategories', response.data)
+        Promise.resolve()
       })
       .catch(err => {
-        throw err;
-      });
+        throw err
+      })
   },
-  updateGrainCategoryValue({ commit }, grainCategory, key, value) {
-    commit('setGrainCategoryValue', grainCategory, key, value);
+  updateGrainCategoryValue ({ commit }, grainCategory, key, value) {
+    commit('setGrainCategoryValue', grainCategory, key, value)
   },
-  async fetchAllGrains({ commit }) {
+  async fetchAllGrains ({ commit }) {
     return axios
       .get('http://localhost:5000/api/v1/grains')
       .then(response => {
-        commit('setAllGrains', response.data);
-        Promise.resolve();
+        commit('setAllGrains', response.data)
+        Promise.resolve()
       })
       .catch(err => {
-        throw err;
-      });
+        throw err
+      })
   },
-  setEquipmentSetting({ commit }, key, value) {
-    commit('setEquipmentSetting', key, value);
+  setEquipmentSetting ({ commit }, key, value) {
+    commit('setEquipmentSetting', key, value)
   },
-  async fetchSensoryData({ commit }) {
+  async fetchSensoryData ({ commit }) {
     return axios
       .post('http://localhost:5000/api/v1/grains/sensory-profiles', {
         grain_list: state.allGrains
@@ -75,33 +75,33 @@ const actions = {
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
       })
       .then(response => {
-        commit('setSensoryData', response.data);
-        Promise.resolve();
+        commit('setSensoryData', response.data)
+        Promise.resolve()
       })
       .catch(err => {
-        throw err;
-      });
+        throw err
+      })
   },
-  async fetchRecipeData({ commit }, { colorOnly, chartMin, chartMax }) {
+  async fetchRecipeData ({ commit }, { colorOnly, chartMin, chartMax }) {
     if (colorOnly == true) {
       if (chartMin !== undefined && chartMax !== undefined) {
-        var params = '&chartrange=' + chartMin + ', ' + chartMax
+        var params = '&chartrange=' + chartMin + ',' + chartMax
       } else {
         var params = ''
       }
-      var uri = 'http://localhost:5000/api/v1/grains/recipes?coloronly=true' + params;
-      var commitAction = 'setRecipeColorData';
+      var uri = 'http://localhost:5000/api/v1/grains/recipes?coloronly=true' + params
+      var commitAction = 'setRecipeColorData'
       var beerProfile = {
         original_sg: Number(state.equipmentProfile.originalSg)
-      };
+      }
     } else {
-      var uri = 'http://localhost:5000/api/v1/grains/recipes';
-      var commitAction = 'setRecipeData';
+      var uri = 'http://localhost:5000/api/v1/grains/recipes'
+      var commitAction = 'setRecipeData'
       var beerProfile = {
         min_color_srm: Number(state.equipmentProfile.minSrm),
         max_color_srm: Number(state.equipmentProfile.maxSrm),
         original_sg: Number(state.equipmentProfile.originalSg)
-      };
+      }
     }
     return axios
       .post(uri, {
@@ -120,44 +120,44 @@ const actions = {
         beer_profile: beerProfile
       })
       .then(response => {
-        commit(commitAction, response.data);
-        Promise.resolve();
+        commit(commitAction, response.data)
+        Promise.resolve()
       })
       .catch(err => {
-        throw err;
-      });
+        throw err
+      })
   },
-  async fetchStyles({ commit }) {
+  async fetchStyles ({ commit }) {
     return axios
       .get('http://localhost:5000/api/v1/styles')
       .then(response => {
-        commit('setStyles', response.data);
-        Promise.resolve();
+        commit('setStyles', response.data)
+        Promise.resolve()
       })
       .catch(err => {
-        throw err;
-      });
+        throw err
+      })
   },
-  async setDataFromStyle({ commit }, styleSlug) {
+  async setDataFromStyle ({ commit }, styleSlug) {
     return axios
       .get('http://localhost:5000/api/v1/styles/' + styleSlug)
       .then(response => {
-        commit('setAllGrainsFromStyle', response.data.grain_usage);
-        commit('setGrainCategories', response.data.category_usage);
-        commit('setCurrentStyleStats', response.data.stats);
-        Promise.resolve();
+        commit('setAllGrainsFromStyle', response.data.grain_usage)
+        commit('setGrainCategories', response.data.category_usage)
+        commit('setCurrentStyleStats', response.data.stats)
+        Promise.resolve()
       })
       .catch(err => {
-        throw err;
-      });
+        throw err
+      })
   },
-  removeSensoryFromModel({ commit }, name) {
-    commit('removeSensoryFromModel', name);
+  removeSensoryFromModel ({ commit }, name) {
+    commit('removeSensoryFromModel', name)
   },
-  addSensoryToModel({ commit }, name, min, max) {
-    commit('addSensoryToModel', name), min, max;
+  addSensoryToModel ({ commit }, name, min, max) {
+    commit('addSensoryToModel', name), min, max
   }
-};
+}
 
 const mutations = {
   setGrainCategories: (state, grainCategories) =>
@@ -165,12 +165,12 @@ const mutations = {
   setGrainCategoryValue: (state, { grainCategory, key, value }) => {
     var matchCategory = state.grainCategories.find(
       category => category.name == grainCategory
-    );
-    Object.assign(matchCategory, { [key]: value });
+    )
+    Object.assign(matchCategory, { [key]: value })
   },
   setAllGrains: (state, allGrains) => {
-    allGrains.forEach(grain => (grain['enabled'] = true));
-    state.allGrains = allGrains;
+    allGrains.forEach(grain => (grain['enabled'] = true))
+    state.allGrains = allGrains
   },
   setAllGrainsFromStyle: (state, styleGrains) => {
     // Iterate over every grain in allGrains, set the grain properties from the provided style data
@@ -191,44 +191,44 @@ const mutations = {
   setRecipeColorData: (state, recipeColorData) =>
     (state.recipeColorData = recipeColorData),
   setGrainEnabled: (state, { slug, enabled }) => {
-    var matchGrain = state.allGrains.find(grain => grain.slug == slug);
-    Object.assign(matchGrain, { enabled });
+    var matchGrain = state.allGrains.find(grain => grain.slug == slug)
+    Object.assign(matchGrain, { enabled })
   },
-  removeSensoryFromModel(state, name) {
-    var modelObject = state.sensoryModel.find(object => object.name == name);
+  removeSensoryFromModel (state, name) {
+    var modelObject = state.sensoryModel.find(object => object.name == name)
     if (modelObject !== undefined) {
-      var index = state.sensoryModel.indexOf(modelObject);
-      state.sensoryModel.splice(index);
+      var index = state.sensoryModel.indexOf(modelObject)
+      state.sensoryModel.splice(index)
     }
   },
-  addSensoryToModel(state, { name, min, max }) {
+  addSensoryToModel (state, { name, min, max }) {
     // Remove if already exists, just to be safe
-    var modelObject = state.sensoryModel.find(object => object.name == name);
+    var modelObject = state.sensoryModel.find(object => object.name == name)
     if (modelObject !== undefined) {
-      var index = state.sensoryModel.indexOf(modelObject);
-      state.sensoryModel.splice(index);
+      var index = state.sensoryModel.indexOf(modelObject)
+      state.sensoryModel.splice(index)
     }
     // Add to the model
     state.sensoryModel.push({
       name,
       min: parseFloat(min),
       max: parseFloat(max)
-    });
+    })
   },
-  setStyles(state, value) {
+  setStyles (state, value) {
     state.styles = value
   },
-  setCurrentStyleName(state, value) {
+  setCurrentStyleName (state, value) {
     state.currentStyleName = value
   },
-  setCurrentStyleStats(state, value) {
+  setCurrentStyleStats (state, value) {
     state.currentStyleStats = value
   }
-};
+}
 
 export default {
   state,
   getters,
   actions,
   mutations
-};
+}
