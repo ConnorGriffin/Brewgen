@@ -1,10 +1,10 @@
 <template>
-  <div class="modal-card" style="width: auto">
+  <div class="modal-card">
     <header class="modal-card-head">
       <p class="modal-card-title">Styles</p>
     </header>
-    <section class="modal-card-body" :key="style.slug" v-for="style in styles">
-      <StyleCard :style="style" />
+    <section class="modal-card-body">
+      <StyleCard :key="style.slug" v-for="style in styles" :styleData="style" />
     </section>
     <footer class="modal-card-foot">
       <button class="button" type="button" @click="$parent.close()">Cancel</button>
