@@ -81,7 +81,8 @@ def get_style_data(style_slug):
         'slug': style_object.slug,
         'stats': style_object.get_stats(),
         'grain_usage': style_object.get_grain_usage(),
-        'category_usage': style_object.get_category_usage()
+        'category_usage': style_object.get_category_usage(),
+        'sensory_data': style_object.sensory_data
     }), 200
 
 

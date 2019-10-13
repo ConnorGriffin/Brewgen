@@ -7,7 +7,7 @@ from . import grain, category
 class Style:
     """Defines a style and all of its properties."""
 
-    def __init__(self, name, bjcp_id, bjcp_category, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list):
+    def __init__(self, name, bjcp_id, bjcp_category, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list, sensory_data):
         self.name = name
         self.slug = slugify(name, replacements=[["'", ''], ['®', '']])
         self.id = bjcp_id
@@ -26,6 +26,7 @@ class Style:
         self.stats = stats
         self.grain_list = grain_list
         self.category_list = category_list
+        self.sensory_data = sensory_data
         self.exceptions = self.stats.get('exceptions', None)
 
     def get_style_data(self):
@@ -34,7 +35,8 @@ class Style:
             'name': self.name,
             'slug': self.slug,
             'grain_list': [grain_object.get_grain_data() for grain_object in self.grain_list],
-            'category_list': [category_object.get_category_data() for category_object in self.category_list]
+            'category_list': [category_object.get_category_data() for category_object in self.category_list],
+            'sensory_data': self.sensory_data
         }
 
     def get_grain_usage(self):
@@ -151,6 +153,7 @@ class StyleModel:
                 style['style'], return_category=True)
             style_grain_list = []
             style_category_list = []
+            style_sensory_data = []
 
             for grain_data in style['grain_usage']:
                 matching_grain = grain.GrainModel.get_grain_by_slug(grain.GrainModel(), grain_data['slug'])[
@@ -173,6 +176,13 @@ class StyleModel:
                     max_percent=category_data['usage']['max']
                 ))
 
+            for sensory_keyword in style['sensory_data']:
+                style_sensory_data.append({
+                    'name': sensory_keyword['name'],
+                    'min': sensory_keyword['min'],
+                    'max': sensory_keyword['max']
+                })
+
             self.style_list.append(Style(
                 # Remove Historical Beer:, Specialty IPA: etc from start of names
                 name=style['style'].split(':')[-1].strip(),
@@ -191,7 +201,8 @@ class StyleModel:
                 tags=bjcp_style.get('tags'),
                 stats=bjcp_style.get('stats'),
                 grain_list=grain.GrainList(style_grain_list),
-                category_list=style_category_list
+                category_list=style_category_list,
+                sensory_data=style_sensory_data
             ))
 
     def __bjcp_lookup(self, name, return_category=False):

@@ -340,7 +340,7 @@ class GrainList(GrainModel):
 class GrainBill(GrainModel):
     """Creates a Grain Bill, a list of grains and their usage percentage in a recipe.
     Args:
-        grain_list (list): A GrainList object
+        grain_list (object): A GrainList object
         use_percent (list): A list of percentages (as int(0-100)) of each grain in grain_list to use
     """
 
@@ -399,3 +399,21 @@ class GrainBill(GrainModel):
             "grains": grain_list,
             "srm": self.get_beer_srm(original_sg, equipment_profile)
         }
+
+    def get_sensory_data(self):
+        """Returns sensory data for the given grain bill"""
+
+        sensory_data = {}
+        # Iterate over every possible keyword, not just the possible ones in the grain bill
+        for sensory_keyword in GrainModel.get_sensory_keywords(GrainModel()):
+            sensory_value = 0
+            #  Sum the sensory value contributions of each grain proportional to their usage percent
+            for i in self.__grain_range:
+                fermentable = self.grain_list[i]
+                for key, value in fermentable.sensory_data.items():
+                    if key == sensory_keyword:
+                        sensory_value += value * self.use_percent[i] / 100
+
+            sensory_data[sensory_keyword] = sensory_value
+
+        return sensory_data

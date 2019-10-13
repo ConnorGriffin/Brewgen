@@ -27,16 +27,6 @@ def bjcp_name(name):
                         return subcat.get('stats', {})
 
 
-def bjcp_id(id):
-    """Return beer stats for a style ID"""
-    for bev_class in bjcp['styleguide']['class']:
-        if bev_class['type'] == 'beer':
-            for style_category in bev_class['category']:
-                for subcat in style_category['subcategory']:
-                    if subcat['id'] == id:
-                        return subcat['stats']
-
-
 all_grains = grain.GrainModel()
 category_model = category.CategoryModel()
 parser = Parser()
@@ -424,10 +414,11 @@ unmatched = []
 not_to_style = 0
 unmatched_fermentable = 0
 unmatched_style = 0
+uses_extract = 0
 
 # Get all recipe paths
-beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:120000]
-#beerxml_list = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))
+#beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:120000]
+beerxml_list = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))[0:50000]
 for beerxml_file in beerxml_list:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
@@ -465,6 +456,7 @@ for beerxml_file in beerxml_list:
                         extract = re.match(
                             "^.*(CBW|DME|LME|Extract|Malt Syrup).*$", fermentable_name, flags=re.IGNORECASE)
                         if extract:
+                            uses_extract += 1
                             raise Exception(
                                 'Recipe contains extract: {}'.format(fermentable_name))
 
@@ -495,23 +487,34 @@ for beerxml_file in beerxml_list:
                         # Calculate total amount of grains ignoring the bypass list
                         total_amount = sum(
                             fermentable.amount for fermentable in recipe.fermentables if fermentable_name not in fermentable_bypass)
+                        
                         fermentables.append({
                             'name': fermentable_name,
                             'category': matched_fermentable.category,
                             'percent': fermentable.amount / total_amount * 100,
                             'color': fermentable.color,
                             'ppg': fermentable.ppg,
-                            'addition': fermentable.addition
+                            'addition': fermentable.addition,
+                            'matched_fermentable': matched_fermentable
                         })
-
+                    
+                    grain_bill = grain.GrainBill(
+                        [fermentable['matched_fermentable']
+                                         for fermentable in fermentables],
+                        [fermentable['percent']
+                            for fermentable in fermentables]
+                    )
                     recipe_db.append({
                         'style': style,
                         'category': recipe.style.category,
                         'og': recipe.og,
                         'color': recipe.color,
-                        'fermentables': fermentables
+                        'fermentables': fermentables,
+                        'grain_bill': grain_bill,
+                        'sensory_data': grain_bill.get_sensory_data()
                     })
-                else: 
+
+                else:
                     style_spec = {
                         'og': {
                             'low': points(float(specs.get('og', {}).get('low', 1))),
@@ -550,6 +553,8 @@ for beerxml_file in beerxml_list:
 print('Unmatched Style:       {}'.format(unmatched_style))
 print('Unmatched Fermentable: {}'.format(unmatched_fermentable))
 print('Not to Style:          {}'.format(not_to_style))
+print('Contains Extract:      {}'.format(uses_extract))
+print('USABLE RECIPES:        {}'.format(len(recipe_db)))
 
 # Create a list of list of dicts containing grains and their usage percents for every style
 style_data = []
@@ -560,6 +565,7 @@ for style in styles:
     style_grain_usage = []
     style_category_data = []
     style_category_usage = []
+    style_sensory_data = []
 
     # Calculate the average grain usage from each category, only use recipes with 100% grain coverage, remove any recipes that use extracts
     for recipe in recipe_db:
@@ -591,8 +597,8 @@ for style in styles:
                 'max': int(np.max(category_usage))
             },
             'usage': {
-                'min': max(0, int(median - 1 * std_dev)),
-                'max': min(100, int(median + 1 * std_dev))
+                'min': max(0, int(mean - 1 * std_dev)),
+                'max': min(100, int(mean + 1 * std_dev))
             }
         })
 
@@ -633,16 +639,44 @@ for style in styles:
                     'max': min(100, int(mean + 1 * std_dev))
                 }
             })
+    
+    # Iterate over each sensory keyword, get the average values for each keyword in the style
+    for keyword in all_grains.get_sensory_keywords():
+        sensory_values = [recipe['sensory_data'][keyword] for recipe in recipe_db if recipe['style'] == style]
+        std_dev = np.std(sensory_values)
+        mean = np.mean(sensory_values)
 
+        style_sensory_data.append({
+            'name': keyword, 
+            'min': round(max(0, mean - 2 * std_dev), 3),
+            'max': round(min(5, mean + 2 * std_dev), 3),
+            'stats': {
+                'mean': mean, 
+                'median': np.median(sensory_values),
+                'std_dev': std_dev,
+                'min': min(sensory_values),
+                'max': max(sensory_values)
+            }
+        })
+ 
     style_data.append({
         'style': style,
+        'recipe_count': recipe_count,
         'grain_usage': style_grain_usage,
         'category_usage': style_category_usage,
-        'recipe_count': recipe_count
+        'sensory_data': style_sensory_data
     })
 
 with open('styles.json', 'w') as f:
     json.dump(style_data, f)
+
+for recipe in recipe_db:
+    del recipe['grain_bill']
+    for fermentable in recipe['fermentables']:
+        del fermentable['matched_fermentable']
+
+with open('recipe_db.json', 'w') as f:
+    json.dump(recipe_db, f)
 
 with open('unmatched.csv', 'w') as f:
     writer = csv.DictWriter(f, fieldnames=['name', 'type'])
