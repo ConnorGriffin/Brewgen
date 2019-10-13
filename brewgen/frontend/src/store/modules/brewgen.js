@@ -7,6 +7,8 @@ const state = {
     maxUniqueGrains: 4,
     targetVolumeGallons: 5.5,
     mashEfficiency: 75,
+  },
+  beerProfile: {
     originalSg: 1.05,
     minSrm: 3,
     maxSrm: 10
@@ -93,15 +95,15 @@ const actions = {
       var uri = 'http://localhost:5000/api/v1/grains/recipes?coloronly=true' + params
       var commitAction = 'setRecipeColorData'
       var beerProfile = {
-        original_sg: Number(state.equipmentProfile.originalSg)
+        original_sg: Number(state.beerProfile.originalSg)
       }
     } else {
       var uri = 'http://localhost:5000/api/v1/grains/recipes'
       var commitAction = 'setRecipeData'
       var beerProfile = {
-        min_color_srm: Number(state.equipmentProfile.minSrm),
-        max_color_srm: Number(state.equipmentProfile.maxSrm),
-        original_sg: Number(state.equipmentProfile.originalSg)
+        min_color_srm: Number(state.beerProfile.minSrm),
+        max_color_srm: Number(state.beerProfile.maxSrm),
+        original_sg: Number(state.beerProfile.originalSg)
       }
     }
     return axios
@@ -143,9 +145,31 @@ const actions = {
     return axios
       .get('http://localhost:5000/api/v1/styles/' + styleSlug)
       .then(response => {
+        // Set some default values for og/fg if none provided
+        let stats = response.data.stats
+        if (stats === null) {
+          stats = {
+            og: {
+              high: 1.150,
+              low: 1.020
+            },
+            fg: {
+              high: 1.040,
+              low: 0.990
+            },
+            srm: {
+              high: 100,
+              low: 0
+            },
+            ibu: {
+              high: 120,
+              low: 0
+            }
+          }
+        }
         commit('setAllGrainsFromStyle', response.data.grain_usage)
         commit('setGrainCategories', response.data.category_usage)
-        commit('setCurrentStyleStats', response.data.stats)
+        commit('setCurrentStyleStats', stats)
         Promise.resolve()
       })
       .catch(err => {
@@ -156,12 +180,8 @@ const actions = {
     commit('removeSensoryFromModel', name)
   },
   addSensoryToModel({ commit }, name, min, max) {
-    commit('addSensoryToModel', name), min, max
+    commit('addSensoryToModel', name, min, max)
   }
-  // ,
-  // setStyleListFilter({ commit }, value) {
-  //   commit('setStyleListFilter', value)
-  // }
 }
 
 const mutations = {
@@ -192,6 +212,8 @@ const mutations = {
   updateEquipmentProfile: (state, { maxUniqueGrains, targetVolumeGallons, mashEfficiency }) => {
     Object.assign(state.equipmentProfile, { maxUniqueGrains, targetVolumeGallons, mashEfficiency })
   },
+  setBeerProfileKey: (state, { key, value }) =>
+    (state.beerProfile[key] = value),
   setSensoryData: (state, sensoryData) => (state.sensoryData = sensoryData),
   setRecipeData: (state, recipeData) => (state.recipeData = recipeData),
   setRecipeColorData: (state, recipeColorData) =>

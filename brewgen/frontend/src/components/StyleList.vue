@@ -17,7 +17,6 @@
     </section>
     <footer class="modal-card-foot">
       <button class="button" type="button" @click="$parent.close()">Cancel</button>
-      <button class="button is-primary" @click="$parent.close()">Save</button>
     </footer>
   </div>
 </template>
