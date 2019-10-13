@@ -17,7 +17,8 @@ const state = {
   recipeColorData: [],
   styles: [],
   currentStyleName: 'None Selected',
-  currentStyleStats: ''
+  currentStyleStats: '',
+  styleListFilter: ''
 }
 
 const getters = {
@@ -157,6 +158,10 @@ const actions = {
   addSensoryToModel({ commit }, name, min, max) {
     commit('addSensoryToModel', name), min, max
   }
+  // ,
+  // setStyleListFilter({ commit }, value) {
+  //   commit('setStyleListFilter', value)
+  // }
 }
 
 const mutations = {
@@ -224,6 +229,9 @@ const mutations = {
   },
   setCurrentStyleStats(state, value) {
     state.currentStyleStats = value
+  },
+  setStyleListFilter(state, value) {
+    state.styleListFilter = value
   }
 }
 

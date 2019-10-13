@@ -7,10 +7,11 @@ from . import grain, category
 class Style:
     """Defines a style and all of its properties."""
 
-    def __init__(self, name, bjcp_id, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list):
+    def __init__(self, name, bjcp_id, bjcp_category, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list):
         self.name = name
         self.slug = slugify(name, replacements=[["'", ''], ['®', '']])
         self.id = bjcp_id
+        self.category = bjcp_category
         self.impression = impression
         self.aroma = aroma
         self.appearance = appearance
@@ -145,7 +146,9 @@ class StyleModel:
             style_data = json.load(f)
 
         for style in style_data:
-            bjcp_style = self.__bjcp_name(style['style'])
+            bjcp_style = self.__bjcp_lookup(style['style'])
+            bjcp_category = self.__bjcp_lookup(
+                style['style'], return_category=True)
             style_grain_list = []
             style_category_list = []
 
@@ -171,8 +174,10 @@ class StyleModel:
                 ))
 
             self.style_list.append(Style(
-                name=style['style'],
+                # Remove Historical Beer:, Specialty IPA: etc from start of names
+                name=style['style'].split(':')[-1].strip(),
                 bjcp_id=bjcp_style.get('id'),
+                bjcp_category=bjcp_category.get('name'),
                 impression=bjcp_style.get('impression'),
                 aroma=bjcp_style.get('aroma'),
                 appearance=bjcp_style.get('appearance'),
@@ -189,14 +194,17 @@ class StyleModel:
                 category_list=style_category_list
             ))
 
-    def __bjcp_name(self, name,):
+    def __bjcp_lookup(self, name, return_category=False):
         """Return bjcp data for a style name"""
         for bev_class in self.bjcp_data['styleguide']['class']:
             if bev_class['type'] == 'beer':
                 for style_category in bev_class['category']:
                     for subcat in style_category['subcategory']:
                         if subcat['name'] == name:
-                            return subcat
+                            if not return_category:
+                                return subcat
+                            else:
+                                return style_category
 
     def get_style_names(self):
         """Return a list of style names"""

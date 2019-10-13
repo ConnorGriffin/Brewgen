@@ -59,8 +59,16 @@ def get_grain_categories_style_data():
 
 @app.route('/api/v1/styles', methods=['GET'])
 def get_styles():
-    """List of style slugs"""
-    return jsonify(all_styles.get_style_names_and_slugs()), 200
+    """List of styles and their summaries"""
+    response = []
+    for style_object in all_styles.style_list:
+        response.append({
+            'name': style_object.name,
+            'slug': style_object.slug,
+            'category': style_object.category,
+            'stats': style_object.stats
+        })
+    return jsonify(response), 200
 
 
 @app.route('/api/v1/styles/<style_slug>', methods=['GET'])
