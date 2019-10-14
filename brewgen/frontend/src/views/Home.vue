@@ -18,7 +18,7 @@
       </section>
       <!-- Recipe Builder -->
       <section class="section">
-        <RecipeBuilder />
+        <RecipeBuilder v-if="currentStyleStats !== ''"/>
       </section>
     </div>
     <!-- Footer -->

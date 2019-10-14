@@ -56,8 +56,14 @@ export default {
     }
   },
   methods: {
-    ...mapActions(['setDataFromStyle', 'setCurrentStyleStats']),
-    setCurrentStyleName: function() {
+    ...mapActions([
+      'setDataFromStyle',
+      'setCurrentStyleStats',
+      'fetchSensoryData',
+      'fetchRecipeData'
+    ]),
+    setCurrentStyle: function() {
+      // Set the current style name, get the style grains and sensory data
       this.$store.commit('setCurrentStyleName', this.styleData.name);
       this.$store.dispatch('setDataFromStyle', this.styleData.slug).then(() => {
         // Set the starting target OG in the middle of the style range
@@ -79,10 +85,14 @@ export default {
           key: 'maxSrm',
           value: this.$store.state.brewgen.currentStyleStats.srm.high
         });
+
+        // Get the sensory and recipe data after setting everything else
+        this.fetchSensoryData();
+        this.fetchRecipeData({ colorOnly: true });
       });
     },
     setCurrentStyleAndClose: function() {
-      this.setCurrentStyleName();
+      this.setCurrentStyle();
       this.$parent.$parent.close();
     }
   }
