@@ -95,12 +95,12 @@ export default {
         var annotations = {
           xaxis: [
             {
-              x: this.currentStyleStats.srm.low,
-              x2: this.currentStyleStats.srm.high,
+              x: this.$store.state.brewgen.beerProfile.minSrm,
+              x2: this.$store.state.brewgen.beerProfile.maxSrm,
               fillColor: '#98C9A3',
               opacity: 0.4,
               label: {
-                text: 'Style Range'
+                text: 'Target Color'
               }
             }
           ]
@@ -108,6 +108,7 @@ export default {
       } else {
         var annotations = {};
       }
+
       // Return the data formatted for ApexCharts
       return {
         options: {

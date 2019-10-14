@@ -58,7 +58,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import { mapGetters, mapActions } from 'vuex';
 import StyleList from '@/components/StyleList.vue';
 
 export default {
@@ -101,6 +101,18 @@ export default {
           value: value[1]
         });
       }
+    }
+  },
+  methods: {
+    ...mapActions(['fetchRecipeData'])
+  },
+  watch: {
+    originalSg: function() {
+      this.fetchRecipeData({
+        colorOnly: true,
+        chartMin: this.$store.state.brewgen.currentStyleStats.srm.low,
+        chartMax: this.$store.state.brewgen.currentStyleStats.srm.high
+      });
     }
   }
 };

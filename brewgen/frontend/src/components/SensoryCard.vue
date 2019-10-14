@@ -37,4 +37,8 @@ export default {
 </script>
 
 <style>
+.card {
+  box-shadow: none;
+  border: 1px solid #e3e3e3;
+}
 </style>

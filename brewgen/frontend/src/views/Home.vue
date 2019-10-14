@@ -18,7 +18,7 @@
       </section>
       <!-- Recipe Builder -->
       <section class="section">
-        <RecipeBuilder v-if="currentStyleStats !== ''"/>
+        <RecipeBuilder v-if="currentStyleStats !== ''" />
       </section>
     </div>
     <!-- Footer -->
@@ -95,6 +95,7 @@ export default {
       } else {
         var annotations = {};
       }
+      console.log(annotations);
       // Return the data formatted for ApexCharts
       return {
         options: {

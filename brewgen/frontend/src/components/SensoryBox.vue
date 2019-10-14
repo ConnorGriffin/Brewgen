@@ -1,12 +1,13 @@
 <template>
-  <div class="keyword-box">
+  <div class="keyword-div">
     <!-- Sensory constraint control buttons -->
     <div class="buttons">
       <b-button class="is-primary">Add Constraint</b-button>
       <b-button disabled>Clear</b-button>
     </div>
     <!-- Box containing sensory constraint cards -->
-    <div class="box keyword-box">
+    <div class="keyword-box">
+      <SensoryCard editable :sensoryData="sensoryCard" />
       <SensoryCard editable :sensoryData="sensoryCard" />
     </div>
   </div>
@@ -44,8 +45,12 @@ export default {
   width: 100%;
 }
 .keyword-box {
-  height: 100%;
   padding: 0px;
-  padding-bottom: 2rem;
+  height: 100%;
+  overflow-y: auto;
+}
+.keyword-div {
+  height: 100%;
+  max-height: 60vh;
 }
 </style>

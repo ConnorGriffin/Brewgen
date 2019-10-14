@@ -88,7 +88,11 @@ export default {
 
         // Get the sensory and recipe data after setting everything else
         this.fetchSensoryData();
-        this.fetchRecipeData({ colorOnly: true });
+        this.fetchRecipeData({
+          colorOnly: true,
+          chartMin: this.$store.state.brewgen.currentStyleStats.srm.low,
+          chartMax: this.$store.state.brewgen.currentStyleStats.srm.high
+        });
       });
     },
     setCurrentStyleAndClose: function() {
