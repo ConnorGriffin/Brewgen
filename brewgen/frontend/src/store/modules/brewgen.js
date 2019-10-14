@@ -20,6 +20,7 @@ const state = {
   styles: [],
   currentStyleName: 'None Selected',
   currentStyleStats: '',
+  currentStyleSensory: '',
   styleListFilter: ''
 }
 
@@ -169,6 +170,7 @@ const actions = {
         }
         commit('setAllGrainsFromStyle', response.data.grain_usage)
         commit('setGrainCategories', response.data.category_usage)
+        commit('setCurrentStyleSensory', response.data.sensory_data)
         commit('setCurrentStyleStats', stats)
         Promise.resolve()
       })
@@ -208,6 +210,9 @@ const mutations = {
         Object.assign(stateGrain, { enabled: true, min_percent: styleGrain.min_percent, max_percent: styleGrain.max_percent })
       }
     })
+  },
+  setCurrentStyleSensory: (state, sensoryModel) => {
+    state.sensoryModel = sensoryModel
   },
   updateEquipmentProfile: (state, { maxUniqueGrains, targetVolumeGallons, mashEfficiency }) => {
     Object.assign(state.equipmentProfile, { maxUniqueGrains, targetVolumeGallons, mashEfficiency })
