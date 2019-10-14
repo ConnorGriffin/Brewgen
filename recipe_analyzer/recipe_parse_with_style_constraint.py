@@ -418,7 +418,8 @@ uses_extract = 0
 
 # Get all recipe paths
 #beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:120000]
-beerxml_list = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))[0:50000]
+beerxml_list = list(
+    Path("./brewersfriend_scrape/recipes").rglob("*.xml"))#[0:100000]
 for beerxml_file in beerxml_list:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
@@ -487,7 +488,7 @@ for beerxml_file in beerxml_list:
                         # Calculate total amount of grains ignoring the bypass list
                         total_amount = sum(
                             fermentable.amount for fermentable in recipe.fermentables if fermentable_name not in fermentable_bypass)
-                        
+
                         fermentables.append({
                             'name': fermentable_name,
                             'category': matched_fermentable.category,
@@ -497,10 +498,10 @@ for beerxml_file in beerxml_list:
                             'addition': fermentable.addition,
                             'matched_fermentable': matched_fermentable
                         })
-                    
+
                     grain_bill = grain.GrainBill(
                         [fermentable['matched_fermentable']
-                                         for fermentable in fermentables],
+                         for fermentable in fermentables],
                         [fermentable['percent']
                             for fermentable in fermentables]
                     )
@@ -543,7 +544,7 @@ for beerxml_file in beerxml_list:
 
         except Exception as err:
             pass
-            #print(err)
+            # print(err)
             # print("Failed to parse recipe in ./{}".format(str(beerxml_file)))
 
     # Get a list of style and grain category games
@@ -599,7 +600,8 @@ for style in styles:
             'usage': {
                 'min': max(0, int(mean - 1 * std_dev)),
                 'max': min(100, int(mean + 1 * std_dev))
-            }
+            },
+            'category_object': category.Category(category_name, int(np.min(category_usage)), int(np.max(category_usage)))
         })
 
     # Add fermentables for each recipe in the style to fermentable_data
@@ -617,8 +619,8 @@ for style in styles:
     # Iterate over each fermentable, getting its average usage and adding to the style database
     for fermentable_name in unique_names:
         # Check if the name exists in our grain db, only add to the database if we have it
-        grain = all_grains.get_grain_by_name(fermentable_name)
-        if grain:
+        matched_fermentable = all_grains.get_grain_by_name(fermentable_name)
+        if matched_fermentable:
             # Get the fermentable usage
             usage = [fermentable['percent'] for fermentable in fermentable_list
                      if fermentable['name'] == fermentable_name]
@@ -626,7 +628,7 @@ for style in styles:
             mean = np.mean(usage)
 
             style_grain_usage.append({
-                'slug': grain.slug,
+                'slug': matched_fermentable.slug,
                 'stats': {
                     'mean': mean,
                     'median': int(np.median(usage)),
@@ -637,28 +639,71 @@ for style in styles:
                 'usage': {
                     'min': max(0, int(mean - 1 * std_dev)),
                     'max': min(100, int(mean + 1 * std_dev))
-                }
+                },
+                'fermentable_object': grain.Grain(
+                    name=matched_fermentable.name,
+                    brand=matched_fermentable.brand,
+                    potential=matched_fermentable.potential,
+                    color=matched_fermentable.color,
+                    category=matched_fermentable.category,
+                    sensory_data=matched_fermentable.sensory_data,
+                    min_percent=max(0, int(mean - 1 * std_dev)),
+                    max_percent=min(100, int(mean + 1 * std_dev))
+                )
             })
-    
+
+    # Get min/max style data for the given grain profile
+    try:
+        style_fermentable_list = grain.GrainList(
+            [style_fermentable['fermentable_object'] for style_fermentable in style_grain_usage])
+        category_profile = category.CategoryProfile(
+            [style_category['category_object'] for style_category in style_category_usage])
+        style_sensory_minmax = style_fermentable_list.get_sensory_profiles(
+            category_profile)
+    except: 
+        print('Failed to get recipe data for {}'.format(style))
+
     # Iterate over each sensory keyword, get the average values for each keyword in the style
     for keyword in all_grains.get_sensory_keywords():
-        sensory_values = [recipe['sensory_data'][keyword] for recipe in recipe_db if recipe['style'] == style]
+        # Get average sensory data for the given style style data for all recipes
+        sensory_values = [recipe['sensory_data'][keyword]
+                          for recipe in recipe_db if recipe['style'] == style]
         std_dev = np.std(sensory_values)
         mean = np.mean(sensory_values)
 
+        # Get the sensory data possible from the grain profile
+        for sensory_minmax in style_sensory_minmax:
+            if sensory_minmax['name'] == keyword:
+                sensory_from_grains = sensory_minmax
+                break
+
+        if not sensory_from_grains:
+            sensory_from_grains = {
+                'name': keyword,
+                'min': 0,
+                'max': 5
+            }
+
         style_sensory_data.append({
-            'name': keyword, 
-            'min': round(max(0, mean - 2 * std_dev), 3),
-            'max': round(min(5, mean + 2 * std_dev), 3),
+            'name': keyword,
+            'min': round(max(0, mean - 2 * std_dev, sensory_from_grains['min']), 3),
+            'max': round(min(5, mean + 2 * std_dev, sensory_from_grains['max']), 3),
             'stats': {
-                'mean': mean, 
+                'mean': mean,
                 'median': np.median(sensory_values),
                 'std_dev': std_dev,
                 'min': min(sensory_values),
                 'max': max(sensory_values)
             }
         })
- 
+    
+    # Remove the fermentable object, can't export it to JSON
+    for style_fermentable in style_grain_usage:
+        del style_fermentable['fermentable_object']
+    
+    for category_usage in style_category_usage:
+        del category_usage['category_object']
+
     style_data.append({
         'style': style,
         'recipe_count': recipe_count,

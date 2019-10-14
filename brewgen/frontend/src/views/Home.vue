@@ -95,7 +95,7 @@ export default {
       } else {
         var annotations = {};
       }
-      console.log(annotations);
+
       // Return the data formatted for ApexCharts
       return {
         options: {

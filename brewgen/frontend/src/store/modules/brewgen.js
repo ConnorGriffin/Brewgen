@@ -71,9 +71,7 @@ const actions = {
   async fetchSensoryData({ commit }) {
     return axios
       .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
-        grain_list: state.allGrains
-          .filter(grain => grain.enabled)
-          .map(grain => grain.slug),
+        grain_list: state.allGrains,
         category_model: state.grainCategories,
         sensory_model: state.sensoryModel,
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
@@ -109,9 +107,7 @@ const actions = {
     }
     return axios
       .post(uri, {
-        grain_list: state.allGrains
-          .filter(grain => grain.enabled)
-          .map(grain => grain.slug),
+        grain_list: state.allGrains,
         category_model: state.grainCategories,
         sensory_model: state.sensoryModel,
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains),
@@ -170,7 +166,8 @@ const actions = {
         }
         commit('setAllGrainsFromStyle', response.data.grain_usage)
         commit('setGrainCategories', response.data.category_usage)
-        commit('setCurrentStyleSensory', response.data.sensory_data)
+        //commit('setCurrentStyleSensory', response.data.sensory_data)
+        // commit('setSensoryModel', response.data.sensory_data)
         commit('setCurrentStyleStats', stats)
         Promise.resolve()
       })
@@ -200,16 +197,8 @@ const mutations = {
     state.allGrains = allGrains
   },
   setAllGrainsFromStyle: (state, styleGrains) => {
-    // Iterate over every grain in allGrains, set the grain properties from the provided style data
-    state.allGrains.forEach(stateGrain => {
-      var styleGrain = styleGrains.find(g => g.slug == stateGrain.slug)
-      // If the grain isn't in the style data at all, set to disabled and set min and max to 0
-      if (styleGrain === undefined) {
-        Object.assign(stateGrain, { enabled: false, min_percent: 0, max_percent: 0 })
-      } else {
-        Object.assign(stateGrain, { enabled: true, min_percent: styleGrain.min_percent, max_percent: styleGrain.max_percent })
-      }
-    })
+    // Store the grain data for the style in allGrains
+    state.allGrains = styleGrains
   },
   setCurrentStyleSensory: (state, sensoryModel) => {
     state.sensoryModel = sensoryModel

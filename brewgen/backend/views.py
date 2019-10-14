@@ -134,7 +134,13 @@ def get_grain_list_sensory_values():
     print(data)
 
     # Create a grain object from the list of slugs
-    grain_list = grain.GrainList(grain_slugs=data.get('grain_list', []))
+    fermentable_list = []
+    for fermentable in data.get('grain_list', []):
+        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])[0]
+        fermentable_obj.set_usage(
+            fermentable['min_percent'], fermentable['max_percent'])
+        fermentable_list.append(fermentable_obj)
+    fermentable_list_obj = grain.GrainList(fermentable_list)
 
     # Create a category profile from the category data provided
     categories = []
@@ -144,7 +150,7 @@ def get_grain_list_sensory_values():
     category_profile = category.CategoryProfile(categories)
 
     # Get the profile list and return to the client
-    profiles = grain_list.get_sensory_profiles(
+    profiles = fermentable_list_obj.get_sensory_profiles(
         category_model=category_profile,
         sensory_model=data.get('sensory_model'),
         max_unique_grains=data.get('max_unique_grains')
@@ -161,7 +167,10 @@ def get_grain_list_recipes():
         chartrange=x1,x2: Returns color data that contains at least x1 through x2, even if values are 0
     POST format:
     {
-        "grain_list": [grain1, grain2],
+        "grain_list": [
+            {slug: 'grain1', max_percent: int, min:percent: int},
+            {slug: 'grain2'...}
+        ],
         "category_model": CategoryModel,
         "sensory_model": SensoryModel,
         "max_unique_grains": int,
@@ -172,7 +181,13 @@ def get_grain_list_recipes():
     data = request.json
 
     # Create a grain object from the list of slugs
-    grain_list = grain.GrainList(grain_slugs=data.get('grain_list', []))
+    fermentable_list = []
+    for fermentable in data.get('grain_list', []):
+        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])[0]
+        fermentable_obj.set_usage(
+            fermentable['min_percent'], fermentable['max_percent'])
+        fermentable_list.append(fermentable_obj)
+    fermentable_list_obj = grain.GrainList(fermentable_list)
 
     # Create a category profile from the category data provided
     categories = []
@@ -197,7 +212,7 @@ def get_grain_list_recipes():
     )
 
     # Get the recipe list and return to the client
-    recipes = grain_list.get_grain_bills(
+    recipes = fermentable_list_obj.get_grain_bills(
         category_model=category_profile,
         sensory_model=data.get('sensory_model'),
         max_unique_grains=data.get('max_unique_grains'),

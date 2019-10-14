@@ -11,6 +11,8 @@
         type="search"
         style="margin-bottom: .5rem"
         v-model="styleListFilter"
+        ref="styleFilter"
+        autofocus
       ></b-input>
       <div class="list is-hoverable">
         <StyleCard :key="style.slug" v-for="style in filteredStyles" :styleData="style" />

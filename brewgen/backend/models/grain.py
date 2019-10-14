@@ -37,6 +37,11 @@ class Grain:
             'ppg': self.ppg
         }
 
+    def set_usage(self, min_percent, max_percent):
+        """Set the min and max usage percents for the grain"""
+        self.min_percent = min_percent
+        self.max_percent = max_percent
+
 
 class GrainModel:
     """Defines a Grain Model, used to access data about grains in the grain database."""
@@ -93,11 +98,14 @@ class GrainModel:
         # TODO: Add the filtering part, same as above, not sure if filtering on slugs or what
         sensory_keys = []
         for grain in self.grain_list:
-            if grain.sensory_data:
-                grain_keys = [key for key in grain.sensory_data.keys()]
-                for key in grain_keys:
-                    if key not in sensory_keys:
-                        sensory_keys.append(key)
+            try:
+                if grain.sensory_data:
+                    grain_keys = [key for key in grain.sensory_data.keys()]
+                    for key in grain_keys:
+                        if key not in sensory_keys:
+                            sensory_keys.append(key)
+            except:
+                print(grain.get_grain_data())
         return sensory_keys
 
     def get_grain_slugs(self):
@@ -155,7 +163,7 @@ class GrainList(GrainModel):
         # Init the category, grain, and sensory data
         category_data = category_model.get_category_list()
         grain_data = grain_list.get_grain_list()
-        sensory_keys = grain_list.get_sensory_keywords()
+        sensory_keys = GrainModel().get_sensory_keywords()
 
         # Set the ranges, we'll need to index into things a lot
         grain_range = range(len(grain_data))
@@ -273,7 +281,7 @@ class GrainList(GrainModel):
             # Find all solutions with a time limit, return the usage_percent for each solution
             solver = cp_model.CpSolver()
             # TODO: Accept max_time_in_seconds as a parameter, adjust upwards for initial load
-            solver.parameters.max_time_in_seconds = 2
+            solver.parameters.max_time_in_seconds = 1
             solution_printer = SolutionPrinter(grain_vars)
             status = solver.SearchForAllSolutions(model, solution_printer)
 
