@@ -2,17 +2,23 @@
   <div>
     <!-- Nav bar -->
     <Navbar />
-    <!-- Equipment profile and beer style setup -->
+    <!-- Main Body-->
     <div class="container">
       <section class="section">
         <div class="columns">
+          <!-- Style Setup -->
           <div class="column">
             <StyleField />
           </div>
+          <!-- Equipment Profile -->
           <div class="column">
             <EquipmentField />
           </div>
         </div>
+      </section>
+      <!-- Recipe Builder -->
+      <section class="section">
+        <RecipeBuilder />
       </section>
     </div>
     <!-- Footer -->
@@ -26,6 +32,7 @@ import Navbar from '@/components/Navbar.vue';
 import Footer from '@/components/Footer.vue';
 import EquipmentField from '@/components/EquipmentField.vue';
 import StyleField from '@/components/StyleField.vue';
+import RecipeBuilder from '@/components/RecipeBuilder.vue';
 
 export default {
   name: 'Home',
@@ -33,7 +40,8 @@ export default {
     Navbar,
     Footer,
     EquipmentField,
-    StyleField
+    StyleField,
+    RecipeBuilder
   },
   filters: {
     inCategory: function(value, categoryName) {
@@ -69,48 +77,6 @@ export default {
       'styles',
       'currentStyleStats'
     ]),
-    sensoryChartData: function() {
-      // Get the labels in deslugged title-case
-      var chartLabels = this.sensoryData.map(element => {
-        var value = element.name;
-        value = value
-          .replace('_', ' ')
-          .toLowerCase()
-          .split(' ');
-        for (var i = 0; i < value.length; i++) {
-          value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1);
-        }
-        return value.join(' ');
-      });
-
-      // Set Radar chart series data
-      var minData = this.sensoryData.map(element => {
-        return element.min;
-      });
-      var maxData = this.sensoryData.map(element => {
-        return element.max;
-      });
-
-      // Return the data formatted for ApexCharts
-      return {
-        options: {
-          chart: {
-            id: 'sensory-min-max'
-          },
-          labels: chartLabels
-        },
-        series: [
-          {
-            name: 'Minimum',
-            data: minData
-          },
-          {
-            name: 'Maximum',
-            data: maxData
-          }
-        ]
-      };
-    },
     recipeChartData: function() {
       if (this.currentStyleStats != '') {
         var annotations = {
@@ -169,12 +135,11 @@ export default {
   created() {
     document.title = 'Brewgen';
     this.fetchStyles();
-    var prom1 = this.$store.dispatch('fetchGrainCategories');
-    var prom2 = this.$store.dispatch('fetchAllGrains');
-    Promise.all([prom1, prom2]).then(() => {
-      this.fetchSensoryData();
-      this.fetchRecipeData({ colorOnly: true });
-    });
+    // var prom2 = this.$store.dispatch('fetchAllGrains');
+    // Promise.all([prom1, prom2]).then(() => {
+    //   this.fetchSensoryData();
+    //   this.fetchRecipeData({ colorOnly: true });
+    // });
   }
 };
 </script>

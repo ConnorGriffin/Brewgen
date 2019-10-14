@@ -1,4 +1,5 @@
 <template>
+  <!-- Defines each beer style card in the style modal -->
   <a class="list-item has-background-light" @click="setCurrentStyleAndClose">
     <div class="columns is-vcentered is-flex is-gapless">
       <div class="column is-4">

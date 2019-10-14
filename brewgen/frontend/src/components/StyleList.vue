@@ -1,4 +1,5 @@
 <template>
+  <!-- Defines the style picker modal -->
   <div class="modal-card" style="height: calc(100vh - 40px)">
     <header class="modal-card-head">
       <p class="modal-card-title">Styles</p>

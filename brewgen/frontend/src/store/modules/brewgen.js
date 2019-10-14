@@ -41,7 +41,7 @@ const getters = {
 const actions = {
   async fetchGrainCategories({ commit }) {
     return axios
-      .get('http://localhost:5000/api/v1/style-data/grains/categories')
+      .get('http://10.31.36.49:5000/api/v1/style-data/grains/categories')
       .then(response => {
         commit('setGrainCategories', response.data)
         Promise.resolve()
@@ -55,7 +55,7 @@ const actions = {
   },
   async fetchAllGrains({ commit }) {
     return axios
-      .get('http://localhost:5000/api/v1/grains')
+      .get('http://10.31.36.49:5000/api/v1/grains')
       .then(response => {
         commit('setAllGrains', response.data)
         Promise.resolve()
@@ -69,7 +69,7 @@ const actions = {
   },
   async fetchSensoryData({ commit }) {
     return axios
-      .post('http://localhost:5000/api/v1/grains/sensory-profiles', {
+      .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
         grain_list: state.allGrains
           .filter(grain => grain.enabled)
           .map(grain => grain.slug),
@@ -92,13 +92,13 @@ const actions = {
       } else {
         var params = ''
       }
-      var uri = 'http://localhost:5000/api/v1/grains/recipes?coloronly=true' + params
+      var uri = 'http://10.31.36.49:5000/api/v1/grains/recipes?coloronly=true' + params
       var commitAction = 'setRecipeColorData'
       var beerProfile = {
         original_sg: Number(state.beerProfile.originalSg)
       }
     } else {
-      var uri = 'http://localhost:5000/api/v1/grains/recipes'
+      var uri = 'http://10.31.36.49:5000/api/v1/grains/recipes'
       var commitAction = 'setRecipeData'
       var beerProfile = {
         min_color_srm: Number(state.beerProfile.minSrm),
@@ -132,7 +132,7 @@ const actions = {
   },
   async fetchStyles({ commit }) {
     return axios
-      .get('http://localhost:5000/api/v1/styles')
+      .get('http://10.31.36.49:5000/api/v1/styles')
       .then(response => {
         commit('setStyles', response.data)
         Promise.resolve()
@@ -143,7 +143,7 @@ const actions = {
   },
   async setDataFromStyle({ commit }, styleSlug) {
     return axios
-      .get('http://localhost:5000/api/v1/styles/' + styleSlug)
+      .get('http://10.31.36.49:5000/api/v1/styles/' + styleSlug)
       .then(response => {
         // Set some default values for og/fg if none provided
         let stats = response.data.stats
