@@ -107,12 +107,15 @@ export default {
     ...mapActions(['fetchRecipeData'])
   },
   watch: {
-    originalSg: function() {
-      this.fetchRecipeData({
-        colorOnly: true,
-        chartMin: this.$store.state.brewgen.currentStyleStats.srm.low,
-        chartMax: this.$store.state.brewgen.currentStyleStats.srm.high
-      });
+    originalSg: function(oldVal, newVal) {
+      // Adding this check to avoid multiple simultaneous calls when selecting a style
+      if (this.$store.state.brewgen.ogWatcherEnabled === true) {
+        this.fetchRecipeData({
+          colorOnly: true,
+          chartMin: this.$store.state.brewgen.currentStyleStats.srm.low,
+          chartMax: this.$store.state.brewgen.currentStyleStats.srm.high
+        });
+      }
     }
   }
 };

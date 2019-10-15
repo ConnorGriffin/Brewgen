@@ -21,7 +21,8 @@ const state = {
   currentStyleName: 'None Selected',
   currentStyleStats: '',
   currentStyleSensory: '',
-  styleListFilter: ''
+  styleListFilter: '',
+  ogWatcherEnabled: false
 }
 
 const getters = {
@@ -36,7 +37,8 @@ const getters = {
   recipeColorData: state => state.recipeColorData,
   styles: state => state.styles,
   currentStyleName: state => state.currentStyleName,
-  currentStyleStats: state => state.currentStyleStats
+  currentStyleStats: state => state.currentStyleStats,
+  currentStyleSensory: state => state.currentStyleSensory
 }
 
 const actions = {
@@ -166,7 +168,7 @@ const actions = {
         }
         commit('setAllGrainsFromStyle', response.data.grain_usage)
         commit('setGrainCategories', response.data.category_usage)
-        //commit('setCurrentStyleSensory', response.data.sensory_data)
+        commit('setCurrentStyleSensory', response.data.sensory_data)
         // commit('setSensoryModel', response.data.sensory_data)
         commit('setCurrentStyleStats', stats)
         Promise.resolve()
@@ -200,8 +202,40 @@ const mutations = {
     // Store the grain data for the style in allGrains
     state.allGrains = styleGrains
   },
-  setCurrentStyleSensory: (state, sensoryModel) => {
-    state.sensoryModel = sensoryModel
+  setCurrentStyleSensory: (state, sensoryData) => {
+    // Format the sensory data for use in the recipe designer
+    state.currentStyleSensory = sensoryData.filter(sensoryValue => {
+      return sensoryValue.max > 0
+    })
+      .map(sensoryValue => {
+        let sensoryReturn = {
+          name: sensoryValue.name,
+          style: {
+            min: sensoryValue.min,
+            max: sensoryValue.max
+          },
+          tags: []
+        }
+        if (sensoryValue.max - sensoryValue.min >= 1) {
+          sensoryReturn.tags.push({
+            value: 'large range',
+            type: 'is-info'
+          })
+        }
+        if (sensoryValue.max <= .25) {
+          sensoryReturn.tags.push({
+            value: 'minimal use',
+            type: 'is-danger'
+          })
+        }
+        if (sensoryValue.max - sensoryValue.min <= .25) {
+          sensoryReturn.tags.push({
+            value: 'small range',
+            type: 'is-warning'
+          })
+        }
+        return sensoryReturn
+      })
   },
   updateEquipmentProfile: (state, { maxUniqueGrains, targetVolumeGallons, mashEfficiency }) => {
     Object.assign(state.equipmentProfile, { maxUniqueGrains, targetVolumeGallons, mashEfficiency })
@@ -248,6 +282,9 @@ const mutations = {
   },
   setStyleListFilter(state, value) {
     state.styleListFilter = value
+  },
+  setOgWatcherEnabled(state, value) {
+    state.ogWatcherEnabled = value
   }
 }
 

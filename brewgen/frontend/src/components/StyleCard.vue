@@ -63,6 +63,9 @@ export default {
       'fetchRecipeData'
     ]),
     setCurrentStyle: function() {
+      // Disable the OG watcher to avoid multiple calls
+      this.$store.commit('setOgWatcherEnabled', false);
+
       // Set the current style name, get the style grains and sensory data
       this.$store.commit('setCurrentStyleName', this.styleData.name);
       this.$store.dispatch('setDataFromStyle', this.styleData.slug).then(() => {
@@ -94,6 +97,9 @@ export default {
           chartMax: this.$store.state.brewgen.currentStyleStats.srm.high
         });
       });
+
+      // Re-enable the OG watcher after setting values
+      this.$store.commit('setOgWatcherEnabled', true);
     },
     setCurrentStyleAndClose: function() {
       this.setCurrentStyle();

@@ -2,40 +2,36 @@
   <div class="keyword-div">
     <!-- Sensory constraint control buttons -->
     <div class="buttons">
-      <b-button class="is-primary">Add Constraint</b-button>
+      <b-button class="is-primary" @click="showSensoryPicker = true">Add Constraint</b-button>
       <b-button disabled>Clear</b-button>
     </div>
+    <!-- SensoryPicker modal and contents -->
+    <b-modal :active.sync="showSensoryPicker" has-modal-card trap-focus scroll="keep">
+      <SensoryPicker />
+    </b-modal>
     <!-- Box containing sensory constraint cards -->
-    <div class="keyword-box">
-      <SensoryCard editable :sensoryData="sensoryCard" />
-      <SensoryCard editable :sensoryData="sensoryCard" />
-    </div>
+    <div class="keyword-box"></div>
   </div>
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 import SensoryCard from '@/components/SensoryCard.vue';
+import SensoryPicker from '@/components/SensoryPicker.vue';
 
 export default {
   name: 'SensoryBox',
   components: {
-    SensoryCard
+    SensoryCard,
+    SensoryPicker
   },
   data() {
     return {
-      sensoryCard: {
-        name: 'Toast',
-        configured: {
-          min: 0.5,
-          max: 1.25
-        },
-        style: {
-          min: 0.25,
-          max: 1.35
-        },
-        tags: ['in style notes', 'wide range']
-      }
+      showSensoryPicker: false
     };
+  },
+  computed: {
+    ...mapGetters(['currentStyleSensory'])
   }
 };
 </script>

@@ -131,7 +131,6 @@ def get_grain_list_sensory_values():
     }
     """
     data = request.json
-    print(data)
 
     # Create a grain object from the list of slugs
     fermentable_list = []
