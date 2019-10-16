@@ -10,7 +10,18 @@
       <SensoryPicker />
     </b-modal>
     <!-- Box containing sensory constraint cards -->
-    <div class="keyword-box"></div>
+    <div class="keyword-box">
+      <SensoryCard
+        v-for="(sensoryData, index) in configuredSensory"
+        :key="index"
+        :sensoryData="sensoryData"
+        :sliderMin="sliderMin"
+        :sliderMax="sliderMax"
+        type="added"
+        cardBg="white"
+        :tickSpace="0.4"
+      />
+    </div>
   </div>
 </template>
 
@@ -31,7 +42,30 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['currentStyleSensory'])
+    ...mapGetters(['currentStyleSensory']),
+    configuredSensory: function() {
+      return this.currentStyleSensory.filter(sensoryData => {
+        return sensoryData.configured !== undefined;
+      });
+    },
+    sliderMin: function() {
+      // Returns lowest possible min sensory value in sensory array
+      let values = this.currentStyleSensory.map(sensoryData => {
+        return sensoryData.style.min;
+      });
+      values.sort();
+      return values[0];
+    },
+    sliderMax: function() {
+      // Returns highest possible max sensory value in sensory array
+      let values = this.currentStyleSensory.map(sensoryData => {
+        return sensoryData.style.max;
+      });
+      values.sort(function(a, b) {
+        return b - a;
+      });
+      return values[0];
+    }
   }
 };
 </script>

@@ -2,7 +2,7 @@
   <!-- Defines the sensory picker modal -->
   <div class="modal-card" style="height: calc(100vh - 40px)">
     <header class="modal-card-head">
-      <p class="modal-card-title">Styles</p>
+      <p class="modal-card-title">Grain Descriptors</p>
     </header>
     <section class="modal-card-body" style="height:100%">
       <!-- <b-input
@@ -16,10 +16,14 @@
       ></b-input>-->
       <div class="list">
         <SensoryCard
-          :sensoryData="sensoryData"
-          :key="index"
           v-for="(sensoryData, index) in currentStyleSensory"
+          :key="index"
+          :sensoryData="sensoryData"
+          :sliderMin="sliderMin"
+          :sliderMax="sliderMax"
           type="picker"
+          cardBg="light"
+          :tickSpace="0.2"
         />
       </div>
     </section>
@@ -39,7 +43,33 @@ export default {
     SensoryCard
   },
   computed: {
-    ...mapGetters(['currentStyleSensory'])
+    ...mapGetters(['currentStyleSensory']),
+    sliderMin: function() {
+      // Returns lowest possible min sensory value in sensory array
+      let values = [];
+      this.currentStyleSensory.forEach(sensoryData => {
+        values.push(sensoryData.style.min);
+        if (sensoryData.possible !== undefined) {
+          values.push(sensoryData.possible.min);
+        }
+      });
+      values.sort();
+      return values[0];
+    },
+    sliderMax: function() {
+      // Returns highest possible max sensory value in sensory array
+      let values = [];
+      this.currentStyleSensory.forEach(sensoryData => {
+        values.push(sensoryData.style.max);
+        if (sensoryData.possible !== undefined) {
+          values.push(sensoryData.possible.max);
+        }
+      });
+      values.sort(function(a, b) {
+        return b - a;
+      });
+      return values[0];
+    }
   }
 };
 </script>

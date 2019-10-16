@@ -80,6 +80,7 @@ const actions = {
       })
       .then(response => {
         commit('setSensoryData', response.data)
+        commit('setPossibleSensory', response.data)
         Promise.resolve()
       })
       .catch(err => {
@@ -218,7 +219,7 @@ const mutations = {
         }
         if (sensoryValue.max - sensoryValue.min >= 1) {
           sensoryReturn.tags.push({
-            value: 'large range',
+            value: 'wide range',
             type: 'is-info'
           })
         }
@@ -230,19 +231,38 @@ const mutations = {
         }
         if (sensoryValue.max - sensoryValue.min <= .25) {
           sensoryReturn.tags.push({
-            value: 'small range',
+            value: 'narrow range',
             type: 'is-warning'
           })
         }
         return sensoryReturn
       })
   },
+  setPossibleSensory: (state, sensoryData) => {
+    // Set the possible sensory values from the sensory profile query
+    // Used by sliders in the recipe designer and eventually the chart data as well
+    sensoryData.forEach(sensoryValue => {
+      // Find the matching sensory object in the currentStyleSensory data so we can update it
+      let matchedSensory = state.currentStyleSensory.find(csSensory => csSensory.name == sensoryValue.name)
+      if (matchedSensory !== undefined) {
+        Object.assign(matchedSensory, {
+          possible: {
+            min: sensoryValue.min,
+            max: sensoryValue.max
+          }
+        })
+      }
+    })
+  },
   updateEquipmentProfile: (state, { maxUniqueGrains, targetVolumeGallons, mashEfficiency }) => {
     Object.assign(state.equipmentProfile, { maxUniqueGrains, targetVolumeGallons, mashEfficiency })
   },
   setBeerProfileKey: (state, { key, value }) =>
     (state.beerProfile[key] = value),
-  setSensoryData: (state, sensoryData) => (state.sensoryData = sensoryData),
+  setSensoryData: (state, sensoryData) => {
+    // TODO: Charts are using this data still, want to move it to the Possible data instead
+    state.sensoryData = sensoryData
+  },
   setRecipeData: (state, recipeData) => (state.recipeData = recipeData),
   setRecipeColorData: (state, recipeColorData) =>
     (state.recipeColorData = recipeColorData),
