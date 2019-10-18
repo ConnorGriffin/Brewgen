@@ -29,7 +29,7 @@
       </div>
     </section>
     <footer class="modal-card-foot">
-      <button class="button" type="button" @click="$parent.close()">Cancel</button>
+      <button class="button" type="button" @click="$parent.close()">Close</button>
     </footer>
   </div>
 </template>

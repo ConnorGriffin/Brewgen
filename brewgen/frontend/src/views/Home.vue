@@ -57,14 +57,7 @@ export default {
       'fetchStyles'
     ]),
     updateRecipeData: function() {
-      var params = {
-        colorOnly: true
-      };
-      if (this.currentStyleStats != '') {
-        params['chartMin'] = this.currentStyleStats.srm.low;
-        params['chartMax'] = this.currentStyleStats.srm.high;
-      }
-      this.fetchRecipeData(params);
+      this.fetchRecipeData({ colorOnly: true });
     }
   },
   computed: {

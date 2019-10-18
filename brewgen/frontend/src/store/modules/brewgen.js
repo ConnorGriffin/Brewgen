@@ -100,13 +100,13 @@ const actions = {
         throw err
       })
   },
-  async fetchRecipeData({ commit }, { colorOnly, chartMin, chartMax }) {
+  async fetchRecipeData({ commit }, { colorOnly }) {
     if (colorOnly == true) {
-      if (chartMin !== undefined && chartMax !== undefined) {
-        var params = '&chartrange=' + chartMin + ',' + chartMax
-      } else {
-        var params = ''
-      }
+      console.log(state.beerProfile)
+      let chartMin = state.beerProfile.minSrm
+      let chartMax = state.beerProfile.maxSrm
+      let params = '&chartrange=' + chartMin + ',' + chartMax
+
       var uri = 'http://10.31.36.49:5000/api/v1/grains/recipes?coloronly=true' + params
       var commitAction = 'setRecipeColorData'
       var beerProfile = {

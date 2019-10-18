@@ -114,7 +114,11 @@ export default {
     };
   },
   methods: {
-    ...mapActions(['setSensoryConstraint']),
+    ...mapActions([
+      'setSensoryConstraint',
+      'fetchSensoryData',
+      'fetchRecipeData'
+    ]),
     sliderTicks: function(min, max) {
       if (max - min >= this.tickSpace) {
         return [
@@ -150,6 +154,8 @@ export default {
         max: this.desiredSliderRange[1]
       });
       this.$parent.close();
+      this.fetchSensoryData();
+      this.fetchRecipeData({ colorOnly: true });
     }
   }
 };

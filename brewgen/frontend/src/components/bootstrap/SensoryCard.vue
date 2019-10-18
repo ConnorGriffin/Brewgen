@@ -177,11 +177,7 @@ export default {
         });
       }
       this.fetchSensoryData();
-      this.fetchRecipeData({
-        colorOnly: true,
-        chartMin: this.currentStyleStats.srm.low,
-        chartMax: this.currentStyleStats.srm.high
-      });
+      this.fetchRecipeData({ colorOnly: true });
     },
     inModel: function() {
       // Return true if value is in the model, false if not
