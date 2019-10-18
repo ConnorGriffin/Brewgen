@@ -71,11 +71,24 @@ const actions = {
     commit('updateEquipmentProfile', maxUniqueGrains, targetVolumeGallons, mashEfficiency)
   },
   async fetchSensoryData({ commit }) {
+    // build the sensory model from the currentStyleSensory.configured values
+    let sensoryModel = state.currentStyleSensory
+      .filter(sensoryData => {
+        return sensoryData.configured !== undefined
+      })
+      .map(sensoryData => {
+        return {
+          name: sensoryData.name,
+          min: sensoryData.configured.min,
+          max: sensoryData.configured.max
+        }
+      })
+
     return axios
       .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
         grain_list: state.allGrains,
         category_model: state.grainCategories,
-        sensory_model: state.sensoryModel,
+        sensory_model: sensoryModel,
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
       })
       .then(response => {
@@ -108,11 +121,25 @@ const actions = {
         original_sg: Number(state.beerProfile.originalSg)
       }
     }
+
+    // build the sensory model from the currentStyleSensory.configured values
+    let sensoryModel = state.currentStyleSensory
+      .filter(sensoryData => {
+        return sensoryData.configured !== undefined
+      })
+      .map(sensoryData => {
+        return {
+          name: sensoryData.name,
+          min: sensoryData.configured.min,
+          max: sensoryData.configured.max
+        }
+      })
+
     return axios
       .post(uri, {
         grain_list: state.allGrains,
         category_model: state.grainCategories,
-        sensory_model: state.sensoryModel,
+        sensory_model: sensoryModel,
         max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains),
         equipment_profile: {
           target_volume_gallons: Number(
