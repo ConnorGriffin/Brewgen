@@ -53,6 +53,9 @@ export default {
         if (sensoryData.possible !== undefined) {
           values.push(sensoryData.possible.min);
         }
+        if (sensoryData.configured !== undefined) {
+          values.push(sensoryData.configured.min);
+        }
       });
       values.sort();
       return values[0];
@@ -64,6 +67,9 @@ export default {
         values.push(sensoryData.style.max);
         if (sensoryData.possible !== undefined) {
           values.push(sensoryData.possible.max);
+        }
+        if (sensoryData.configured !== undefined) {
+          values.push(sensoryData.configured.max);
         }
       });
       values.sort(function(a, b) {
