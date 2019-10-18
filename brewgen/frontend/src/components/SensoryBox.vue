@@ -91,10 +91,12 @@ export default {
 .keyword-box {
   padding: 0px;
   height: 100%;
+  max-height: 60vh;
   overflow-y: auto;
 }
 .keyword-div {
   height: 100%;
   max-height: 60vh;
+  margin-bottom: 3rem;
 }
 </style>
