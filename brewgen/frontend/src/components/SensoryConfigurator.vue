@@ -4,47 +4,9 @@
     <header class="modal-card-head">
       <p class="modal-card-title">{{ name }}</p>
     </header>
-    <section class="modal-card-body">
-      <section>
-        <b-field label="Your Desired Range" custom-class="title">
-          <b-slider
-            v-model="desiredSliderRange"
-            :min="possibleSliderRange[0]"
-            :max="possibleSliderRange[1]"
-            :step=".001"
-            type="is-primary"
-            style="padding-left: 1rem; padding-right: 1rem"
-          >
-            <b-slider-tick
-              v-for="(tick, index) in sliderTicks(desiredSliderRange[0], desiredSliderRange[1])"
-              :key="index"
-              :value="tick.value"
-              class="is-tick-hidden"
-            >{{ tick.label }}</b-slider-tick>
-          </b-slider>
-        </b-field>
-      </section>
-      <section style="margin-top: 3rem">
-        <h1 class="subtitle is-6">Value Ranges</h1>
-        <b-field label="Desired" custom-class="is-size-7">
-          <b-slider
-            v-model="desiredSliderRange"
-            :min="sliderMin"
-            :max="sliderMax"
-            type="is-primary"
-            size="is-small"
-            disabled
-            style="padding-left: 1rem; padding-right: 1rem"
-          >
-            <b-slider-tick
-              v-for="(tick, index) in sliderTicks(desiredSliderRange[0], desiredSliderRange[1])"
-              :key="index"
-              :value="tick.value"
-              class="is-tick-hidden"
-            >{{ tick.label }}</b-slider-tick>
-          </b-slider>
-        </b-field>
-        <b-field label="Style" style="padding-top: .25rem" custom-class="is-size-7">
+    <div class="has-background-light range-slider-div">
+      <section class="section range-slider-section">
+        <b-field label="Style" style="padding-top: .25rem" custom-class="is-size-7 has-text-grey">
           <b-slider
             v-model="styleSliderRange"
             :min="sliderMin"
@@ -65,7 +27,7 @@
         <b-field
           label="Possible in Current Model"
           style="padding-top: .25rem"
-          custom-class="is-size-7"
+          custom-class="is-size-7 has-text-grey"
         >
           <b-slider
             v-model="possibleSliderRange"
@@ -84,16 +46,55 @@
             >{{ tick.label }}</b-slider-tick>
           </b-slider>
         </b-field>
+        <b-field label="Desired" custom-class="is-size-7 has-text-grey">
+          <b-slider
+            v-model="desiredSliderRange"
+            :min="sliderMin"
+            :max="sliderMax"
+            type="is-primary"
+            size="is-small"
+            disabled
+            style="padding-left: 1rem; padding-right: 1rem"
+          >
+            <b-slider-tick
+              v-for="(tick, index) in sliderTicks(desiredSliderRange[0], desiredSliderRange[1])"
+              :key="index"
+              :value="tick.value"
+              class="is-tick-hidden"
+            >{{ tick.label }}</b-slider-tick>
+          </b-slider>
+        </b-field>
       </section>
+    </div>
+    <section class="modal-card-body" style="overflow-y: auto">
+      <b-field label="Desired Range" custom-class="title">
+        <b-slider
+          v-model="desiredSliderRange"
+          :min="possibleSliderRange[0]"
+          :max="possibleSliderRange[1]"
+          :step=".001"
+          type="is-primary"
+          style="padding-left: 1rem; padding-right: 1rem"
+        >
+          <b-slider-tick
+            v-for="(tick, index) in sliderTicks(desiredSliderRange[0], desiredSliderRange[1])"
+            :key="index"
+            :value="tick.value"
+            class="is-tick-hidden"
+          >{{ tick.label }}</b-slider-tick>
+        </b-slider>
+      </b-field>
     </section>
     <footer class="modal-card-foot">
       <b-button @click="$parent.close()">Cancel</b-button>
-      <b-button type="is-primary">Add to Recipe Constraints</b-button>
+      <b-button type="is-primary" @click="addConstraint">Add to Recipe Constraints</b-button>
     </footer>
   </div>
 </template>
 
 <script>
+import { mapActions } from 'vuex';
+
 export default {
   name: 'SensoryConfigurator',
   props: {
@@ -112,6 +113,7 @@ export default {
     };
   },
   methods: {
+    ...mapActions(['setSensoryConstraint']),
     sliderTicks: function(min, max) {
       if (max - min >= this.tickSpace) {
         return [
@@ -139,10 +141,27 @@ export default {
           }
         ];
       }
+    },
+    addConstraint: function() {
+      this.setSensoryConstraint({
+        name: this.name.toLowerCase(),
+        min: this.desiredSliderRange[0],
+        max: this.desiredSliderRange[1]
+      });
+      this.$parent.close();
     }
   }
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@import '~bulma/sass/utilities/_all';
+
+.range-slider-section {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+.range-slider-div {
+  border-bottom: 1px solid $grey-lighter;
+}
 </style>

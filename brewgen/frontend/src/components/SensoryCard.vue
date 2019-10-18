@@ -58,7 +58,7 @@
             label="Possible Range"
             custom-class="is-size-7"
             style="padding-top: .25rem"
-            v-if="sensoryData.possible !== undefined"
+            v-if="possibleSliderRange !== ''"
           >
             <b-slider
               v-model="possibleSliderRange"
@@ -83,12 +83,12 @@
             label="Configured Range"
             custom-class="is-size-7"
             style="padding-top: .25rem"
-            v-if="sensoryData.configured !== undefined"
+            v-if="configuredSliderRange !== ''"
           >
             <b-slider
-              v-model="sensoryArray"
-              :min="0"
-              :max="3.5"
+              v-model="configuredSliderRange"
+              :min="sliderMin"
+              :max="sliderMax"
               disabled
               size="is-small"
               type="is-primary"
@@ -139,7 +139,8 @@ export default {
         this.sensoryData.style.min,
         this.sensoryData.style.max
       ],
-      possibleSliderRange: ''
+      possibleSliderRange: '',
+      configuredSliderRange: ''
     };
   },
   created() {
@@ -148,6 +149,20 @@ export default {
         this.sensoryData.possible.min,
         this.sensoryData.possible.max
       ];
+    }
+    if (this.sensoryData.configured !== undefined) {
+      this.configuredSliderRange = [
+        this.sensoryData.configured.min,
+        this.sensoryData.configured.max
+      ];
+    }
+  },
+  watch: {
+    'sensoryData.configured': function(value) {
+      this.configuredSliderRange = [value.min, value.max];
+    },
+    'sensoryData.possible': function(value) {
+      this.possibleSliderRange = [value.min, value.max];
     }
   },
   filters: {

@@ -183,6 +183,9 @@ const actions = {
   },
   addSensoryToModel({ commit }, name, min, max) {
     commit('addSensoryToModel', name, min, max)
+  },
+  setSensoryConstraint({ commit }, name, min, max) {
+    commit('setSensoryConstraint', name, min, max)
   }
 }
 
@@ -203,6 +206,18 @@ const mutations = {
     // Store the grain data for the style in allGrains
     state.allGrains = styleGrains
   },
+  setSensoryConstraint: (state, { name, min, max }) => {
+    // Add a sensory constraint to the model, or modify an existing constraint
+    let matchSensory = state.currentStyleSensory.find(
+      sensoryObject => sensoryObject.name == name
+    )
+    Object.assign(matchSensory, {
+      configured: {
+        min,
+        max
+      }
+    })
+  },
   setCurrentStyleSensory: (state, sensoryData) => {
     // Format the sensory data for use in the recipe designer
     state.currentStyleSensory = sensoryData.filter(sensoryValue => {
@@ -215,6 +230,8 @@ const mutations = {
             min: sensoryValue.min,
             max: sensoryValue.max
           },
+          possible: undefined,
+          configured: undefined,
           tags: []
         }
         if (sensoryValue.max - sensoryValue.min >= 1) {
