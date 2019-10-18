@@ -50,16 +50,24 @@ export default {
     },
     sliderMin: function() {
       // Returns lowest possible min sensory value in sensory array
-      let values = this.currentStyleSensory.map(sensoryData => {
-        return sensoryData.style.min;
+      let values = [];
+      this.currentStyleSensory.forEach(sensoryData => {
+        values.push(sensoryData.style.min);
+        if (sensoryData.possible !== undefined) {
+          values.push(sensoryData.possible.min);
+        }
       });
       values.sort();
       return values[0];
     },
     sliderMax: function() {
       // Returns highest possible max sensory value in sensory array
-      let values = this.currentStyleSensory.map(sensoryData => {
-        return sensoryData.style.max;
+      let values = [];
+      this.currentStyleSensory.forEach(sensoryData => {
+        values.push(sensoryData.style.max);
+        if (sensoryData.possible !== undefined) {
+          values.push(sensoryData.possible.max);
+        }
       });
       values.sort(function(a, b) {
         return b - a;
