@@ -53,12 +53,12 @@
             </b-slider>
           </b-field>
 
-          <!-- Possible Range - Show if available-->
+          <!-- Possible Range - Show if available, only on picker screen-->
           <b-field
             label="Possible Range"
             custom-class="is-size-7"
             style="padding-top: .25rem"
-            v-if="possibleSliderRange !== ''"
+            v-if="possibleSliderRange !== '' && type==='picker'"
           >
             <b-slider
               v-model="possibleSliderRange"
