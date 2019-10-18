@@ -3,6 +3,7 @@
   <div class="modal-card">
     <header class="modal-card-head">
       <p class="modal-card-title">{{ name }}</p>
+      <a class="delete is-medium is-pulled-right" @click="$parent.close()"></a>
     </header>
     <div class="has-background-light range-slider-div">
       <section class="section range-slider-section">

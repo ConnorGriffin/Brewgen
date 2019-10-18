@@ -91,4 +91,9 @@ $link-focus-border: $primary;
 // Import Bulma and Buefy styles
 @import '~bulma';
 @import '~buefy/src/scss/buefy';
+
+// Get rid of the crappy default modal close button
+.modal-close {
+  display: none;
+}
 </style>

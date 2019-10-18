@@ -3,6 +3,7 @@
   <div class="modal-card" style="height: calc(100vh - 40px)">
     <header class="modal-card-head">
       <p class="modal-card-title">Grain Descriptors</p>
+      <a class="delete is-medium is-pulled-right" @click="$parent.close()"></a>
     </header>
     <section class="modal-card-body" style="height:100%">
       <!-- <b-input
