@@ -19,7 +19,7 @@
         :sliderMax="sliderMax"
         type="picker"
         cardBg="white"
-        :tickSpace="0.2"
+        :tickSpace="1"
       />
     </div>
   </div>
@@ -81,12 +81,9 @@ export default {
         // Always show configured values
         if (sensoryData.configured !== undefined) {
           return true;
-        }
-        // For unconfigured, only show ones with a wide range
-        if (sensoryData.possible !== undefined) {
-          return sensoryData.possible.max - sensoryData.possible.min >= 0.5;
         } else {
-          return false;
+          // Return items with certain tags only
+          return sensoryData.tags.map(tag => tag.value).includes('wide range');
         }
       });
     }
