@@ -204,6 +204,7 @@ const actions = {
       })
   },
   async setDataFromStyle({ commit }, styleSlug) {
+    commit('resetData')
     return axios
       .get('http://10.31.36.49:5000/api/v1/styles/' + styleSlug)
       .then(response => {
@@ -395,6 +396,14 @@ const mutations = {
         name, loading
       })
     }
+  },
+  resetData(state) {
+    state.allGrains = []
+    state.sensoryData = []
+    state.recipeData = []
+    state.grainCategories = []
+    state.currentStyleSensory = ''
+    state.currentStyleStats = ''
   }
 }
 

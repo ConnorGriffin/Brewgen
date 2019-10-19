@@ -4,7 +4,7 @@
     <div class="columns">
       <!-- Sensory Contstraint Buuidler -->
       <div class="column is-4">
-        <SensoryBox v-if="currentStyleStats !== ''" />
+        <SensoryBox v-if="currentStyleSensory !== ''" />
       </div>
       <!-- Radar Chart -->
       <div class="column is-8">
@@ -46,6 +46,7 @@ export default {
       'sensoryData',
       'recipeColorData',
       'currentStyleStats',
+      'currentStyleSensory',
       'isLoading'
     ]),
     sensoryChartData: function() {

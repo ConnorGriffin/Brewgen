@@ -18,7 +18,7 @@
       </section>
       <!-- Recipe Builder -->
       <section class="section">
-        <RecipeBuilder v-if="currentStyleStats !== ''" />
+        <RecipeBuilder v-if="currentStyleName !== 'None Selected'" />
       </section>
     </div>
     <!-- Footer -->
@@ -68,7 +68,8 @@ export default {
       'recipeData',
       'recipeColorData',
       'styles',
-      'currentStyleStats'
+      'currentStyleStats',
+      'currentStyleName'
     ]),
     recipeChartData: function() {
       if (this.currentStyleStats != '') {
