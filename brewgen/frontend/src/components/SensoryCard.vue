@@ -252,4 +252,7 @@ export default {
   margin: 0;
   padding: 0;
 }
+.card >>> .b-slider-thumb {
+  display: none;
+}
 </style>

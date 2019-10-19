@@ -76,6 +76,7 @@
           :step=".001"
           type="is-primary"
           style="padding-left: 1rem; padding-right: 1rem"
+          class="has-thumb"
         >
           <b-slider-tick
             v-for="(tick, index) in sliderTicks(desiredSliderRange[0], desiredSliderRange[1])"
@@ -170,5 +171,8 @@ export default {
 }
 .range-slider-div {
   border-bottom: 1px solid $grey-lighter;
+}
+.has-thumb ::v-deep .b-slider-thumb {
+  display: block !important;
 }
 </style>
