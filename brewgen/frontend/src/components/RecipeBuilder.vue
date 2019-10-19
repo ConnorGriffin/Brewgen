@@ -4,7 +4,7 @@
     <div class="columns">
       <!-- Sensory Contstraint Buuidler -->
       <div class="column is-4">
-        <SensoryBox />
+        <SensoryBox v-if="currentStyleStats !== ''" />
       </div>
       <!-- Radar Chart -->
       <div class="column is-8">
