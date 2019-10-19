@@ -12,14 +12,14 @@
     <!-- Box containing sensory constraint cards -->
     <div class="keyword-box">
       <SensoryCard
-        v-for="(sensoryData, index) in configuredSensory"
+        v-for="(sensoryData, index) in filteredStyleSensory"
         :key="index"
         :sensoryData="sensoryData"
         :sliderMin="sliderMin"
         :sliderMax="sliderMax"
-        type="added"
+        type="picker"
         cardBg="white"
-        :tickSpace="0.4"
+        :tickSpace="0.2"
       />
     </div>
   </div>
@@ -38,16 +38,12 @@ export default {
   },
   data() {
     return {
-      showSensoryPicker: false
+      showSensoryPicker: false,
+      alwaysLoading: true
     };
   },
   computed: {
-    ...mapGetters(['currentStyleSensory']),
-    configuredSensory: function() {
-      return this.currentStyleSensory.filter(sensoryData => {
-        return sensoryData.configured !== undefined;
-      });
-    },
+    ...mapGetters(['currentStyleSensory', 'isLoading']),
     sliderMin: function() {
       // Returns lowest possible min sensory value in sensory array
       let values = [];
@@ -79,6 +75,20 @@ export default {
         return b - a;
       });
       return values[0];
+    },
+    filteredStyleSensory: function() {
+      return this.currentStyleSensory.filter(sensoryData => {
+        // Always show configured values
+        if (sensoryData.configured !== undefined) {
+          return true;
+        }
+        // For unconfigured, only show ones with a wide range
+        if (sensoryData.possible !== undefined) {
+          return sensoryData.possible.max - sensoryData.possible.min >= 0.5;
+        } else {
+          return false;
+        }
+      });
     }
   }
 };

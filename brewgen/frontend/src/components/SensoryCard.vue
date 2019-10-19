@@ -113,10 +113,12 @@
         </b-taglist>
       </div>
     </div>
+    <b-loading :is-full-page="false" :active.sync="this.isLoading('sensoryData')"></b-loading>
   </div>
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 import SensoryConfigurator from '@/components/SensoryConfigurator.vue';
 
 export default {
@@ -180,7 +182,9 @@ export default {
       return value.charAt(0).toUpperCase() + value.slice(1);
     }
   },
-  computed: {},
+  computed: {
+    ...mapGetters(['isLoading'])
+  },
   methods: {
     sliderTicks: function(min, max) {
       if (max - min >= this.tickSpace) {

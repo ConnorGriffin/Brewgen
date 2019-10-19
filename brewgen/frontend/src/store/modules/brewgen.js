@@ -22,7 +22,9 @@ const state = {
   currentStyleStats: '',
   currentStyleSensory: '',
   styleListFilter: '',
-  ogWatcherEnabled: false
+  ogWatcherEnabled: false,
+  // State of application API calls, used to set spinners and progress bars
+  loaders: []
 }
 
 const getters = {
@@ -38,7 +40,16 @@ const getters = {
   styles: state => state.styles,
   currentStyleName: state => state.currentStyleName,
   currentStyleStats: state => state.currentStyleStats,
-  currentStyleSensory: state => state.currentStyleSensory
+  currentStyleSensory: state => state.currentStyleSensory,
+  isLoading: state => loader => {
+    // Get the state of a loader by name, returns false if loader doesn't exist
+    let loaderObject = state.loaders.find(obj => obj.name === loader)
+    if (loaderObject !== undefined) {
+      return loaderObject.loading
+    } else {
+      return false
+    }
+  }
 }
 
 const actions = {
@@ -71,6 +82,11 @@ const actions = {
     commit('updateEquipmentProfile', maxUniqueGrains, targetVolumeGallons, mashEfficiency)
   },
   async fetchSensoryData({ commit }) {
+    commit('setLoader', {
+      name: 'sensoryData',
+      loading: true
+    })
+
     // build the sensory model from the currentStyleSensory.configured values
     let sensoryModel = state.currentStyleSensory
       .filter(sensoryData => {
@@ -94,6 +110,10 @@ const actions = {
       .then(response => {
         commit('setSensoryData', response.data)
         commit('setPossibleSensory', response.data)
+        commit('setLoader', {
+          name: 'sensoryData',
+          loading: false
+        })
         Promise.resolve()
       })
       .catch(err => {
@@ -101,8 +121,11 @@ const actions = {
       })
   },
   async fetchRecipeData({ commit }, { colorOnly }) {
+    commit('setLoader', {
+      name: 'recipeData',
+      loading: true
+    })
     if (colorOnly == true) {
-      console.log(state.beerProfile)
       let chartMin = state.beerProfile.minSrm
       let chartMax = state.beerProfile.maxSrm
       let params = '&chartrange=' + chartMin + ',' + chartMax
@@ -151,6 +174,10 @@ const actions = {
       })
       .then(response => {
         commit(commitAction, response.data)
+        commit('setLoader', {
+          name: 'recipeData',
+          loading: false
+        })
         Promise.resolve()
       })
       .catch(err => {
@@ -158,10 +185,18 @@ const actions = {
       })
   },
   async fetchStyles({ commit }) {
+    commit('setLoader', {
+      name: 'styles',
+      loading: true
+    })
     return axios
       .get('http://10.31.36.49:5000/api/v1/styles')
       .then(response => {
         commit('setStyles', response.data)
+        commit('setLoader', {
+          name: 'styles',
+          loading: false
+        })
         Promise.resolve()
       })
       .catch(err => {
@@ -349,6 +384,17 @@ const mutations = {
   },
   setOgWatcherEnabled(state, value) {
     state.ogWatcherEnabled = value
+  },
+  setLoader(state, { name, loading }) {
+    // Creates or updates a loader's status
+    let loader = state.loaders.find(loader => loader.name === name)
+    if (loader !== undefined) {
+      Object.assign(loader, { name, loading })
+    } else {
+      state.loaders.push({
+        name, loading
+      })
+    }
   }
 }
 

@@ -11,9 +11,11 @@
         <b-tabs v-model="activeTab">
           <b-tab-item label="Sensory">
             <SensoryRadar :chartData="sensoryChartData" />
+            <b-loading :is-full-page="false" :active.sync="this.isLoading('sensoryData')"></b-loading>
           </b-tab-item>
           <b-tab-item label="Beer Color">
             <RecipeChart :chartData="recipeChartData" />
+            <b-loading :is-full-page="false" :active.sync="this.isLoading('recipeData')"></b-loading>
           </b-tab-item>
         </b-tabs>
       </div>
@@ -40,7 +42,12 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['sensoryData', 'recipeColorData', 'currentStyleStats']),
+    ...mapGetters([
+      'sensoryData',
+      'recipeColorData',
+      'currentStyleStats',
+      'isLoading'
+    ]),
     sensoryChartData: function() {
       // Get the labels in deslugged title-case
       var chartLabels = this.sensoryData.map(element => {
