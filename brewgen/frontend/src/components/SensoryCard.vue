@@ -15,7 +15,13 @@
           v-if="type === 'picker'"
           @click="showSensoryConfigurator = true"
         >Add to model</b-button>
-        <b-modal :active.sync="showSensoryConfigurator" has-modal-card trap-focus scroll="keep">
+        <b-modal
+          :active.sync="showSensoryConfigurator"
+          has-modal-card
+          trap-focus
+          scroll="keep"
+          v-if="possibleSliderRange !== ''"
+        >
           <SensoryConfigurator
             :styleRange="[sensoryData.style.min, sensoryData.style.max]"
             :possibleRange="[sensoryData.possible.min, sensoryData.possible.max]"
@@ -34,74 +40,76 @@
       <div>
         <!-- Style Baseline - Show always -->
         <div class="style-sliders">
-          <b-field label="Style Range" custom-class="is-size-7">
-            <b-slider
-              v-model="styleSliderRange"
-              :min="sliderMin"
-              :max="sliderMax"
-              disabled
-              size="is-small"
-              type="is-rosewood"
-              style="padding-left: 1rem; padding-right: 1rem"
-            >
-              <b-slider-tick
-                v-for="(tick, index) in sliderTicks(sensoryData.style.min, sensoryData.style.max)"
-                :key="index"
-                :value="tick.value"
-                class="is-tick-hidden"
-              >{{ tick.label }}</b-slider-tick>
-            </b-slider>
-          </b-field>
+          <div class="columns is-gapless is-vcentered is-multiline is-vcentered card-columns">
+            <!-- Style Range -->
+            <div class="column is-one-third">
+              <h1 class="title is-7">Style</h1>
+            </div>
+            <div class="column is-two-thirds">
+              <b-slider
+                v-model="styleSliderRange"
+                :min="sliderMin"
+                :max="sliderMax"
+                disabled
+                size="is-small"
+                type="is-rosewood"
+                style="padding-left: 1rem; padding-right: 1rem"
+              >
+                <b-slider-tick
+                  v-for="(tick, index) in sliderTicks(sensoryData.style.min, sensoryData.style.max)"
+                  :key="index"
+                  :value="tick.value"
+                  class="is-tick-hidden"
+                >{{ tick.label }}</b-slider-tick>
+              </b-slider>
+            </div>
 
-          <!-- Possible Range - Show if available, only on picker screen-->
-          <b-field
-            label="Possible Range"
-            custom-class="is-size-7"
-            style="padding-top: .25rem"
-            v-if="possibleSliderRange !== '' && type==='picker'"
-          >
-            <b-slider
-              v-model="possibleSliderRange"
-              :min="sliderMin"
-              :max="sliderMax"
-              disabled
-              size="is-small"
-              type="is-info"
-              style="padding-left: 1rem; padding-right: 1rem"
-            >
-              <b-slider-tick
-                v-for="(tick, index) in sliderTicks(sensoryData.possible.min, sensoryData.possible.max)"
-                :key="index"
-                :value="tick.value"
-                class="is-tick-hidden"
-              >{{ tick.label }}</b-slider-tick>
-            </b-slider>
-          </b-field>
+            <!-- Possible Range -->
+            <div class="column is-one-third" v-if="possibleSliderRange !== '' && type==='picker'">
+              <h1 class="title is-7">Possible</h1>
+            </div>
+            <div class="column is-two-thirds" v-if="possibleSliderRange !== '' && type==='picker'">
+              <b-slider
+                v-model="possibleSliderRange"
+                :min="sliderMin"
+                :max="sliderMax"
+                disabled
+                size="is-small"
+                type="is-info"
+                style="padding-left: 1rem; padding-right: 1rem"
+              >
+                <b-slider-tick
+                  v-for="(tick, index) in sliderTicks(sensoryData.possible.min, sensoryData.possible.max)"
+                  :key="index"
+                  :value="tick.value"
+                  class="is-tick-hidden"
+                >{{ tick.label }}</b-slider-tick>
+              </b-slider>
+            </div>
 
-          <!-- Configured Range - Show if available-->
-          <b-field
-            label="Configured Range"
-            custom-class="is-size-7"
-            style="padding-top: .25rem"
-            v-if="configuredSliderRange !== ''"
-          >
-            <b-slider
-              v-model="configuredSliderRange"
-              :min="sliderMin"
-              :max="sliderMax"
-              disabled
-              size="is-small"
-              type="is-primary"
-              style="padding-left: 1rem; padding-right: 1rem"
-            >
-              <b-slider-tick
-                v-for="(tick, index) in sliderTicks(sensoryData.configured.min, sensoryData.configured.max)"
-                :key="index"
-                :value="tick.value"
-                class="is-tick-hidden"
-              >{{ tick.label }}</b-slider-tick>
-            </b-slider>
-          </b-field>
+            <!-- Configured Range -->
+            <div class="column is-one-third" v-if="configuredSliderRange !== ''">
+              <h1 class="title is-7">Desired</h1>
+            </div>
+            <div class="column is-two-thirds" v-if="configuredSliderRange !== ''">
+              <b-slider
+                v-model="configuredSliderRange"
+                :min="sliderMin"
+                :max="sliderMax"
+                disabled
+                size="is-small"
+                type="is-primary"
+                style="padding-left: 1rem; padding-right: 1rem"
+              >
+                <b-slider-tick
+                  v-for="(tick, index) in sliderTicks(sensoryData.configured.min, sensoryData.configured.max)"
+                  :key="index"
+                  :value="tick.value"
+                  class="is-tick-hidden"
+                >{{ tick.label }}</b-slider-tick>
+              </b-slider>
+            </div>
+          </div>
         </div>
 
         <b-taglist style="margin-top: .5rem">
@@ -161,10 +169,14 @@ export default {
   },
   watch: {
     'sensoryData.configured': function(value) {
-      this.configuredSliderRange = [value.min, value.max];
+      if (value !== undefined) {
+        this.configuredSliderRange = [value.min, value.max];
+      }
     },
     'sensoryData.possible': function(value) {
-      this.possibleSliderRange = [value.min, value.max];
+      if (value !== undefined) {
+        this.possibleSliderRange = [value.min, value.max];
+      }
     }
   },
   filters: {
@@ -235,5 +247,9 @@ export default {
 .style-sliders {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
+}
+.card-columns {
+  margin: 0;
+  padding: 0;
 }
 </style>
