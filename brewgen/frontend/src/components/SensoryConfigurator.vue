@@ -9,9 +9,9 @@
       <section class="section range-slider-section">
         <b-field label="Style" style="padding-top: .25rem" custom-class="is-size-7 has-text-grey">
           <b-slider
-            v-model="styleSliderRange"
-            :min="sliderMin"
-            :max="sliderMax"
+            :value="styleRange"
+            :min="sliderMinComp"
+            :max="sliderMaxComp"
             disabled
             size="is-small"
             type="is-rosewood"
@@ -31,16 +31,16 @@
           custom-class="is-size-7 has-text-grey"
         >
           <b-slider
-            v-model="possibleSliderRange"
-            :min="sliderMin"
-            :max="sliderMax"
+            :value="possibleSliderRange"
+            :min="sliderMinComp"
+            :max="sliderMaxComp"
             disabled
             size="is-small"
             type="is-info"
             style="padding-left: 1rem; padding-right: 1rem"
           >
             <b-slider-tick
-              v-for="(tick, index) in sliderTicks(possibleRange[0], possibleRange[1])"
+              v-for="(tick, index) in sliderTicks(possibleSliderRange[0], possibleSliderRange[1])"
               :key="index"
               :value="tick.value"
               class="is-tick-hidden"
@@ -50,8 +50,8 @@
         <b-field label="Desired" custom-class="is-size-7 has-text-grey">
           <b-slider
             v-model="desiredSliderRange"
-            :min="sliderMin"
-            :max="sliderMax"
+            :min="sliderMinComp"
+            :max="sliderMaxComp"
             type="is-primary"
             size="is-small"
             disabled
@@ -89,30 +89,69 @@
     </section>
     <footer class="modal-card-foot">
       <b-button @click="$parent.close()">Cancel</b-button>
-      <b-button type="is-primary" @click="addConstraint">Add to Recipe Constraints</b-button>
+      <b-button
+        type="is-primary"
+        @click="addConstraint"
+        v-if="mode !== 'edit'"
+      >Add to Recipe Constraints</b-button>
+      <b-button type="is-primary" @click="addConstraint" v-else>Save Changes</b-button>
     </footer>
+    <b-loading
+      :is-full-page="false"
+      :active.sync="this.isLoading('sensoryDataEdit')"
+      v-if="mode === 'edit'"
+    ></b-loading>
   </div>
 </template>
 
 <script>
-import { mapActions } from 'vuex';
+import { mapActions, mapGetters } from 'vuex';
 
 export default {
   name: 'SensoryConfigurator',
   props: {
     name: String,
+    slug: String,
     styleRange: Array,
     possibleRange: Array,
+    startingRange: Array,
     tickSpace: Number,
     sliderMin: Number,
-    sliderMax: Number
+    sliderMax: Number,
+    mode: String
   },
   data() {
     return {
-      styleSliderRange: this.styleRange,
-      possibleSliderRange: this.possibleRange,
-      desiredSliderRange: this.possibleRange
+      desiredSliderRange: null
     };
+  },
+  computed: {
+    ...mapGetters(['isLoading', 'currentStyleSensoryEdit']),
+    possibleSliderRange: function() {
+      if (this.mode == 'edit' && this.isLoading('sensoryDataEdit') === false) {
+        let editData = this.currentStyleSensoryEdit(this.slug);
+        return [editData.possible.min, editData.possible.max];
+      } else {
+        return this.possibleRange;
+      }
+    },
+    sliderMinComp: function() {
+      return Math.min(this.sliderMin, this.possibleSliderRange[0]);
+    },
+    sliderMaxComp: function() {
+      return Math.max(this.sliderMax, this.possibleSliderRange[1]);
+    }
+  },
+  created() {
+    // Set the starting values if provided, set upper and lower limits to the possibleRange
+    if (this.startingRange) {
+      this.desiredSliderRange = [
+        Math.max(this.startingRange[0], this.possibleRange[0]),
+        Math.min(this.startingRange[1], this.possibleRange[2])
+      ];
+    } else {
+      this.desiredSliderRange = this.possibleRange;
+    }
   },
   methods: {
     ...mapActions([

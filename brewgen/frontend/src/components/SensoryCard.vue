@@ -8,7 +8,10 @@
         <b-button
           size="is-small"
           style="margin-right: .5rem"
+          outlined
+          type="is-dark"
           v-if="sensoryData.configured !== undefined"
+          @click="editSensory"
         >Edit</b-button>
         <a
           class="delete is-medium"
@@ -33,11 +36,14 @@
         >
           <SensoryConfigurator
             :styleRange="[sensoryData.style.min, sensoryData.style.max]"
-            :possibleRange="[sensoryData.possible.min, sensoryData.possible.max]"
+            :possibleRange="possibleSliderRange"
             :name="sensoryData.name | deslug | titleCase"
+            :slug="sensoryData.name"
             :tickSpace="tickSpace"
             :sliderMin="sliderMin"
             :sliderMax="sliderMax"
+            :startingRange="startingRange()"
+            :mode="configuratorMode"
           />
         </b-modal>
       </span>
@@ -62,7 +68,7 @@
             <div class="column">
               <!-- Style Range -->
               <b-slider
-                v-model="styleSliderRange"
+                :value="styleSliderRange"
                 :min="sliderMin"
                 :max="sliderMax"
                 disabled
@@ -80,7 +86,7 @@
 
               <!-- Possible Range -->
               <b-slider
-                v-model="possibleSliderRange"
+                :value="possibleSliderRange"
                 :min="sliderMin"
                 :max="sliderMax"
                 disabled
@@ -90,7 +96,7 @@
                 v-if="sensoryData.possible !== undefined && sensoryData.configured === undefined"
               >
                 <b-slider-tick
-                  v-for="(tick, index) in sliderTicks(sensoryData.possible.min, sensoryData.possible.max)"
+                  v-for="(tick, index) in sliderTicks(possibleSliderRange[0], possibleSliderRange[1])"
                   :key="index"
                   :value="tick.value"
                   class="is-tick-hidden"
@@ -99,7 +105,7 @@
 
               <!-- Configured Range -->
               <b-slider
-                v-model="configuredSliderRange"
+                :value="configuredSliderRange"
                 :min="sliderMin"
                 :max="sliderMax"
                 disabled
@@ -109,7 +115,7 @@
                 v-if="sensoryData.configured !== undefined"
               >
                 <b-slider-tick
-                  v-for="(tick, index) in sliderTicks(sensoryData.configured.min, sensoryData.configured.max)"
+                  v-for="(tick, index) in sliderTicks(configuredSliderRange[0], configuredSliderRange[1])"
                   :key="index"
                   :value="tick.value"
                   class="is-tick-hidden"
@@ -152,44 +158,8 @@ export default {
   data() {
     return {
       showSensoryConfigurator: false,
-      styleSliderRange: [
-        this.sensoryData.style.min,
-        this.sensoryData.style.max
-      ],
-      possibleSliderRange: null,
-      configuredSliderRange: null
+      styleSliderRange: [this.sensoryData.style.min, this.sensoryData.style.max]
     };
-  },
-  created() {
-    // Set slider values on created(), only used by Picker screen, not used by constraint builder/box
-    if (this.sensoryData.possible !== undefined) {
-      this.possibleSliderRange = [
-        this.sensoryData.possible.min,
-        this.sensoryData.possible.max
-      ];
-    }
-    if (this.sensoryData.configured !== undefined) {
-      this.configuredSliderRange = [
-        this.sensoryData.configured.min,
-        this.sensoryData.configured.max
-      ];
-    }
-  },
-  watch: {
-    'sensoryData.configured': function(value) {
-      if (value !== undefined) {
-        this.configuredSliderRange = [value.min, value.max];
-      } else {
-        this.configuredSliderRange = null;
-      }
-    },
-    'sensoryData.possible': function(value) {
-      if (value !== undefined) {
-        this.possibleSliderRange = [value.min, value.max];
-      } else {
-        this.possibleSliderRange = null;
-      }
-    }
   },
   filters: {
     titleCase: function(value) {
@@ -207,12 +177,37 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['isLoading'])
+    ...mapGetters(['isLoading']),
+    possibleSliderRange: function() {
+      if (this.sensoryData.possible !== undefined) {
+        return [this.sensoryData.possible.min, this.sensoryData.possible.max];
+      } else {
+        return null;
+      }
+    },
+    configuredSliderRange: function() {
+      if (this.sensoryData.configured !== undefined) {
+        return [
+          this.sensoryData.configured.min,
+          this.sensoryData.configured.max
+        ];
+      } else {
+        return null;
+      }
+    },
+    configuratorMode: function() {
+      if (this.sensoryData.configured !== undefined) {
+        return 'edit';
+      } else {
+        return null;
+      }
+    }
   },
   methods: {
     ...mapActions([
       'removeSensoryConstraint',
       'fetchSensoryData',
+      'fetchSensoryDataEdit',
       'fetchRecipeData'
     ]),
     sliderTicks: function(min, max) {
@@ -243,10 +238,27 @@ export default {
         ];
       }
     },
+    startingRange: function() {
+      // Set the starting range to the configured value if one exists
+      if (this.sensoryData.configured !== undefined) {
+        return [
+          this.sensoryData.configured.min,
+          this.sensoryData.configured.max
+        ];
+      } else if (this.sensoryData.possible) {
+        return [this.sensoryData.possible.min, this.sensoryData.possible.max];
+      } else {
+        return null;
+      }
+    },
     removeSensory: function(value) {
       this.removeSensoryConstraint(value);
       this.fetchSensoryData();
       this.fetchRecipeData({ colorOnly: true });
+    },
+    editSensory: function() {
+      this.fetchSensoryDataEdit(this.sensoryData.name);
+      this.showSensoryConfigurator = true;
     }
   }
 };
@@ -287,5 +299,8 @@ export default {
 }
 .card >>> .column {
   margin-top: 0.5rem;
+}
+.delete {
+  margin-top: 0.1rem;
 }
 </style>

@@ -20,7 +20,10 @@ const state = {
   styles: [],
   currentStyleName: 'None Selected',
   currentStyleStats: '',
+  // Current style sensory stats including style, possible, and configured min/max values
   currentStyleSensory: '',
+  // Current style sensory stats with a single descriptor's configured values nulled
+  currentStyleSensoryEdit: '',
   styleListFilter: '',
   ogWatcherEnabled: false,
   // State of application API calls, used to set spinners and progress bars
@@ -41,6 +44,9 @@ const getters = {
   currentStyleName: state => state.currentStyleName,
   currentStyleStats: state => state.currentStyleStats,
   currentStyleSensory: state => state.currentStyleSensory,
+  currentStyleSensoryEdit: state => sensoryName => {
+    return state.currentStyleSensoryEdit.find(sensoryData => sensoryData.name == sensoryName)
+  },
   isLoading: state => loader => {
     // Get the state of a loader by name, returns false if loader doesn't exist
     let loaderObject = state.loaders.find(obj => obj.name === loader)
@@ -112,6 +118,46 @@ const actions = {
         commit('setPossibleSensory', response.data)
         commit('setLoader', {
           name: 'sensoryData',
+          loading: false
+        })
+        Promise.resolve()
+      })
+      .catch(err => {
+        throw err
+      })
+  },
+  async fetchSensoryDataEdit({ commit }, name) {
+    // Fetches current style sensory data but excludes configured values for a single descriptor
+    commit('setLoader', {
+      name: 'sensoryDataEdit',
+      loading: true
+    })
+
+    // build the sensory model from the currentStyleSensory.configured values
+    let sensoryModel = state.currentStyleSensory
+      .filter(sensoryData => {
+        return (sensoryData.configured !== undefined
+          && sensoryData.name !== name)
+      })
+      .map(sensoryData => {
+        return {
+          name: sensoryData.name,
+          min: sensoryData.configured.min,
+          max: sensoryData.configured.max
+        }
+      })
+
+    return axios
+      .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
+        grain_list: state.allGrains,
+        category_model: state.grainCategories,
+        sensory_model: sensoryModel,
+        max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
+      })
+      .then(response => {
+        commit('setPossibleSensoryEdit', response.data)
+        commit('setLoader', {
+          name: 'sensoryDataEdit',
           loading: false
         })
         Promise.resolve()
@@ -324,6 +370,23 @@ const mutations = {
     sensoryData.forEach(sensoryValue => {
       // Find the matching sensory object in the currentStyleSensory data so we can update it
       let matchedSensory = state.currentStyleSensory.find(csSensory => csSensory.name == sensoryValue.name)
+      if (matchedSensory !== undefined) {
+        Object.assign(matchedSensory, {
+          possible: {
+            min: sensoryValue.min,
+            max: sensoryValue.max
+          }
+        })
+      }
+    })
+  },
+  setPossibleSensoryEdit: (state, sensoryData) => {
+    // Set the possible sensory values from the sensory profile query, used while editing a descriptor
+    // Work off a copy of the current sensory data
+    state.currentStyleSensoryEdit = JSON.parse(JSON.stringify(state.currentStyleSensory))
+    sensoryData.forEach(sensoryValue => {
+      // Find the matching sensory object in the currentStyleSensoryEdit data so we can update it
+      let matchedSensory = state.currentStyleSensoryEdit.find(csSensory => csSensory.name == sensoryValue.name)
       if (matchedSensory !== undefined) {
         Object.assign(matchedSensory, {
           possible: {
