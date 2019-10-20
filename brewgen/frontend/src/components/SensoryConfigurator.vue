@@ -156,7 +156,7 @@ export default {
     if (this.startingRange) {
       this.desiredSliderRange = [
         Math.max(this.startingRange[0], this.possibleRange[0]),
-        Math.min(this.startingRange[1], this.possibleRange[2])
+        Math.min(this.startingRange[1], this.possibleRange[1])
       ]
     } else {
       this.desiredSliderRange = this.possibleRange
@@ -204,8 +204,10 @@ export default {
       })
       this.$parent.close()
       // Save a snapshot of the current sensory data and save the most recently changed descriptor name
-      this.$store.commit('setLastSensoryData')
-      this.$store.commit('setLastChangedSensoryDescriptor', this.slug)
+      if (this.lastChangedSensoryDescriptor !== this.slug) {
+        this.$store.commit('setLastSensoryData')
+        this.$store.commit('setLastChangedSensoryDescriptor', this.slug)
+      }
       // Update recipe and sensory data
       this.fetchSensoryData()
       this.fetchRecipeData({ colorOnly: true })

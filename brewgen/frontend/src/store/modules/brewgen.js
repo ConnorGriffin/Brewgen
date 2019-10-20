@@ -429,6 +429,8 @@ const mutations = {
     if (sensoryObj.configured !== undefined) {
       delete sensoryObj.configured
     }
+    state.lastChangedSensoryDescriptor = null
+    state.lastSensoryData = null
   },
   addSensoryToModel(state, { name, min, max }) {
     // Remove if already exists, just to be safe
