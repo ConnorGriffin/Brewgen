@@ -8,6 +8,9 @@
       </div>
       <!-- Radar Chart -->
       <div class="column is-8">
+        <div class="buttons">
+          <b-button type="is-success ">Get Recipes</b-button>
+        </div>
         <b-tabs v-model="activeTab">
           <b-tab-item label="Sensory">
             <SensoryRadar :chartData="sensoryChartData" />
