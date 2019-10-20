@@ -27,10 +27,10 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
-import SensoryRadar from '@/components/SensoryRadar.vue';
-import RecipeChart from '@/components/RecipeChart.vue';
-import SensoryBox from '@/components/SensoryBox.vue';
+import { mapGetters } from 'vuex'
+import SensoryRadar from '@/components/SensoryRadar.vue'
+import RecipeChart from '@/components/RecipeChart.vue'
+import SensoryBox from '@/components/SensoryBox.vue'
 
 export default {
   name: 'RecipeBuilder',
@@ -39,10 +39,10 @@ export default {
     RecipeChart,
     SensoryBox
   },
-  data() {
+  data () {
     return {
       activeTab: 0
-    };
+    }
   },
   computed: {
     ...mapGetters([
@@ -52,27 +52,27 @@ export default {
       'currentStyleSensory',
       'isLoading'
     ]),
-    sensoryChartData: function() {
+    sensoryChartData: function () {
       // Get the labels in deslugged title-case
       var chartLabels = this.sensoryData.map(element => {
-        var value = element.name;
+        var value = element.name
         value = value
           .replace('_', ' ')
           .toLowerCase()
-          .split(' ');
+          .split(' ')
         for (var i = 0; i < value.length; i++) {
-          value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1);
+          value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1)
         }
-        return value.join(' ');
-      });
+        return value.join(' ')
+      })
 
       // Set Radar chart series data
       var minData = this.sensoryData.map(element => {
-        return element.min;
-      });
+        return element.min
+      })
       var maxData = this.sensoryData.map(element => {
-        return element.max;
-      });
+        return element.max
+      })
 
       // Return the data formatted for ApexCharts
       return {
@@ -99,9 +99,9 @@ export default {
             data: maxData.slice(0, 9)
           }
         ]
-      };
+      }
     },
-    recipeChartData: function() {
+    recipeChartData: function () {
       if (this.currentStyleStats != '') {
         var annotations = {
           xaxis: [
@@ -115,9 +115,9 @@ export default {
               }
             }
           ]
-        };
+        }
       } else {
-        var annotations = {};
+        var annotations = {}
       }
 
       // Return the data formatted for ApexCharts
@@ -151,10 +151,10 @@ export default {
             data: this.recipeColorData.map(recipe => recipe.count)
           }
         ]
-      };
+      }
     }
   }
-};
+}
 </script>
 
 <style>

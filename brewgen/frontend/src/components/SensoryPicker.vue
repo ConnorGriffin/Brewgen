@@ -34,8 +34,8 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex';
-import SensoryCard from '@/components/SensoryCard';
+import { mapActions, mapGetters } from 'vuex'
+import SensoryCard from '@/components/SensoryCard'
 
 export default {
   name: 'SensoryPicker',
@@ -44,40 +44,40 @@ export default {
   },
   computed: {
     ...mapGetters(['currentStyleSensory']),
-    sliderMin: function() {
+    sliderMin: function () {
       // Returns lowest possible min sensory value in sensory array
-      let values = [];
+      let values = []
       this.currentStyleSensory.forEach(sensoryData => {
-        values.push(sensoryData.style.min);
+        values.push(sensoryData.style.min)
         if (sensoryData.possible !== undefined) {
-          values.push(sensoryData.possible.min);
+          values.push(sensoryData.possible.min)
         }
         if (sensoryData.configured !== undefined) {
-          values.push(sensoryData.configured.min);
+          values.push(sensoryData.configured.min)
         }
-      });
-      values.sort();
-      return values[0];
+      })
+      values.sort()
+      return values[0]
     },
-    sliderMax: function() {
+    sliderMax: function () {
       // Returns highest possible max sensory value in sensory array
-      let values = [];
+      let values = []
       this.currentStyleSensory.forEach(sensoryData => {
-        values.push(sensoryData.style.max);
+        values.push(sensoryData.style.max)
         if (sensoryData.possible !== undefined) {
-          values.push(sensoryData.possible.max);
+          values.push(sensoryData.possible.max)
         }
         if (sensoryData.configured !== undefined) {
-          values.push(sensoryData.configured.max);
+          values.push(sensoryData.configured.max)
         }
-      });
-      values.sort(function(a, b) {
-        return b - a;
-      });
-      return values[0];
+      })
+      values.sort(function (a, b) {
+        return b - a
+      })
+      return values[0]
     }
   }
-};
+}
 </script>
 
 <style>

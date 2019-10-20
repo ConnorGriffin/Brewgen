@@ -8,7 +8,7 @@
 export default {
   name: 'RecipeChart',
   props: ['chartData']
-};
+}
 </script>
 
 <style>

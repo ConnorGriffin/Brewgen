@@ -26,8 +26,8 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
-import StyleCard from '@/components/StyleCard.vue';
+import { mapGetters } from 'vuex'
+import StyleCard from '@/components/StyleCard.vue'
 
 export default {
   name: 'StyleList',
@@ -36,20 +36,20 @@ export default {
   },
   computed: {
     ...mapGetters(['styles']),
-    sortedStyles: function() {
-      return this.styles.sort((a, b) => (a.name > b.name ? 1 : -1));
+    sortedStyles: function () {
+      return this.styles.sort((a, b) => (a.name > b.name ? 1 : -1))
     },
     styleListFilter: {
-      get() {
-        return this.$store.state.brewgen.styleListFilter;
+      get () {
+        return this.$store.state.brewgen.styleListFilter
       },
-      set(value) {
-        this.$store.commit('setStyleListFilter', value);
+      set (value) {
+        this.$store.commit('setStyleListFilter', value)
       }
     },
     //
-    filteredStyles: function() {
-      let filterWords = this.styleListFilter.trim().split(' ');
+    filteredStyles: function () {
+      let filterWords = this.styleListFilter.trim().split(' ')
 
       // Search for each filter word in each name or category
       let filterArray = filterWords.map(word => {
@@ -57,52 +57,52 @@ export default {
           return (
             styleData.name.toLowerCase().match(word.toLowerCase()) ||
             styleData.category.toLowerCase().match(word.toLowerCase())
-          );
-        });
+          )
+        })
         if (matchedStyles !== undefined) {
-          return matchedStyles.map(style => style.slug);
+          return matchedStyles.map(style => style.slug)
         }
-      });
+      })
 
       // Find items that are common among results for all filter words
-      let styleIntersect = this.intersection(filterArray);
+      let styleIntersect = this.intersection(filterArray)
 
       // Return style objects for each common item
       return this.sortedStyles.filter(styleData => {
-        return styleIntersect.includes(styleData.slug);
-      });
+        return styleIntersect.includes(styleData.slug)
+      })
     }
   },
   methods: {
-    intersection: function() {
-      var result = [];
-      var lists;
+    intersection: function () {
+      var result = []
+      var lists
 
       if (arguments.length === 1) {
-        lists = arguments[0];
+        lists = arguments[0]
       } else {
-        lists = arguments;
+        lists = arguments
       }
 
       for (var i = 0; i < lists.length; i++) {
-        var currentList = lists[i];
+        var currentList = lists[i]
         for (var y = 0; y < currentList.length; y++) {
-          var currentValue = currentList[y];
+          var currentValue = currentList[y]
           if (result.indexOf(currentValue) === -1) {
             if (
-              lists.filter(function(obj) {
-                return obj.indexOf(currentValue) == -1;
+              lists.filter(function (obj) {
+                return obj.indexOf(currentValue) == -1
               }).length == 0
             ) {
-              result.push(currentValue);
+              result.push(currentValue)
             }
           }
         }
       }
-      return result;
+      return result
     }
   }
-};
+}
 </script>,
 
 <style>

@@ -22,33 +22,33 @@
 </template>
 
 <script>
-import { mapActions } from 'vuex';
+import { mapActions } from 'vuex'
 export default {
   name: 'EquipmentForm',
-  data() {
+  data () {
     return {
       maxUniqueGrains: 0,
       targetVolumeGallons: 0,
       mashEfficiency: 0
-    };
+    }
   },
-  created() {
-    this.maxUniqueGrains = this.$store.state.brewgen.equipmentProfile.maxUniqueGrains;
-    this.targetVolumeGallons = this.$store.state.brewgen.equipmentProfile.targetVolumeGallons;
-    this.mashEfficiency = this.$store.state.brewgen.equipmentProfile.mashEfficiency;
+  created () {
+    this.maxUniqueGrains = this.$store.state.brewgen.equipmentProfile.maxUniqueGrains
+    this.targetVolumeGallons = this.$store.state.brewgen.equipmentProfile.targetVolumeGallons
+    this.mashEfficiency = this.$store.state.brewgen.equipmentProfile.mashEfficiency
   },
   methods: {
     ...mapActions(['updateEquipmentProfile']),
-    updateEquipmentProfileAndClose: function() {
+    updateEquipmentProfileAndClose: function () {
       this.updateEquipmentProfile({
         maxUniqueGrains: this.maxUniqueGrains,
         targetVolumeGallons: this.targetVolumeGallons,
         mashEfficiency: this.mashEfficiency
-      });
-      this.$parent.close();
+      })
+      this.$parent.close()
     }
   }
-};
+}
 </script>,
 
 <style>

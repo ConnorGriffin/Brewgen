@@ -139,8 +139,8 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
-import SensoryConfigurator from '@/components/SensoryConfigurator.vue';
+import { mapGetters, mapActions } from 'vuex'
+import SensoryConfigurator from '@/components/SensoryConfigurator.vue'
 
 export default {
   name: 'SensoryCard',
@@ -155,51 +155,51 @@ export default {
   components: {
     SensoryConfigurator
   },
-  data() {
+  data () {
     return {
       showSensoryConfigurator: false,
       styleSliderRange: [this.sensoryData.style.min, this.sensoryData.style.max]
-    };
+    }
   },
   filters: {
-    titleCase: function(value) {
-      value = value.toLowerCase().split(' ');
+    titleCase: function (value) {
+      value = value.toLowerCase().split(' ')
       for (var i = 0; i < value.length; i++) {
-        value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1);
+        value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1)
       }
-      return value.join(' ');
+      return value.join(' ')
     },
-    deslug: function(value) {
-      if (!value) return '';
-      value = value.toString();
-      value = value.replace('_', ' ');
-      return value.charAt(0).toUpperCase() + value.slice(1);
+    deslug: function (value) {
+      if (!value) return ''
+      value = value.toString()
+      value = value.replace('_', ' ')
+      return value.charAt(0).toUpperCase() + value.slice(1)
     }
   },
   computed: {
     ...mapGetters(['isLoading']),
-    possibleSliderRange: function() {
+    possibleSliderRange: function () {
       if (this.sensoryData.possible !== undefined) {
-        return [this.sensoryData.possible.min, this.sensoryData.possible.max];
+        return [this.sensoryData.possible.min, this.sensoryData.possible.max]
       } else {
-        return null;
+        return null
       }
     },
-    configuredSliderRange: function() {
+    configuredSliderRange: function () {
       if (this.sensoryData.configured !== undefined) {
         return [
           this.sensoryData.configured.min,
           this.sensoryData.configured.max
-        ];
+        ]
       } else {
-        return null;
+        return null
       }
     },
-    configuratorMode: function() {
+    configuratorMode: function () {
       if (this.sensoryData.configured !== undefined) {
-        return 'edit';
+        return 'edit'
       } else {
-        return null;
+        return null
       }
     }
   },
@@ -210,7 +210,7 @@ export default {
       'fetchSensoryDataEdit',
       'fetchRecipeData'
     ]),
-    sliderTicks: function(min, max) {
+    sliderTicks: function (min, max) {
       if (max - min >= this.tickSpace) {
         return [
           {
@@ -221,47 +221,47 @@ export default {
             value: max,
             label: max
           }
-        ];
+        ]
       } else if (min === max) {
         return [
           {
             value: min,
             label: min
           }
-        ];
+        ]
       } else {
         return [
           {
             value: (min + max) / 2,
             label: `${min}\xa0-\xa0${max}`
           }
-        ];
+        ]
       }
     },
-    startingRange: function() {
+    startingRange: function () {
       // Set the starting range to the configured value if one exists
       if (this.sensoryData.configured !== undefined) {
         return [
           this.sensoryData.configured.min,
           this.sensoryData.configured.max
-        ];
+        ]
       } else if (this.sensoryData.possible) {
-        return [this.sensoryData.possible.min, this.sensoryData.possible.max];
+        return [this.sensoryData.possible.min, this.sensoryData.possible.max]
       } else {
-        return null;
+        return null
       }
     },
-    removeSensory: function(value) {
-      this.removeSensoryConstraint(value);
-      this.fetchSensoryData();
-      this.fetchRecipeData({ colorOnly: true });
+    removeSensory: function (value) {
+      this.removeSensoryConstraint(value)
+      this.fetchSensoryData()
+      this.fetchRecipeData({ colorOnly: true })
     },
-    editSensory: function() {
-      this.fetchSensoryDataEdit(this.sensoryData.name);
-      this.showSensoryConfigurator = true;
+    editSensory: function () {
+      this.fetchSensoryDataEdit(this.sensoryData.name)
+      this.showSensoryConfigurator = true
     }
   }
-};
+}
 </script>
 
 <style scoped>

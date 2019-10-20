@@ -105,7 +105,7 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex';
+import { mapActions, mapGetters } from 'vuex'
 
 export default {
   name: 'SensoryConfigurator',
@@ -120,37 +120,37 @@ export default {
     sliderMax: Number,
     mode: String
   },
-  data() {
+  data () {
     return {
       desiredSliderRange: null
-    };
+    }
   },
   computed: {
     ...mapGetters(['isLoading', 'currentStyleSensoryEdit']),
-    possibleSliderRange: function() {
+    possibleSliderRange: function () {
       if (this.mode == 'edit' && this.isLoading('sensoryDataEdit') === false) {
-        let editData = this.currentStyleSensoryEdit(this.slug);
-        return [editData.possible.min, editData.possible.max];
+        let editData = this.currentStyleSensoryEdit(this.slug)
+        return [editData.possible.min, editData.possible.max]
       } else {
-        return this.possibleRange;
+        return this.possibleRange
       }
     },
-    sliderMinComp: function() {
-      return Math.min(this.sliderMin, this.possibleSliderRange[0]);
+    sliderMinComp: function () {
+      return Math.min(this.sliderMin, this.possibleSliderRange[0])
     },
-    sliderMaxComp: function() {
-      return Math.max(this.sliderMax, this.possibleSliderRange[1]);
+    sliderMaxComp: function () {
+      return Math.max(this.sliderMax, this.possibleSliderRange[1])
     }
   },
-  created() {
+  created () {
     // Set the starting values if provided, set upper and lower limits to the possibleRange
     if (this.startingRange) {
       this.desiredSliderRange = [
         Math.max(this.startingRange[0], this.possibleRange[0]),
         Math.min(this.startingRange[1], this.possibleRange[2])
-      ];
+      ]
     } else {
-      this.desiredSliderRange = this.possibleRange;
+      this.desiredSliderRange = this.possibleRange
     }
   },
   methods: {
@@ -159,7 +159,7 @@ export default {
       'fetchSensoryData',
       'fetchRecipeData'
     ]),
-    sliderTicks: function(min, max) {
+    sliderTicks: function (min, max) {
       if (max - min >= this.tickSpace) {
         return [
           {
@@ -170,35 +170,35 @@ export default {
             value: max,
             label: max
           }
-        ];
+        ]
       } else if (min === max) {
         return [
           {
             value: min,
             label: min
           }
-        ];
+        ]
       } else {
         return [
           {
             value: (min + max) / 2,
             label: `${min}\xa0-\xa0${max}`
           }
-        ];
+        ]
       }
     },
-    addConstraint: function() {
+    addConstraint: function () {
       this.setSensoryConstraint({
         name: this.slug,
         min: this.desiredSliderRange[0],
         max: this.desiredSliderRange[1]
-      });
-      this.$parent.close();
-      this.fetchSensoryData();
-      this.fetchRecipeData({ colorOnly: true });
+      })
+      this.$parent.close()
+      this.fetchSensoryData()
+      this.fetchRecipeData({ colorOnly: true })
     }
   }
-};
+}
 </script>
 
 <style scoped lang="scss">

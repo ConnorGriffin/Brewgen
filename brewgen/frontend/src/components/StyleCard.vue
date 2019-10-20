@@ -41,17 +41,17 @@
 </template>
 
 <script>
-import { mapActions } from 'vuex';
+import { mapActions } from 'vuex'
 
 export default {
   name: 'StyleCard',
   props: ['styleData'],
   computed: {
-    hasStats: function() {
+    hasStats: function () {
       if (this.styleData.stats.exceptions === undefined) {
-        return true;
+        return true
       } else {
-        return false;
+        return false
       }
     }
   },
@@ -62,47 +62,47 @@ export default {
       'fetchSensoryData',
       'fetchRecipeData'
     ]),
-    setCurrentStyle: function() {
+    setCurrentStyle: function () {
       // Disable the OG watcher to avoid multiple calls
-      this.$store.commit('setOgWatcherEnabled', false);
+      this.$store.commit('setOgWatcherEnabled', false)
 
       // Set the current style name, get the style grains and sensory data
-      this.$store.commit('setCurrentStyleName', this.styleData.name);
+      this.$store.commit('setCurrentStyleName', this.styleData.name)
       this.$store.dispatch('setDataFromStyle', this.styleData.slug).then(() => {
         // Set the starting target OG in the middle of the style range
         let averageOg =
           (this.$store.state.brewgen.currentStyleStats.og.low +
             this.$store.state.brewgen.currentStyleStats.og.high) /
-          2;
+          2
         this.$store.commit('setBeerProfileKey', {
           key: 'originalSg',
           value: Number(averageOg.toFixed(3))
-        });
+        })
 
         // Set the high and low SRM to be the whole style range by default
         this.$store.commit('setBeerProfileKey', {
           key: 'minSrm',
           value: this.$store.state.brewgen.currentStyleStats.srm.low
-        });
+        })
         this.$store.commit('setBeerProfileKey', {
           key: 'maxSrm',
           value: this.$store.state.brewgen.currentStyleStats.srm.high
-        });
+        })
 
         // Get the sensory and recipe data after setting everything else
-        this.fetchSensoryData();
-        this.fetchRecipeData({ colorOnly: true });
-      });
+        this.fetchSensoryData()
+        this.fetchRecipeData({ colorOnly: true })
+      })
 
       // Re-enable the OG watcher after setting values
-      this.$store.commit('setOgWatcherEnabled', true);
+      this.$store.commit('setOgWatcherEnabled', true)
     },
-    setCurrentStyleAndClose: function() {
-      this.setCurrentStyle();
-      this.$parent.$parent.close();
+    setCurrentStyleAndClose: function () {
+      this.setCurrentStyle()
+      this.$parent.$parent.close()
     }
   }
-};
+}
 </script>
 
 <style>

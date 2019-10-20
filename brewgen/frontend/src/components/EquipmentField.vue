@@ -25,36 +25,36 @@
 </template>
 
 <script>
-import EquipmentForm from '@/components/EquipmentForm.vue';
+import EquipmentForm from '@/components/EquipmentForm.vue'
 
 export default {
   name: 'EquipmentField',
   components: {
     EquipmentForm
   },
-  data() {
+  data () {
     return {
       showEditEquipmentModal: false
-    };
+    }
   },
   computed: {
     maxUniqueGrains: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.maxUniqueGrains;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.maxUniqueGrains
       }
     },
     targetVolumeGallons: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.targetVolumeGallons;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.targetVolumeGallons
       }
     },
     mashEfficiency: {
-      get() {
-        return this.$store.state.brewgen.equipmentProfile.mashEfficiency;
+      get () {
+        return this.$store.state.brewgen.equipmentProfile.mashEfficiency
       }
     }
   }
-};
+}
 </script>
 
 <style>

@@ -27,12 +27,12 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
-import Navbar from '@/components/Navbar.vue';
-import Footer from '@/components/Footer.vue';
-import EquipmentField from '@/components/EquipmentField.vue';
-import StyleField from '@/components/StyleField.vue';
-import RecipeBuilder from '@/components/RecipeBuilder.vue';
+import { mapGetters, mapActions } from 'vuex'
+import Navbar from '@/components/Navbar.vue'
+import Footer from '@/components/Footer.vue'
+import EquipmentField from '@/components/EquipmentField.vue'
+import StyleField from '@/components/StyleField.vue'
+import RecipeBuilder from '@/components/RecipeBuilder.vue'
 
 export default {
   name: 'Home',
@@ -44,8 +44,8 @@ export default {
     RecipeBuilder
   },
   filters: {
-    inCategory: function(value, categoryName) {
-      return value.filter(object => object.category == categoryName);
+    inCategory: function (value, categoryName) {
+      return value.filter(object => object.category == categoryName)
     }
   },
   methods: {
@@ -56,8 +56,8 @@ export default {
       'fetchRecipeData',
       'fetchStyles'
     ]),
-    updateRecipeData: function() {
-      this.fetchRecipeData({ colorOnly: true });
+    updateRecipeData: function () {
+      this.fetchRecipeData({ colorOnly: true })
     }
   },
   computed: {
@@ -71,7 +71,7 @@ export default {
       'currentStyleStats',
       'currentStyleName'
     ]),
-    recipeChartData: function() {
+    recipeChartData: function () {
       if (this.currentStyleStats != '') {
         var annotations = {
           xaxis: [
@@ -85,9 +85,9 @@ export default {
               }
             }
           ]
-        };
+        }
       } else {
-        var annotations = {};
+        var annotations = {}
       }
 
       // Return the data formatted for ApexCharts
@@ -121,22 +121,22 @@ export default {
             data: this.recipeColorData.map(recipe => recipe.count)
           }
         ]
-      };
+      }
     },
-    sortedStyles: function() {
-      return this.styles.sort((a, b) => (a.name > b.name ? 1 : -1));
+    sortedStyles: function () {
+      return this.styles.sort((a, b) => (a.name > b.name ? 1 : -1))
     }
   },
-  created() {
-    document.title = 'Brewgen';
-    this.fetchStyles();
+  created () {
+    document.title = 'Brewgen'
+    this.fetchStyles()
     // var prom2 = this.$store.dispatch('fetchAllGrains');
     // Promise.all([prom1, prom2]).then(() => {
     //   this.fetchSensoryData();
     //   this.fetchRecipeData({ colorOnly: true });
     // });
   }
-};
+}
 </script>
 
 <style>

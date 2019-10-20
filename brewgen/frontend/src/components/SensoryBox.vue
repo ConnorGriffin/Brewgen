@@ -25,9 +25,9 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
-import SensoryCard from '@/components/SensoryCard.vue';
-import SensoryPicker from '@/components/SensoryPicker.vue';
+import { mapGetters } from 'vuex'
+import SensoryCard from '@/components/SensoryCard.vue'
+import SensoryPicker from '@/components/SensoryPicker.vue'
 
 export default {
   name: 'SensoryBox',
@@ -35,59 +35,59 @@ export default {
     SensoryCard,
     SensoryPicker
   },
-  data() {
+  data () {
     return {
       showSensoryPicker: false,
       alwaysLoading: true
-    };
+    }
   },
   computed: {
     ...mapGetters(['currentStyleSensory', 'isLoading']),
-    sliderMin: function() {
+    sliderMin: function () {
       // Returns lowest possible min sensory value in sensory array
-      let values = [];
+      let values = []
       this.currentStyleSensory.forEach(sensoryData => {
-        values.push(sensoryData.style.min);
+        values.push(sensoryData.style.min)
         if (sensoryData.possible !== undefined) {
-          values.push(sensoryData.possible.min);
+          values.push(sensoryData.possible.min)
         }
         if (sensoryData.configured !== undefined) {
-          values.push(sensoryData.configured.min);
+          values.push(sensoryData.configured.min)
         }
-      });
-      values.sort();
-      return values[0];
+      })
+      values.sort()
+      return values[0]
     },
-    sliderMax: function() {
+    sliderMax: function () {
       // Returns highest possible max sensory value in sensory array
-      let values = [];
+      let values = []
       this.currentStyleSensory.forEach(sensoryData => {
-        values.push(sensoryData.style.max);
+        values.push(sensoryData.style.max)
         if (sensoryData.possible !== undefined) {
-          values.push(sensoryData.possible.max);
+          values.push(sensoryData.possible.max)
         }
         if (sensoryData.configured !== undefined) {
-          values.push(sensoryData.configured.max);
+          values.push(sensoryData.configured.max)
         }
-      });
-      values.sort(function(a, b) {
-        return b - a;
-      });
-      return values[0];
+      })
+      values.sort(function (a, b) {
+        return b - a
+      })
+      return values[0]
     },
-    filteredStyleSensory: function() {
+    filteredStyleSensory: function () {
       return this.currentStyleSensory.filter(sensoryData => {
         // Always show configured values
         if (sensoryData.configured !== undefined) {
-          return true;
+          return true
         } else {
           // Return items with certain tags only
-          return sensoryData.tags.map(tag => tag.value).includes('wide range');
+          return sensoryData.tags.map(tag => tag.value).includes('wide range')
         }
-      });
+      })
     }
   }
-};
+}
 </script>
 
 <style scoped>

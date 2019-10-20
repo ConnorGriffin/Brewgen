@@ -8,7 +8,7 @@
 export default {
   name: 'SensoryRadar',
   props: ['chartData']
-};
+}
 </script>
 
 <style>

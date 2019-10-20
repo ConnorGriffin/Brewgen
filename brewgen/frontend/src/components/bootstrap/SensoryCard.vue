@@ -124,33 +124,33 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex';
+import { mapActions, mapGetters } from 'vuex'
 export default {
   name: 'SensoryCard',
   props: ['sensoryData'],
-  data() {
+  data () {
     return {
       minValue: '',
       maxValue: ''
-    };
+    }
   },
-  created() {
-    this.updateSliders();
+  created () {
+    this.updateSliders()
   },
   filters: {
-    titleCase: function(value) {
-      value = value.toLowerCase().split(' ');
+    titleCase: function (value) {
+      value = value.toLowerCase().split(' ')
       for (var i = 0; i < value.length; i++) {
-        value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1);
+        value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1)
       }
-      return value.join(' ');
+      return value.join(' ')
     },
-    deslug: function(value) {
+    deslug: function (value) {
       // toasted_marshmallow -> toasted marshmallow
-      if (!value) return '';
-      value = value.toString();
-      value = value.replace('_', ' ');
-      return value.charAt(0).toUpperCase() + value.slice(1);
+      if (!value) return ''
+      value = value.toString()
+      value = value.replace('_', ' ')
+      return value.charAt(0).toUpperCase() + value.slice(1)
     }
   },
   methods: {
@@ -160,34 +160,34 @@ export default {
       'addSensoryToModel',
       'fetchRecipeData'
     ]),
-    updateSliders: function() {
+    updateSliders: function () {
       // Set the slider initial values to the min and max possible
-      this.minValue = this.sensoryData.min;
-      this.maxValue = this.sensoryData.max;
+      this.minValue = this.sensoryData.min
+      this.maxValue = this.sensoryData.max
     },
-    toggleSensoryCardLock: function() {
+    toggleSensoryCardLock: function () {
       // Remove if already in model, otherwise add
       if (this.inModel()) {
-        this.removeSensoryFromModel(this.sensoryData.name);
+        this.removeSensoryFromModel(this.sensoryData.name)
       } else {
         this.addSensoryToModel({
           name: this.sensoryData.name,
           min: this.minValue,
           max: this.maxValue
-        });
+        })
       }
-      this.fetchSensoryData();
-      this.fetchRecipeData({ colorOnly: true });
+      this.fetchSensoryData()
+      this.fetchRecipeData({ colorOnly: true })
     },
-    inModel: function() {
+    inModel: function () {
       // Return true if value is in the model, false if not
       var inModel = this.sensoryModel.find(
         sensory => sensory.name == this.sensoryData.name
-      );
+      )
       if (inModel !== undefined) {
-        return true;
+        return true
       } else {
-        return false;
+        return false
       }
     }
   },
@@ -195,12 +195,12 @@ export default {
     ...mapGetters(['sensoryModel', 'currentStyleStats'])
   },
   watch: {
-    sensoryData: function(value) {
+    sensoryData: function (value) {
       // Update the sensory sliders positions if the dat changes
-      this.updateSliders();
+      this.updateSliders()
     }
   }
-};
+}
 </script>
 
 <style>
