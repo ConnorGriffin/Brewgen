@@ -3,7 +3,7 @@
     <!-- Sensory constraint control buttons -->
     <div class="buttons">
       <b-button class="is-primary" @click="showSensoryPicker = true">Add Constraint</b-button>
-      <b-button disabled>Clear</b-button>
+      <b-button :disabled="clearDisabled()" @click="clearSensoryModel">Clear</b-button>
     </div>
     <!-- SensoryPicker modal and contents -->
     <b-modal :active.sync="showSensoryPicker" has-modal-card trap-focus scroll="keep">
@@ -35,7 +35,7 @@ export default {
     SensoryCard,
     SensoryPicker
   },
-  data () {
+  data() {
     return {
       showSensoryPicker: false,
       alwaysLoading: true
@@ -43,7 +43,7 @@ export default {
   },
   computed: {
     ...mapGetters(['currentStyleSensory', 'isLoading']),
-    sliderMin: function () {
+    sliderMin: function() {
       // Returns lowest possible min sensory value in sensory array
       let values = []
       this.currentStyleSensory.forEach(sensoryData => {
@@ -58,7 +58,7 @@ export default {
       values.sort()
       return values[0]
     },
-    sliderMax: function () {
+    sliderMax: function() {
       // Returns highest possible max sensory value in sensory array
       let values = []
       this.currentStyleSensory.forEach(sensoryData => {
@@ -70,12 +70,12 @@ export default {
           values.push(sensoryData.configured.max)
         }
       })
-      values.sort(function (a, b) {
+      values.sort(function(a, b) {
         return b - a
       })
       return values[0]
     },
-    filteredStyleSensory: function () {
+    filteredStyleSensory: function() {
       return this.currentStyleSensory.filter(sensoryData => {
         // Always show configured values
         if (sensoryData.configured !== undefined) {
@@ -85,6 +85,15 @@ export default {
           return sensoryData.tags.map(tag => tag.value).includes('wide range')
         }
       })
+    }
+  },
+  methods: {
+    clearSensoryModel: function() {},
+    clearDisabled: function() {
+      let configuredSensory = this.currentStyleSensory.filter(sensoryData => {
+        return sensoryData.configured !== undefined
+      })
+      return !(configuredSensory.length > 0)
     }
   }
 }
