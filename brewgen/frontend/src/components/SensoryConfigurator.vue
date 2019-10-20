@@ -189,7 +189,7 @@ export default {
     },
     addConstraint: function() {
       this.setSensoryConstraint({
-        name: this.name.toLowerCase(),
+        name: this.slug,
         min: this.desiredSliderRange[0],
         max: this.desiredSliderRange[1]
       });
