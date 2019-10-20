@@ -66,7 +66,7 @@ export default {
   components: {
     StyleList
   },
-  data () {
+  data() {
     return {
       showStyleListModal: false
     }
@@ -74,10 +74,10 @@ export default {
   computed: {
     ...mapGetters(['currentStyleName', 'currentStyleStats']),
     originalSg: {
-      get () {
+      get() {
         return this.$store.state.brewgen.beerProfile.originalSg
       },
-      set (value) {
+      set(value) {
         this.$store.commit('setBeerProfileKey', {
           key: 'originalSg',
           value
@@ -85,13 +85,13 @@ export default {
       }
     },
     targetSrm: {
-      get () {
+      get() {
         return [
           this.$store.state.brewgen.beerProfile.minSrm,
           this.$store.state.brewgen.beerProfile.maxSrm
         ]
       },
-      set (value) {
+      set(value) {
         this.$store.commit('setBeerProfileKey', {
           key: 'minSrm',
           value: value[0]
@@ -107,7 +107,7 @@ export default {
     ...mapActions(['fetchRecipeData'])
   },
   watch: {
-    originalSg: function (oldVal, newVal) {
+    originalSg: function(oldVal, newVal) {
       // Adding this check to avoid multiple simultaneous calls when selecting a style
       if (this.$store.state.brewgen.ogWatcherEnabled === true) {
         this.fetchRecipeData({ colorOnly: true })

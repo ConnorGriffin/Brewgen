@@ -155,21 +155,21 @@ export default {
   components: {
     SensoryConfigurator
   },
-  data () {
+  data() {
     return {
       showSensoryConfigurator: false,
       styleSliderRange: [this.sensoryData.style.min, this.sensoryData.style.max]
     }
   },
   filters: {
-    titleCase: function (value) {
+    titleCase: function(value) {
       value = value.toLowerCase().split(' ')
       for (var i = 0; i < value.length; i++) {
         value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1)
       }
       return value.join(' ')
     },
-    deslug: function (value) {
+    deslug: function(value) {
       if (!value) return ''
       value = value.toString()
       value = value.replace('_', ' ')
@@ -177,15 +177,22 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['isLoading']),
-    possibleSliderRange: function () {
-      if (this.sensoryData.possible !== undefined) {
-        return [this.sensoryData.possible.min, this.sensoryData.possible.max]
+    ...mapGetters([
+      'isLoading',
+      'lastSensoryData',
+      'lastChangedSensoryDescriptor'
+    ]),
+    possibleSliderRange: function() {
+      if (this.configuratorData.possible !== undefined) {
+        return [
+          this.configuratorData.possible.min,
+          this.configuratorData.possible.max
+        ]
       } else {
         return null
       }
     },
-    configuredSliderRange: function () {
+    configuredSliderRange: function() {
       if (this.sensoryData.configured !== undefined) {
         return [
           this.sensoryData.configured.min,
@@ -195,11 +202,21 @@ export default {
         return null
       }
     },
-    configuratorMode: function () {
+    configuratorMode: function() {
       if (this.sensoryData.configured !== undefined) {
         return 'edit'
       } else {
         return null
+      }
+    },
+    configuratorData: function() {
+      if (
+        this.sensoryData.configured !== undefined &&
+        this.lastChangedSensoryDescriptor === this.slug
+      ) {
+        return this.lastSensoryData(this.slug)
+      } else {
+        return this.sensoryData
       }
     }
   },
@@ -210,7 +227,7 @@ export default {
       'fetchSensoryDataEdit',
       'fetchRecipeData'
     ]),
-    sliderTicks: function (min, max) {
+    sliderTicks: function(min, max) {
       if (max - min >= this.tickSpace) {
         return [
           {
@@ -238,7 +255,7 @@ export default {
         ]
       }
     },
-    startingRange: function () {
+    startingRange: function() {
       // Set the starting range to the configured value if one exists
       if (this.sensoryData.configured !== undefined) {
         return [
@@ -251,13 +268,16 @@ export default {
         return null
       }
     },
-    removeSensory: function (value) {
+    removeSensory: function(value) {
       this.removeSensoryConstraint(value)
       this.fetchSensoryData()
       this.fetchRecipeData({ colorOnly: true })
     },
-    editSensory: function () {
-      this.fetchSensoryDataEdit(this.sensoryData.name)
+    editSensory: function() {
+      // Only fetch sensory data if we aren't editing the last changed value
+      if (this.lastChangedSensoryDescriptor !== this.sensoryData.name) {
+        this.fetchSensoryDataEdit(this.sensoryData.name)
+      }
       this.showSensoryConfigurator = true
     }
   }

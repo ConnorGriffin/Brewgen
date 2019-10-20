@@ -28,7 +28,7 @@ const state = {
   // Current style sensory stats with a single descriptor's configured values nulled
   currentStyleSensoryEdit: null,
   // Current style sensory previous to the most recent change
-  previousStyleSensoryEdit: null,
+  lastSensoryData: null,
   // Slug of the sensory keyword that was most most recently changed
   lastChangedSensoryDescriptor: null,
   styleListFilter: '',
@@ -62,11 +62,15 @@ const getters = {
     } else {
       return false
     }
-  }
+  },
+  lastSensoryData: state => sensoryName => {
+    return state.lastSensoryData.find(sensoryData => sensoryData.name === sensoryName)
+  },
+  lastChangedSensoryDescriptor: state => state.lastChangedSensoryDescriptor
 }
 
 const actions = {
-  async fetchGrainCategories ({ commit }) {
+  async fetchGrainCategories({ commit }) {
     return axios
       .get('http://10.31.36.49:5000/api/v1/style-data/grains/categories')
       .then(response => {
@@ -77,10 +81,10 @@ const actions = {
         throw err
       })
   },
-  updateGrainCategoryValue ({ commit }, grainCategory, key, value) {
+  updateGrainCategoryValue({ commit }, grainCategory, key, value) {
     commit('setGrainCategoryValue', grainCategory, key, value)
   },
-  async fetchAllGrains ({ commit }) {
+  async fetchAllGrains({ commit }) {
     return axios
       .get('http://10.31.36.49:5000/api/v1/grains')
       .then(response => {
@@ -91,10 +95,10 @@ const actions = {
         throw err
       })
   },
-  updateEquipmentProfile ({ commit }, maxUniqueGrains, targetVolumeGallons, mashEfficiency) {
+  updateEquipmentProfile({ commit }, maxUniqueGrains, targetVolumeGallons, mashEfficiency) {
     commit('updateEquipmentProfile', maxUniqueGrains, targetVolumeGallons, mashEfficiency)
   },
-  async fetchSensoryData ({ commit }) {
+  async fetchSensoryData({ commit }) {
     commit('setLoader', {
       name: 'sensoryData',
       loading: true
@@ -133,7 +137,7 @@ const actions = {
         throw err
       })
   },
-  async fetchSensoryDataEdit ({ commit }, name) {
+  async fetchSensoryDataEdit({ commit }, name) {
     // Fetches current style sensory data but excludes configured values for a single descriptor
     commit('setLoader', {
       name: 'sensoryDataEdit',
@@ -173,7 +177,7 @@ const actions = {
         throw err
       })
   },
-  async fetchRecipeData ({ commit }, { colorOnly }) {
+  async fetchRecipeData({ commit }, { colorOnly }) {
     commit('setLoader', {
       name: 'recipeData',
       loading: true
@@ -237,7 +241,7 @@ const actions = {
         throw err
       })
   },
-  async fetchStyles ({ commit }) {
+  async fetchStyles({ commit }) {
     commit('setLoader', {
       name: 'styles',
       loading: true
@@ -256,7 +260,7 @@ const actions = {
         throw err
       })
   },
-  async setDataFromStyle ({ commit }, styleSlug) {
+  async setDataFromStyle({ commit }, styleSlug) {
     commit('resetData')
     return axios
       .get('http://10.31.36.49:5000/api/v1/styles/' + styleSlug)
@@ -294,13 +298,13 @@ const actions = {
         throw err
       })
   },
-  removeSensoryConstraint ({ commit }, name) {
+  removeSensoryConstraint({ commit }, name) {
     commit('removeSensoryConstraint', name)
   },
-  addSensoryToModel ({ commit }, name, min, max) {
+  addSensoryToModel({ commit }, name, min, max) {
     commit('addSensoryToModel', name, min, max)
   },
-  setSensoryConstraint ({ commit }, name, min, max) {
+  setSensoryConstraint({ commit }, name, min, max) {
     commit('setSensoryConstraint', name, min, max)
   }
 }
@@ -420,13 +424,13 @@ const mutations = {
     var matchGrain = state.allGrains.find(grain => grain.slug == slug)
     Object.assign(matchGrain, { enabled })
   },
-  removeSensoryConstraint (state, name) {
+  removeSensoryConstraint(state, name) {
     let sensoryObj = state.currentStyleSensory.find(object => object.name == name)
     if (sensoryObj.configured !== undefined) {
       delete sensoryObj.configured
     }
   },
-  addSensoryToModel (state, { name, min, max }) {
+  addSensoryToModel(state, { name, min, max }) {
     // Remove if already exists, just to be safe
     var modelObject = state.sensoryModel.find(object => object.name == name)
     if (modelObject !== undefined) {
@@ -440,22 +444,22 @@ const mutations = {
       max: parseFloat(max)
     })
   },
-  setStyles (state, value) {
+  setStyles(state, value) {
     state.styles = value
   },
-  setCurrentStyleName (state, value) {
+  setCurrentStyleName(state, value) {
     state.currentStyleName = value
   },
-  setCurrentStyleStats (state, value) {
+  setCurrentStyleStats(state, value) {
     state.currentStyleStats = value
   },
-  setStyleListFilter (state, value) {
+  setStyleListFilter(state, value) {
     state.styleListFilter = value
   },
-  setOgWatcherEnabled (state, value) {
+  setOgWatcherEnabled(state, value) {
     state.ogWatcherEnabled = value
   },
-  setLoader (state, { name, loading }) {
+  setLoader(state, { name, loading }) {
     // Creates or updates a loader's status
     let loader = state.loaders.find(loader => loader.name === name)
     if (loader !== undefined) {
@@ -466,13 +470,21 @@ const mutations = {
       })
     }
   },
-  resetData (state) {
+  setLastSensoryData(state) {
+    state.lastSensoryData = JSON.parse(JSON.stringify(state.currentStyleSensory))
+  },
+  setLastChangedSensoryDescriptor(state, value) {
+    state.lastChangedSensoryDescriptor = value
+  },
+  resetData(state) {
     state.allGrains = []
     state.sensoryData = []
     state.recipeData = []
     state.grainCategories = []
     state.currentStyleSensory = ''
     state.currentStyleStats = ''
+    state.lastChangedSensoryDescriptor = null
+    state.lastSensoryData = null
   }
 }
 

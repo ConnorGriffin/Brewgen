@@ -120,29 +120,38 @@ export default {
     sliderMax: Number,
     mode: String
   },
-  data () {
+  data() {
     return {
       desiredSliderRange: null
     }
   },
   computed: {
-    ...mapGetters(['isLoading', 'currentStyleSensoryEdit']),
-    possibleSliderRange: function () {
+    ...mapGetters([
+      'isLoading',
+      'currentStyleSensoryEdit',
+      'lastChangedSensoryDescriptor',
+      'lastSensoryData'
+    ]),
+    possibleSliderRange: function() {
       if (this.mode == 'edit' && this.isLoading('sensoryDataEdit') === false) {
-        let editData = this.currentStyleSensoryEdit(this.slug)
+        if (this.lastChangedSensoryDescriptor === this.slug) {
+          var editData = this.lastSensoryData(this.slug)
+        } else {
+          var editData = this.currentStyleSensoryEdit(this.slug)
+        }
         return [editData.possible.min, editData.possible.max]
       } else {
         return this.possibleRange
       }
     },
-    sliderMinComp: function () {
+    sliderMinComp: function() {
       return Math.min(this.sliderMin, this.possibleSliderRange[0])
     },
-    sliderMaxComp: function () {
+    sliderMaxComp: function() {
       return Math.max(this.sliderMax, this.possibleSliderRange[1])
     }
   },
-  created () {
+  created() {
     // Set the starting values if provided, set upper and lower limits to the possibleRange
     if (this.startingRange) {
       this.desiredSliderRange = [
@@ -159,7 +168,7 @@ export default {
       'fetchSensoryData',
       'fetchRecipeData'
     ]),
-    sliderTicks: function (min, max) {
+    sliderTicks: function(min, max) {
       if (max - min >= this.tickSpace) {
         return [
           {
@@ -187,13 +196,17 @@ export default {
         ]
       }
     },
-    addConstraint: function () {
+    addConstraint: function() {
       this.setSensoryConstraint({
         name: this.slug,
         min: this.desiredSliderRange[0],
         max: this.desiredSliderRange[1]
       })
       this.$parent.close()
+      // Save a snapshot of the current sensory data and save the most recently changed descriptor name
+      this.$store.commit('setLastSensoryData')
+      this.$store.commit('setLastChangedSensoryDescriptor', this.slug)
+      // Update recipe and sensory data
       this.fetchSensoryData()
       this.fetchRecipeData({ colorOnly: true })
     }
