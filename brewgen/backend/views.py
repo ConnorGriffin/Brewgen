@@ -135,7 +135,7 @@ def get_grain_list_sensory_values():
     # Create a grain object from the list of slugs
     fermentable_list = []
     for fermentable in data.get('grain_list', []):
-        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])[0]
+        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])
         fermentable_obj.set_usage(
             fermentable['min_percent'], fermentable['max_percent'])
         fermentable_list.append(fermentable_obj)
@@ -178,11 +178,12 @@ def get_grain_list_recipes():
     }
     """
     data = request.json
+    print(data)
 
     # Create a grain object from the list of slugs
     fermentable_list = []
     for fermentable in data.get('grain_list', []):
-        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])[0]
+        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])
         fermentable_obj.set_usage(
             fermentable['min_percent'], fermentable['max_percent'])
         fermentable_list.append(fermentable_obj)

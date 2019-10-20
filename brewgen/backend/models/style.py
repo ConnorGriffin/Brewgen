@@ -156,8 +156,8 @@ class StyleModel:
             style_sensory_data = []
 
             for grain_data in style['grain_usage']:
-                matching_grain = grain.GrainModel.get_grain_by_slug(grain.GrainModel(), grain_data['slug'])[
-                    0]
+                matching_grain = grain.GrainModel.get_grain_by_slug(
+                    grain.GrainModel(), grain_data['slug'])
                 style_grain_list.append(grain.Grain(
                     name=matching_grain.name,
                     brand=matching_grain.brand,

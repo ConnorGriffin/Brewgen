@@ -74,18 +74,33 @@ class GrainModel:
         """Return a list of grain objects belonging to the specified categories."""
         return [grain for grain in self.grain_list if grain.category in category]
 
-    def get_grain_by_slug(self, grain_slugs):
-        return [grain for grain in self.grain_list if grain.slug in grain_slugs]
+    def get_grain_by_slug(self, grain_slug):
+        if type(grain_slug) is str:
+            result = [
+                grain for grain in self.grain_list if grain.slug == grain_slug]
+            if result:
+                return result[0]
+        elif type(grain_slug) is list:
+            result = []
+            for slug in grain_slug:
+                for grain in self.grain_list:
+                    if grain.slug == slug:
+                        result.append(grain)
+            if result:
+                return result
 
     def get_grain_by_name(self, grain_name):
         if type(grain_name) is str:
             result = [
-                grain for grain in self.grain_list if grain.name in [grain_name]]
+                grain for grain in self.grain_list if grain.name == grain_name]
             if result:
                 return result[0]
-        elif type(grain_name) is dict:
-            result = [
-                grain for grain in self.grain_list if grain.name in grain_name]
+        elif type(grain_name) is list:
+            result = []
+            for name in grain_name:
+                for grain in self.grain_list:
+                    if grain.name == name:
+                        result.append(grain)
             if result:
                 return result
 
