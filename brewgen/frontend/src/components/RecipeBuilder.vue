@@ -2,7 +2,7 @@
   <div class="container">
     <h1 class="title is-size-5">Recipe Designer</h1>
     <div class="columns">
-      <!-- Sensory Contstraint Buuidler -->
+      <!-- Sensory Constraint Buuidler -->
       <div class="column is-4">
         <SensoryBox v-if="currentStyleSensory !== ''" />
       </div>

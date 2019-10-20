@@ -5,23 +5,31 @@
       <!-- Control buttons on top right -->
       <span class="is-pulled-right">
         <!-- Show edit and delete buttons if type is 'added' -->
-        <b-button size="is-small" style="margin-right: .5rem" v-if="type === 'added'">Edit</b-button>
-        <a class="delete is-medium" v-if="type === 'added'"></a>
+        <b-button
+          size="is-small"
+          style="margin-right: .5rem"
+          v-if="sensoryData.configured !== undefined"
+        >Edit</b-button>
+        <a
+          class="delete is-medium"
+          v-if="sensoryData.configured !== undefined"
+          @click="removeSensory(sensoryData.name)"
+        ></a>
 
-        <!-- Show an Add button if type is 'picker' -->
+        <!-- Show an Add button if not configured -->
         <b-button
           size="is-small"
           type="is-primary"
           outlined
-          v-if="type === 'picker'"
           @click="showSensoryConfigurator = true"
+          v-if="sensoryData.configured === undefined"
         >Add to model</b-button>
         <b-modal
           :active.sync="showSensoryConfigurator"
           has-modal-card
           trap-focus
           scroll="keep"
-          v-if="possibleSliderRange !== ''"
+          v-if="possibleSliderRange !== null"
         >
           <SensoryConfigurator
             :styleRange="[sensoryData.style.min, sensoryData.style.max]"
@@ -41,14 +49,18 @@
       <div>
         <!-- Style Baseline - Show always -->
         <div class="style-sliders">
-          <div
-            class="columns is-gapless is-vcentered is-multiline is-vcentered is-mobile card-columns"
-          >
-            <!-- Style Range -->
-            <div class="column is-one-third">
+          <div class="columns is-gapless is-mobile card-columns">
+            <div class="column is-narrow">
               <h1 class="title is-7">Style</h1>
+              <h1
+                class="title is-7"
+                v-if="sensoryData.possible !== undefined && sensoryData.configured === undefined"
+              >Possible</h1>
+              <h1 class="title is-7" v-if="sensoryData.configured !== undefined">Desired</h1>
             </div>
-            <div class="column is-two-thirds">
+
+            <div class="column">
+              <!-- Style Range -->
               <b-slider
                 v-model="styleSliderRange"
                 :min="sliderMin"
@@ -56,7 +68,7 @@
                 disabled
                 size="is-small"
                 type="is-rosewood"
-                style="padding-left: 1rem; padding-right: 1rem"
+                class="is-style-slider is-slider"
               >
                 <b-slider-tick
                   v-for="(tick, index) in sliderTicks(sensoryData.style.min, sensoryData.style.max)"
@@ -65,13 +77,8 @@
                   class="is-tick-hidden"
                 >{{ tick.label }}</b-slider-tick>
               </b-slider>
-            </div>
 
-            <!-- Possible Range -->
-            <div class="column is-one-third" v-if="possibleSliderRange !== '' && type==='picker'">
-              <h1 class="title is-7">Possible</h1>
-            </div>
-            <div class="column is-two-thirds" v-if="possibleSliderRange !== '' && type==='picker'">
+              <!-- Possible Range -->
               <b-slider
                 v-model="possibleSliderRange"
                 :min="sliderMin"
@@ -79,7 +86,8 @@
                 disabled
                 size="is-small"
                 type="is-info"
-                style="padding-left: 1rem; padding-right: 1rem"
+                class="is-slider"
+                v-if="sensoryData.possible !== undefined && sensoryData.configured === undefined"
               >
                 <b-slider-tick
                   v-for="(tick, index) in sliderTicks(sensoryData.possible.min, sensoryData.possible.max)"
@@ -88,13 +96,8 @@
                   class="is-tick-hidden"
                 >{{ tick.label }}</b-slider-tick>
               </b-slider>
-            </div>
 
-            <!-- Configured Range -->
-            <div class="column is-one-third" v-if="configuredSliderRange !== ''">
-              <h1 class="title is-7">Desired</h1>
-            </div>
-            <div class="column is-two-thirds" v-if="configuredSliderRange !== ''">
+              <!-- Configured Range -->
               <b-slider
                 v-model="configuredSliderRange"
                 :min="sliderMin"
@@ -102,7 +105,8 @@
                 disabled
                 size="is-small"
                 type="is-primary"
-                style="padding-left: 1rem; padding-right: 1rem"
+                class="is-slider"
+                v-if="sensoryData.configured !== undefined"
               >
                 <b-slider-tick
                   v-for="(tick, index) in sliderTicks(sensoryData.configured.min, sensoryData.configured.max)"
@@ -129,7 +133,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import { mapGetters, mapActions } from 'vuex';
 import SensoryConfigurator from '@/components/SensoryConfigurator.vue';
 
 export default {
@@ -152,11 +156,12 @@ export default {
         this.sensoryData.style.min,
         this.sensoryData.style.max
       ],
-      possibleSliderRange: '',
-      configuredSliderRange: ''
+      possibleSliderRange: null,
+      configuredSliderRange: null
     };
   },
   created() {
+    // Set slider values on created(), only used by Picker screen, not used by constraint builder/box
     if (this.sensoryData.possible !== undefined) {
       this.possibleSliderRange = [
         this.sensoryData.possible.min,
@@ -174,11 +179,15 @@ export default {
     'sensoryData.configured': function(value) {
       if (value !== undefined) {
         this.configuredSliderRange = [value.min, value.max];
+      } else {
+        this.configuredSliderRange = null;
       }
     },
     'sensoryData.possible': function(value) {
       if (value !== undefined) {
         this.possibleSliderRange = [value.min, value.max];
+      } else {
+        this.possibleSliderRange = null;
       }
     }
   },
@@ -201,6 +210,11 @@ export default {
     ...mapGetters(['isLoading'])
   },
   methods: {
+    ...mapActions([
+      'removeSensoryConstraint',
+      'fetchSensoryData',
+      'fetchRecipeData'
+    ]),
     sliderTicks: function(min, max) {
       if (max - min >= this.tickSpace) {
         return [
@@ -228,6 +242,11 @@ export default {
           }
         ];
       }
+    },
+    removeSensory: function(value) {
+      this.removeSensoryConstraint(value);
+      this.fetchSensoryData();
+      this.fetchRecipeData({ colorOnly: true });
     }
   }
 };
@@ -257,5 +276,16 @@ export default {
 }
 .card >>> .b-slider-thumb {
   display: none;
+}
+.is-style-slider {
+  margin-bottom: 2rem;
+  margin-top: 0.25rem;
+}
+.is-slider {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+.card >>> .column {
+  margin-top: 0.5rem;
 }
 </style>

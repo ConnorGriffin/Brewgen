@@ -241,8 +241,8 @@ const actions = {
         throw err
       })
   },
-  removeSensoryFromModel({ commit }, name) {
-    commit('removeSensoryFromModel', name)
+  removeSensoryConstraint({ commit }, name) {
+    commit('removeSensoryConstraint', name)
   },
   addSensoryToModel({ commit }, name, min, max) {
     commit('addSensoryToModel', name, min, max)
@@ -350,11 +350,10 @@ const mutations = {
     var matchGrain = state.allGrains.find(grain => grain.slug == slug)
     Object.assign(matchGrain, { enabled })
   },
-  removeSensoryFromModel(state, name) {
-    var modelObject = state.sensoryModel.find(object => object.name == name)
-    if (modelObject !== undefined) {
-      var index = state.sensoryModel.indexOf(modelObject)
-      state.sensoryModel.splice(index)
+  removeSensoryConstraint(state, name) {
+    let sensoryObj = state.currentStyleSensory.find(object => object.name == name)
+    if (sensoryObj.configured !== undefined) {
+      delete sensoryObj.configured
     }
   },
   addSensoryToModel(state, { name, min, max }) {

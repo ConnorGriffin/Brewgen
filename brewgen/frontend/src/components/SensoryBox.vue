@@ -17,7 +17,6 @@
         :sensoryData="sensoryData"
         :sliderMin="sliderMin"
         :sliderMax="sliderMax"
-        type="picker"
         cardBg="white"
         :tickSpace="1"
       />

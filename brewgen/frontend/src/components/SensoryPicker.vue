@@ -22,7 +22,6 @@
           :sensoryData="sensoryData"
           :sliderMin="sliderMin"
           :sliderMax="sliderMax"
-          type="picker"
           cardBg="light"
           :tickSpace="0.2"
         />
