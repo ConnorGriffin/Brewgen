@@ -12,6 +12,7 @@
         <b-button
           size="is-small"
           type="is-primary"
+          outlined
           v-if="type === 'picker'"
           @click="showSensoryConfigurator = true"
         >Add to model</b-button>
@@ -40,7 +41,9 @@
       <div>
         <!-- Style Baseline - Show always -->
         <div class="style-sliders">
-          <div class="columns is-gapless is-vcentered is-multiline is-vcentered card-columns">
+          <div
+            class="columns is-gapless is-vcentered is-multiline is-vcentered is-mobile card-columns"
+          >
             <!-- Style Range -->
             <div class="column is-one-third">
               <h1 class="title is-7">Style</h1>
