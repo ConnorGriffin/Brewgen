@@ -44,7 +44,7 @@ export default {
   },
   computed: {
     ...mapGetters(['currentStyleSensory']),
-    sliderMin: function () {
+    sliderMin: function() {
       // Returns lowest possible min sensory value in sensory array
       let values = []
       this.currentStyleSensory.forEach(sensoryData => {
@@ -59,7 +59,7 @@ export default {
       values.sort()
       return values[0]
     },
-    sliderMax: function () {
+    sliderMax: function() {
       // Returns highest possible max sensory value in sensory array
       let values = []
       this.currentStyleSensory.forEach(sensoryData => {
@@ -71,7 +71,7 @@ export default {
           values.push(sensoryData.configured.max)
         }
       })
-      values.sort(function (a, b) {
+      values.sort(function(a, b) {
         return b - a
       })
       return values[0]

@@ -39,11 +39,11 @@
             :possibleRange="possibleSliderRange"
             :name="sensoryData.name | deslug | titleCase"
             :slug="sensoryData.name"
-            :tickSpace="tickSpace"
+            :tickSpace=".2"
             :sliderMin="sliderMin"
             :sliderMax="sliderMax"
             :startingRange="startingRange()"
-            :mode="configuratorMode"
+            :mode="configuratorMode()"
           />
         </b-modal>
       </span>
@@ -202,13 +202,6 @@ export default {
         return null
       }
     },
-    configuratorMode: function() {
-      if (this.sensoryData.configured !== undefined) {
-        return 'edit'
-      } else {
-        return null
-      }
-    },
     configuratorData: function() {
       if (
         this.sensoryData.configured !== undefined &&
@@ -279,6 +272,13 @@ export default {
         this.fetchSensoryDataEdit(this.sensoryData.name)
       }
       this.showSensoryConfigurator = true
+    },
+    configuratorMode: function() {
+      if (this.sensoryData.configured !== undefined) {
+        return 'edit'
+      } else {
+        return null
+      }
     }
   }
 }
