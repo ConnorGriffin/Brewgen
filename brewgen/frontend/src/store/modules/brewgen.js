@@ -303,6 +303,9 @@ const actions = {
   },
   setSensoryConstraint({ commit }, name, min, max) {
     commit('setSensoryConstraint', name, min, max)
+  },
+  removeSensoryConstraint({ commit }, name) {
+    commit('removeSensoryConstraint', name)
   }
 }
 
