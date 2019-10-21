@@ -298,9 +298,6 @@ const actions = {
         throw err
       })
   },
-  removeSensoryConstraint({ commit }, name) {
-    commit('removeSensoryConstraint', name)
-  },
   addSensoryToModel({ commit }, name, min, max) {
     commit('addSensoryToModel', name, min, max)
   },
@@ -477,6 +474,12 @@ const mutations = {
   },
   setLastChangedSensoryDescriptor(state, value) {
     state.lastChangedSensoryDescriptor = value
+  },
+  clearSensoryConfiguredValues(state) {
+    // Remove all configured sensory values
+    state.currentStyleSensory.forEach(sensoryData => {
+      delete sensoryData.configured
+    })
   },
   resetData(state) {
     state.allGrains = []

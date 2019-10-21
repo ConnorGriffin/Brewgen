@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapActions, mapGetters } from 'vuex'
 import SensoryCard from '@/components/SensoryCard.vue'
 import SensoryPicker from '@/components/SensoryPicker.vue'
 
@@ -88,7 +88,12 @@ export default {
     }
   },
   methods: {
-    clearSensoryModel: function() {},
+    ...mapActions(['fetchSensoryData', 'fetchRecipeData']),
+    clearSensoryModel: function() {
+      this.$store.commit('clearSensoryConfiguredValues')
+      this.fetchSensoryData()
+      this.fetchRecipeData({ colorOnly: true })
+    },
     clearDisabled: function() {
       let configuredSensory = this.currentStyleSensory.filter(sensoryData => {
         return sensoryData.configured !== undefined
