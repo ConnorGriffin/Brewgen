@@ -49,7 +49,20 @@
       </span>
 
       <!-- Descriptor name -->
-      <span class="has-text-weight-semibold">{{ sensoryData.name | deslug | titleCase }}</span>
+      <div>
+        <span class="has-text-weight-semibold">{{ sensoryData.name | deslug | titleCase }}</span>
+        <b-collapse :open="false" position="is-bottom">
+          <a slot="trigger" slot-scope="props">
+            <b-icon :icon="!props.open ? 'angle-down' : 'angle-up'"></b-icon>
+            {{ !props.open ? '' : 'Hide' }}
+          </a>
+          <p>
+            Moderate malty-sweet to malty-rich aroma with chocolate, caramel, nutty, and/or toasty qualities.
+            Medium to moderately-high malty-sweet or malty-rich flavor with chocolate, caramel, nutty,
+            and/or toasty malt complexity, with medium to medium-high bitterness.
+          </p>
+        </b-collapse>
+      </div>
 
       <!-- Descriptor values -->
       <div>
@@ -322,5 +335,9 @@ export default {
 }
 .delete {
   margin-top: 0.1rem;
+}
+.collapse {
+  display: inline;
+  margin-left: 0.25rem;
 }
 </style>
