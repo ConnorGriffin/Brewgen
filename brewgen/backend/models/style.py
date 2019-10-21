@@ -1,5 +1,6 @@
 import json
 import os.path
+import re
 from slugify import slugify
 from . import grain, category
 
@@ -28,6 +29,9 @@ class Style:
         self.category_list = category_list
         self.sensory_data = sensory_data
         self.exceptions = self.stats.get('exceptions', None)
+
+    def __contains_word(self, string, word):
+        return re.compile(r'\b({0}..?)\b'.format(word), flags=re.IGNORECASE).search(string)
 
     def get_style_data(self):
         """Return the style in dict format"""
@@ -127,6 +131,40 @@ class Style:
                     'high': abv[1]
                 }
             }
+
+    def get_bjcp_sensory_descriptors(self):
+        """Return sensory descriptors mentioned in the BJCP data."""
+        grain_model = grain.GrainModel()
+        keywords = grain_model.get_sensory_keywords()
+        aroma = {}
+        flavor = {}
+        aroma_sentences = self.aroma.split('.')
+        flavor_sentences = self.flavor.split('.')
+
+        for slug in keywords:
+            keyword = slug.replace('_', ' ')
+
+            aroma_keyword_sentences = []
+            flavor_keyword_sentences = []
+
+            for sentence in aroma_sentences:
+                if self.__contains_word(sentence, keyword):
+                    aroma_keyword_sentences.append(sentence.strip())
+
+            for sentence in flavor_sentences:
+                if self.__contains_word(sentence, keyword):
+                    flavor_keyword_sentences.append(sentence.strip())
+
+            if len(aroma_keyword_sentences) > 0:
+                aroma[slug] = aroma_keyword_sentences
+
+            if len(flavor_keyword_sentences) > 0:
+                flavor[slug] = flavor_keyword_sentences
+
+        return {
+            'aroma': aroma,
+            'flavor': flavor
+        }
 
 
 class StyleModel:

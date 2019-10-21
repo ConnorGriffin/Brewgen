@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 from .models import grain, beer, category, equipment, style
 from flask_cors import CORS
+from difflib import SequenceMatcher
 
 app = Flask(__name__,
             static_folder='../dist/static',
@@ -91,6 +92,41 @@ def get_style_grain_data(style_slug):
     """Grain data for a single style"""
     style_object = all_styles.get_style_by_slug(style_slug)
     return jsonify(style_object.grain_list.get_grain_list(), 200)
+
+
+@app.route('/api/v1/styles/<style_slug>/bjcp-sensory', methods=['GET'])
+def get_style_bjcp_descriptors(style_slug):
+    """Grain data for a single style"""
+    style_object = all_styles.get_style_by_slug(style_slug)
+    bjcp_sensory = style_object.get_bjcp_sensory_descriptors()
+    response = {}
+
+    # Get a unique  list of keywords in both datasets, probably a better way to do this...
+    keywords = []
+    for attrib in ['flavor', 'aroma']:
+        for key, _ in bjcp_sensory[attrib].items():
+            keywords.append(key)
+    keywords = list(set(keywords))
+
+    # Build the response {'keyword': [sentences]}
+    for keyword in keywords:
+        # Get all the sentences, then remove ones that are too similar (many flavor and aroma sentences are nearly identical)
+        aroma_sentences = bjcp_sensory['aroma'].get(keyword, [])
+        flavor_sentences = bjcp_sensory['flavor'].get(keyword, [])
+        keyword_sentences = aroma_sentences + flavor_sentences
+        for sentence in keyword_sentences:
+            sans_sentence = [s for s in keyword_sentences if s != sentence]
+            seq = SequenceMatcher()
+            seq.set_seq1(sentence.lower())
+            for compare_sentence in sans_sentence:
+                seq.set_seq2(compare_sentence.lower())
+                ratio = seq.ratio() * 100
+                if ratio >= 80:
+                    keyword_sentences.remove(compare_sentence)
+
+        response[keyword] = keyword_sentences
+
+    return jsonify(response), 200
 
 
 @app.route('/api/v1/style-data/grains/categories/<category_name>', methods=['GET'])
