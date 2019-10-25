@@ -77,13 +77,43 @@ def get_style_data(style_slug):
     """Data for a single style"""
     style_object = all_styles.get_style_by_slug(style_slug)
 
+    # Format the BJCP sensory data
+    bjcp_sensory = style_object.get_bjcp_sensory_descriptors()
+    bjcp_sensory_response = {}
+
+    # Get a unique  list of keywords in both datasets, probably a better way to do this...
+    keywords = []
+    for attrib in ['flavor', 'aroma']:
+        for key, _ in bjcp_sensory[attrib].items():
+            keywords.append(key)
+    keywords = list(set(keywords))
+
+    # Build the response {'keyword': [sentences]}
+    for keyword in keywords:
+        # Get all the sentences, then remove ones that are too similar (many flavor and aroma sentences are nearly identical)
+        aroma_sentences = bjcp_sensory['aroma'].get(keyword, [])
+        flavor_sentences = bjcp_sensory['flavor'].get(keyword, [])
+        keyword_sentences = aroma_sentences + flavor_sentences
+        for sentence in keyword_sentences:
+            sans_sentence = [s for s in keyword_sentences if s != sentence]
+            seq = SequenceMatcher()
+            seq.set_seq1(sentence.lower())
+            for compare_sentence in sans_sentence:
+                seq.set_seq2(compare_sentence.lower())
+                ratio = seq.ratio() * 100
+                if ratio >= 80:
+                    keyword_sentences.remove(compare_sentence)
+
+        bjcp_sensory_response[keyword] = keyword_sentences
+
     return jsonify({
         'name': style_object.name,
         'slug': style_object.slug,
         'stats': style_object.get_stats(),
         'grain_usage': style_object.get_grain_usage(),
         'category_usage': style_object.get_category_usage(),
-        'sensory_data': style_object.sensory_data
+        'sensory_data': style_object.sensory_data,
+        'bjcp_sensory': bjcp_sensory_response
     }), 200
 
 

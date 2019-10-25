@@ -49,7 +49,7 @@
         </b-field>
         <b-field label="Desired" custom-class="is-size-7 has-text-grey">
           <b-slider
-            v-model="desiredSliderRange"
+            :value="desiredSliderRange"
             :min="sliderMinComp"
             :max="sliderMaxComp"
             type="is-primary"

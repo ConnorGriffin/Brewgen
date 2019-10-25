@@ -82,7 +82,11 @@ export default {
           return true
         } else {
           // Return items with certain tags only
-          return sensoryData.tags.map(tag => tag.value).includes('wide range')
+          var validTags = ['wide range', 'mentioned in style']
+          let matchTags = sensoryData.tags.filter(tag => {
+            return validTags.includes(tag.value)
+          })
+          return matchTags.length > 0
         }
       })
     }

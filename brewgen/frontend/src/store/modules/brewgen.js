@@ -20,6 +20,10 @@ const state = {
   styles: [],
   currentStyleName: 'None Selected',
   currentStyleStats: '',
+  styleListFilter: '',
+  ogWatcherEnabled: false,
+  // Sensory descriptors that are mentioned in the BJCP style guide
+  bjcpSensory: null,
   // Need to work on saving the previous state so editing is faster in two scenerios:
   // 1. When editing the most recently set descriptor
   // 2. When re-editing a value that we clicked edit on but did not save changes, no need to recalc
@@ -31,8 +35,6 @@ const state = {
   lastSensoryData: null,
   // Slug of the sensory keyword that was most most recently changed
   lastChangedSensoryDescriptor: null,
-  styleListFilter: '',
-  ogWatcherEnabled: false,
   // State of application API calls, used to set spinners and progress bars
   loaders: []
 }
@@ -289,6 +291,7 @@ const actions = {
         }
         commit('setAllGrainsFromStyle', response.data.grain_usage)
         commit('setGrainCategories', response.data.category_usage)
+        commit('setBjcpSensory', response.data.bjcp_sensory)
         commit('setCurrentStyleSensory', response.data.sensory_data)
         // commit('setSensoryModel', response.data.sensory_data)
         commit('setCurrentStyleStats', stats)
@@ -370,6 +373,12 @@ const mutations = {
           sensoryReturn.tags.push({
             value: 'narrow range',
             type: 'is-warning'
+          })
+        }
+        if (Object.keys(state.bjcpSensory).includes(sensoryValue.name)) {
+          sensoryReturn.tags.push({
+            value: 'mentioned in style',
+            type: 'is-primary'
           })
         }
         return sensoryReturn
@@ -483,6 +492,9 @@ const mutations = {
     state.currentStyleSensory.forEach(sensoryData => {
       delete sensoryData.configured
     })
+  },
+  setBjcpSensory(state, value) {
+    state.bjcpSensory = value
   },
   resetData(state) {
     state.allGrains = []

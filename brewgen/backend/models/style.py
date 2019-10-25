@@ -149,11 +149,11 @@ class Style:
 
             for sentence in aroma_sentences:
                 if self.__contains_word(sentence, keyword):
-                    aroma_keyword_sentences.append(sentence.strip())
+                    aroma_keyword_sentences.append(sentence.strip() + '.')
 
             for sentence in flavor_sentences:
                 if self.__contains_word(sentence, keyword):
-                    flavor_keyword_sentences.append(sentence.strip())
+                    flavor_keyword_sentences.append(sentence.strip() + '.')
 
             if len(aroma_keyword_sentences) > 0:
                 aroma[slug] = aroma_keyword_sentences

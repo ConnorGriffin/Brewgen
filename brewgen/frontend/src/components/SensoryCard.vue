@@ -51,17 +51,7 @@
       <!-- Descriptor name -->
       <div>
         <span class="has-text-weight-semibold">{{ sensoryData.name | deslug | titleCase }}</span>
-        <b-collapse :open="false" position="is-bottom">
-          <a slot="trigger" slot-scope="props">
-            <b-icon :icon="!props.open ? 'angle-down' : 'angle-up'"></b-icon>
-            {{ !props.open ? '' : 'Hide' }}
-          </a>
-          <p>
-            Moderate malty-sweet to malty-rich aroma with chocolate, caramel, nutty, and/or toasty qualities.
-            Medium to moderately-high malty-sweet or malty-rich flavor with chocolate, caramel, nutty,
-            and/or toasty malt complexity, with medium to medium-high bitterness.
-          </p>
-        </b-collapse>
+        <p class="content is-size-7 bjcp-sentences" v-if="bjcpSentences" v-html="bjcpSentences"></p>
       </div>
 
       <!-- Descriptor values -->
@@ -224,6 +214,24 @@ export default {
       } else {
         return this.sensoryData
       }
+    },
+    bjcpSentences: function() {
+      if (this.sensoryData.name in this.$store.state.brewgen.bjcpSensory) {
+        let bjcpSentences = this.$store.state.brewgen.bjcpSensory[
+          this.sensoryData.name
+        ]
+
+        // Bold the sensory descriptor in the sentences
+        let regex = new RegExp(
+          '(?<sensory>\\b' +
+            this.sensoryData.name.replace('_', ' ') +
+            '(y?|ed?)\\b)',
+          'gi'
+        )
+        return bjcpSentences
+          .join(' ')
+          .replace(regex, '<strong>$<sensory></strong>')
+      }
     }
   },
   methods: {
@@ -339,5 +347,8 @@ export default {
 .collapse {
   display: inline;
   margin-left: 0.25rem;
+}
+.bjcp-sentences {
+  margin-top: 0.5rem;
 }
 </style>
