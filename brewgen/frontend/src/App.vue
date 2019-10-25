@@ -15,6 +15,8 @@
 // Import Bulma's core
 @import '~bulma/sass/utilities/_all';
 
+$section-padding: 2rem 1.25rem;
+
 // Set your colors
 $primary: #e6af2e;
 $primary-invert: findColorInvert($primary);
