@@ -1,6 +1,5 @@
 <template>
   <div class="container">
-    <h1 class="title is-size-5">Recipe Designer</h1>
     <div class="columns">
       <!-- Sensory Constraint Buuidler -->
       <div class="column is-4">
@@ -8,9 +7,6 @@
       </div>
       <!-- Radar Chart -->
       <div class="column is-8">
-        <div class="buttons">
-          <b-button type="is-success ">Get Recipes</b-button>
-        </div>
         <b-tabs v-model="activeTab">
           <b-tab-item label="Sensory">
             <SensoryRadar :chartData="sensoryChartData" />
@@ -33,13 +29,13 @@ import RecipeChart from '@/components/RecipeChart.vue'
 import SensoryBox from '@/components/SensoryBox.vue'
 
 export default {
-  name: 'RecipeBuilder',
+  name: 'WortSensory',
   components: {
     SensoryRadar,
     RecipeChart,
     SensoryBox
   },
-  data () {
+  data() {
     return {
       activeTab: 0
     }
@@ -52,7 +48,7 @@ export default {
       'currentStyleSensory',
       'isLoading'
     ]),
-    sensoryChartData: function () {
+    sensoryChartData: function() {
       // Get the labels in deslugged title-case
       var chartLabels = this.sensoryData.map(element => {
         var value = element.name
@@ -101,7 +97,7 @@ export default {
         ]
       }
     },
-    recipeChartData: function () {
+    recipeChartData: function() {
       if (this.currentStyleStats != '') {
         var annotations = {
           xaxis: [
