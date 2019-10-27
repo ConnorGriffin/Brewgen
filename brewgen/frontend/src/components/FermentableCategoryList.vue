@@ -55,7 +55,7 @@ export default {
     },
     textColor(categoryName) {
       if (categoryName === this.editingFermentableCategory) {
-        return 'has-text-white'
+        return 'has-text-black'
       } else {
         return 'has-text-primary'
       }

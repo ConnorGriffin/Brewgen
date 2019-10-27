@@ -510,6 +510,7 @@ const mutations = {
     state.currentStyleStats = ''
     state.lastChangedSensoryDescriptor = null
     state.lastSensoryData = null
+    state.editingFermentableCategory = null
   },
   setEditingFermentableCategory(state, value) {
     state.editingFermentableCategory = value

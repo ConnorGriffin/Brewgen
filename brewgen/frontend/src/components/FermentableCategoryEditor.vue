@@ -1,6 +1,26 @@
 <template>
   <div>
-    <h1 class="title is-5">Fermentables</h1>
+    <h1 class="title is-5">
+      Category Usage
+      <b-button type="is-success" class="is-pulled-right">Save Changes</b-button>
+    </h1>
+    <b-field grouped group-multiline>
+      <b-field label="Minimum Usage">
+        <b-field>
+          <b-input type="number" v-model="minUsage" min="0" :max="maxUsage"></b-input>
+          <b-button class="is-static">%</b-button>
+        </b-field>
+      </b-field>
+
+      <b-field label="Maximum Usage">
+        <b-field>
+          <b-input type="number" v-model="maxUsage" :min="minUsage" max="100"></b-input>
+          <b-button class="is-static">%</b-button>
+        </b-field>
+      </b-field>
+    </b-field>
+
+    <h1 class="title is-5">Category Fermentables</h1>
     <b-table :data="categoryFermentables" :columns="columns" hoverable @click="editFermentable"></b-table>
   </div>
 </template>
@@ -10,8 +30,11 @@ import { mapGetters } from 'vuex'
 
 export default {
   name: 'FermentableCategoryEditor',
+  props: ['category'],
   data() {
     return {
+      minUsage: null,
+      maxUsage: null,
       columns: [
         {
           field: 'name',
@@ -39,8 +62,21 @@ export default {
       ]
     }
   },
+  watch: {
+    editingFermentableCategory: {
+      handler() {
+        let category = this.fermentableCategories.find(category => {
+          return category.name === this.editingFermentableCategory
+        })
+        this.minUsage = category.min_percent
+        this.maxUsage = category.max_percent
+      },
+      immediate: true
+    }
+  },
   computed: {
     ...mapGetters([
+      'fermentableCategories',
       'editingFermentableCategory',
       'allFermentables',
       'currentStyleFermentables'
