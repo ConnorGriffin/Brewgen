@@ -1,27 +1,34 @@
 <template>
   <div>
-    <h1 class="title is-5">
-      Category Usage
-      <b-button type="is-success" class="is-pulled-right">Save Changes</b-button>
-    </h1>
-    <b-field grouped group-multiline>
-      <b-field label="Minimum Usage">
-        <b-field>
-          <b-input type="number" v-model="minUsage" min="0" :max="maxUsage"></b-input>
-          <b-button class="is-static">%</b-button>
+      <h1 class="title is-5">
+        Category Usage
+        <b-button type="is-success" class="is-pulled-right">Save Changes</b-button>
+      </h1>
+      <b-field grouped group-multiline>
+        <b-field label="Minimum Usage">
+          <b-field>
+            <b-input type="number" v-model.number="minUsage" min="0" max="100"></b-input>
+            <b-button class="is-static">%</b-button>
+          </b-field>
+        </b-field>
+
+        <b-field label="Maximum Usage">
+          <b-field>
+            <b-input type="number" v-model.number="maxUsage" min="0" max="100"></b-input>
+            <b-button class="is-static">%</b-button>
+          </b-field>
         </b-field>
       </b-field>
 
-      <b-field label="Maximum Usage">
-        <b-field>
-          <b-input type="number" v-model="maxUsage" :min="minUsage" max="100"></b-input>
-          <b-button class="is-static">%</b-button>
-        </b-field>
-      </b-field>
-    </b-field>
-
-    <h1 class="title is-5">Category Fermentables</h1>
-    <b-table :data="categoryFermentables" :columns="columns" hoverable @click="editFermentable"></b-table>
+      <h1 class="title is-5" style="margin-top:1.25rem">Category Fermentables</h1>
+      <b-table
+        :data="categoryFermentables"
+        :columns="columns"
+        hoverable
+        @click="editFermentable"
+        default-sort="name"
+      ></b-table>
+    </div>
   </div>
 </template>
 
@@ -38,26 +45,31 @@ export default {
       columns: [
         {
           field: 'name',
-          label: 'Name'
+          label: 'Name',
+          sortable: true
         },
         {
           field: 'brand',
-          label: 'Brand'
+          label: 'Brand',
+          sortable: true
         },
         {
           field: 'styleUsage.min_percent',
           label: 'Min %',
-          numeric: true
+          numeric: true,
+          sortable: true
         },
         {
           field: 'styleUsage.max_percent',
           label: 'Max %',
-          numeric: true
+          numeric: true,
+          sortable: true
         },
         {
           field: 'color',
           label: 'Color (L)',
-          numeric: true
+          numeric: true,
+          sortable: true
         }
       ]
     }
@@ -72,6 +84,26 @@ export default {
         this.maxUsage = category.max_percent
       },
       immediate: true
+    },
+    // Increment min and max usage together if they collide
+    // Would like this to work in other cases (manually typing values) but input is updated with each keypress so it breaks
+    minUsage: function(newVal, oldVal) {
+      if (
+        oldVal === this.maxUsage &&
+        newVal > this.maxUsage &&
+        this.maxUsage <= 100
+      ) {
+        this.maxUsage = newVal
+      }
+    },
+    maxUsage: function(newVal, oldVal) {
+      if (
+        oldVal === this.minUsage &&
+        newVal < this.minUsage &&
+        this.minUsage >= 0
+      ) {
+        this.minUsage = newVal
+      }
     }
   },
   computed: {
@@ -102,16 +134,9 @@ export default {
         }
       })
 
-      return allFermentables
-        .filter(
-          fermentable =>
-            fermentable.category === this.editingFermentableCategory
-        )
-        .sort((f1, f2) => {
-          if (f1.name < f2.name) return -1
-          if (f1.name > f2.name) return 1
-          return 0
-        })
+      return allFermentables.filter(
+        fermentable => fermentable.category === this.editingFermentableCategory
+      )
     }
   },
   methods: {
