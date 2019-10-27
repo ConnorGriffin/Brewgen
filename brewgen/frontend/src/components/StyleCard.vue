@@ -66,7 +66,7 @@ export default {
       // Disable the OG watcher to avoid multiple calls
       this.$store.commit('setOgWatcherEnabled', false)
 
-      // Set the current style name, get the style grains and sensory data
+      // Set the current style name, get the style fermentables and sensory data
       this.$store.commit('setCurrentStyleName', this.styleData.name)
       this.$store.dispatch('setDataFromStyle', this.styleData.slug).then(() => {
         // Set the starting target OG in the middle of the style range

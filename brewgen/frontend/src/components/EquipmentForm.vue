@@ -10,8 +10,8 @@
       <b-field label="Mash Efficiency (%)" labelPosition="on-border">
         <b-numberinput id="mash_efficiency" min="1" max="100" step="1" v-model="mashEfficiency" />
       </b-field>
-      <b-field label="Max Unique Grains" labelPosition="on-border">
-        <b-numberinput id="maxUniqueGrains" min="1" max="7" step="1" v-model="maxUniqueGrains" />
+      <b-field label="Max Unique Fermentables" labelPosition="on-border">
+        <b-numberinput id="maxUniqueFermentables" min="1" max="7" step="1" v-model="maxUniqueFermentables" />
       </b-field>
     </section>
     <footer class="modal-card-foot">
@@ -27,13 +27,13 @@ export default {
   name: 'EquipmentForm',
   data () {
     return {
-      maxUniqueGrains: 0,
+      maxUniqueFermentables: 0,
       targetVolumeGallons: 0,
       mashEfficiency: 0
     }
   },
   created () {
-    this.maxUniqueGrains = this.$store.state.brewgen.equipmentProfile.maxUniqueGrains
+    this.maxUniqueFermentables = this.$store.state.brewgen.equipmentProfile.maxUniqueFermentables
     this.targetVolumeGallons = this.$store.state.brewgen.equipmentProfile.targetVolumeGallons
     this.mashEfficiency = this.$store.state.brewgen.equipmentProfile.mashEfficiency
   },
@@ -41,7 +41,7 @@ export default {
     ...mapActions(['updateEquipmentProfile']),
     updateEquipmentProfileAndClose: function () {
       this.updateEquipmentProfile({
-        maxUniqueGrains: this.maxUniqueGrains,
+        maxUniqueFermentables: this.maxUniqueFermentables,
         targetVolumeGallons: this.targetVolumeGallons,
         mashEfficiency: this.mashEfficiency
       })

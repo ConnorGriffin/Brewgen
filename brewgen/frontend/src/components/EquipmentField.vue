@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1 class="title is-size-5">
+    <h1 class="title is-4">
       Equipment Profile
       <div class="buttons is-pulled-right">
         <b-button size="is-small" @click="showEditEquipmentModal = true">Edit</b-button>
@@ -18,8 +18,8 @@
       <span>&nbsp;{{ mashEfficiency }} %</span>
     </p>
     <p>
-      <span class="has-text-weight-semibold">Max Unique Grains:</span>
-      <span>&nbsp;{{ maxUniqueGrains }}</span>
+      <span class="has-text-weight-semibold">Max Unique Fermentables:</span>
+      <span>&nbsp;{{ maxUniqueFermentables }}</span>
     </p>
   </div>
 </template>
@@ -32,24 +32,24 @@ export default {
   components: {
     EquipmentForm
   },
-  data () {
+  data() {
     return {
       showEditEquipmentModal: false
     }
   },
   computed: {
-    maxUniqueGrains: {
-      get () {
-        return this.$store.state.brewgen.equipmentProfile.maxUniqueGrains
+    maxUniqueFermentables: {
+      get() {
+        return this.$store.state.brewgen.equipmentProfile.maxUniqueFermentables
       }
     },
     targetVolumeGallons: {
-      get () {
+      get() {
         return this.$store.state.brewgen.equipmentProfile.targetVolumeGallons
       }
     },
     mashEfficiency: {
-      get () {
+      get() {
         return this.$store.state.brewgen.equipmentProfile.mashEfficiency
       }
     }

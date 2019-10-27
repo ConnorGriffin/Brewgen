@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1 class="title is-size-5">Beer Style</h1>
+    <h1 class="title is-4">Beer Style</h1>
 
     <!-- Style list and selection modal -->
     <b-modal :active.sync="showStyleListModal" has-modal-card trap-focus scroll="keep">

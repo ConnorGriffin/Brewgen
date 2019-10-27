@@ -1,10 +1,11 @@
 import axios from 'axios'
 
 const state = {
-  grainCategories: [],
-  allGrains: [],
+  fermentableCategories: [],
+  // Details of all fermentables
+  allFermentables: [],
   equipmentProfile: {
-    maxUniqueGrains: 4,
+    maxUniqueFermentables: 4,
     targetVolumeGallons: 5.5,
     mashEfficiency: 75
   },
@@ -22,6 +23,8 @@ const state = {
   currentStyleStats: '',
   styleListFilter: '',
   ogWatcherEnabled: false,
+  // Fermentable Category that is currently being edited
+  editingFermentableCategory: null,
   // Sensory descriptors that are mentioned in the BJCP style guide
   bjcpSensory: null,
   // Need to work on saving the previous state so editing is faster in two scenerios:
@@ -29,6 +32,8 @@ const state = {
   // 2. When re-editing a value that we clicked edit on but did not save changes, no need to recalc
   // Current style sensory stats including style, possible, and configured min/max values
   currentStyleSensory: '',
+  // Current style fermentable data (usage, slugs, and enabled/disabled only)
+  currentStyleFermentables: null,
   // Current style sensory stats with a single descriptor's configured values nulled
   currentStyleSensoryEdit: null,
   // Current style sensory previous to the most recent change
@@ -40,12 +45,12 @@ const state = {
 }
 
 const getters = {
-  grainCategories: state => state.grainCategories,
-  allGrains: state => state.allGrains,
+  fermentableCategories: state => state.fermentableCategories,
+  allFermentables: state => state.allFermentables,
   sensoryData: state => state.sensoryData,
   sensoryModel: state => state.sensoryModel,
-  getGrainEnabled: state => slug => {
-    return state.allGrains.find(grain => grain.slug == slug).enabled
+  getFermentableEnabled: state => slug => {
+    return state.allFermentables.find(fermentable => fermentable.slug == slug).enabled
   },
   recipeData: state => state.recipeData,
   recipeColorData: state => state.recipeColorData,
@@ -68,37 +73,40 @@ const getters = {
   lastSensoryData: state => sensoryName => {
     return state.lastSensoryData.find(sensoryData => sensoryData.name === sensoryName)
   },
-  lastChangedSensoryDescriptor: state => state.lastChangedSensoryDescriptor
+  lastChangedSensoryDescriptor: state => state.lastChangedSensoryDescriptor,
+  equipmentProfile: state => state.equipmentProfile,
+  beerProfile: state => state.beerProfile,
+  editingFermentableCategory: state => state.editingFermentableCategory
 }
 
 const actions = {
-  async fetchGrainCategories({ commit }) {
+  async fetchFermentableCategories({ commit }) {
     return axios
       .get('http://10.31.36.49:5000/api/v1/style-data/grains/categories')
       .then(response => {
-        commit('setGrainCategories', response.data)
+        commit('setFermentableCategories', response.data)
         Promise.resolve()
       })
       .catch(err => {
         throw err
       })
   },
-  updateGrainCategoryValue({ commit }, grainCategory, key, value) {
-    commit('setGrainCategoryValue', grainCategory, key, value)
+  updateFermentableCategoryValue({ commit }, fermentableCategory, key, value) {
+    commit('setFermentableCategoryValue', fermentableCategory, key, value)
   },
-  async fetchAllGrains({ commit }) {
+  async fetchAllFermentables({ commit }) {
     return axios
       .get('http://10.31.36.49:5000/api/v1/grains')
       .then(response => {
-        commit('setAllGrains', response.data)
+        commit('setAllFermentables', response.data)
         Promise.resolve()
       })
       .catch(err => {
         throw err
       })
   },
-  updateEquipmentProfile({ commit }, maxUniqueGrains, targetVolumeGallons, mashEfficiency) {
-    commit('updateEquipmentProfile', maxUniqueGrains, targetVolumeGallons, mashEfficiency)
+  updateEquipmentProfile({ commit }, maxUniqueFermentables, targetVolumeGallons, mashEfficiency) {
+    commit('updateEquipmentProfile', maxUniqueFermentables, targetVolumeGallons, mashEfficiency)
   },
   async fetchSensoryData({ commit }) {
     commit('setLoader', {
@@ -121,10 +129,10 @@ const actions = {
 
     return axios
       .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
-        grain_list: state.allGrains,
-        category_model: state.grainCategories,
+        fermentable_list: state.allFermentables,
+        category_model: state.fermentableCategories,
         sensory_model: sensoryModel,
-        max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
+        max_unique_fermentables: Number(state.equipmentProfile.maxUniqueFermentables)
       })
       .then(response => {
         commit('setSensoryData', response.data)
@@ -162,10 +170,10 @@ const actions = {
 
     return axios
       .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
-        grain_list: state.allGrains,
-        category_model: state.grainCategories,
+        fermentable_list: state.allFermentables,
+        category_model: state.fermentableCategories,
         sensory_model: sensoryModel,
-        max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains)
+        max_unique_fermentables: Number(state.equipmentProfile.maxUniqueFermentables)
       })
       .then(response => {
         commit('setPossibleSensoryEdit', response.data)
@@ -219,10 +227,10 @@ const actions = {
 
     return axios
       .post(uri, {
-        grain_list: state.allGrains,
-        category_model: state.grainCategories,
+        fermentable_list: state.allFermentables,
+        category_model: state.fermentableCategories,
         sensory_model: sensoryModel,
-        max_unique_grains: Number(state.equipmentProfile.maxUniqueGrains),
+        max_unique_fermentables: Number(state.equipmentProfile.maxUniqueFermentables),
         equipment_profile: {
           target_volume_gallons: Number(
             state.equipmentProfile.targetVolumeGallons
@@ -289,8 +297,8 @@ const actions = {
             }
           }
         }
-        commit('setAllGrainsFromStyle', response.data.grain_usage)
-        commit('setGrainCategories', response.data.category_usage)
+        commit('setFermentablesFromStyle', response.data.grain_usage)
+        commit('setFermentableCategories', response.data.category_usage)
         commit('setBjcpSensory', response.data.bjcp_sensory)
         commit('setCurrentStyleSensory', response.data.sensory_data)
         // commit('setSensoryModel', response.data.sensory_data)
@@ -313,21 +321,20 @@ const actions = {
 }
 
 const mutations = {
-  setGrainCategories: (state, grainCategories) =>
-    (state.grainCategories = grainCategories),
-  setGrainCategoryValue: (state, { grainCategory, key, value }) => {
-    var matchCategory = state.grainCategories.find(
-      category => category.name == grainCategory
+  setFermentableCategories: (state, fermentableCategories) =>
+    (state.fermentableCategories = fermentableCategories),
+  setFermentableCategoryValue: (state, { fermentableCategory, key, value }) => {
+    var matchCategory = state.fermentableCategories.find(
+      category => category.name == fermentableCategory
     )
     Object.assign(matchCategory, { [key]: value })
   },
-  setAllGrains: (state, allGrains) => {
-    allGrains.forEach(grain => (grain['enabled'] = true))
-    state.allGrains = allGrains
+  setAllFermentables: (state, allFermentables) => {
+    state.allFermentables = allFermentables
   },
-  setAllGrainsFromStyle: (state, styleGrains) => {
-    // Store the grain data for the style in allGrains
-    state.allGrains = styleGrains
+  setFermentablesFromStyle: (state, value) => {
+    // Store the fermentable data for the style in allFermentables
+    state.currentStyleFermentables = value
   },
   setSensoryConstraint: (state, { name, min, max }) => {
     // Add a sensory constraint to the model, or modify an existing constraint
@@ -417,8 +424,8 @@ const mutations = {
       }
     })
   },
-  updateEquipmentProfile: (state, { maxUniqueGrains, targetVolumeGallons, mashEfficiency }) => {
-    Object.assign(state.equipmentProfile, { maxUniqueGrains, targetVolumeGallons, mashEfficiency })
+  updateEquipmentProfile: (state, { maxUniqueFermentables, targetVolumeGallons, mashEfficiency }) => {
+    Object.assign(state.equipmentProfile, { maxUniqueFermentables, targetVolumeGallons, mashEfficiency })
   },
   setBeerProfileKey: (state, { key, value }) =>
     (state.beerProfile[key] = value),
@@ -429,9 +436,9 @@ const mutations = {
   setRecipeData: (state, recipeData) => (state.recipeData = recipeData),
   setRecipeColorData: (state, recipeColorData) =>
     (state.recipeColorData = recipeColorData),
-  setGrainEnabled: (state, { slug, enabled }) => {
-    var matchGrain = state.allGrains.find(grain => grain.slug == slug)
-    Object.assign(matchGrain, { enabled })
+  setFermentableEnabled: (state, { slug, enabled }) => {
+    var matchFermentable = state.allFermentables.find(fermentable => fermentable.slug == slug)
+    Object.assign(matchFermentable, { enabled })
   },
   removeSensoryConstraint(state, name) {
     let sensoryObj = state.currentStyleSensory.find(object => object.name == name)
@@ -497,14 +504,17 @@ const mutations = {
     state.bjcpSensory = value
   },
   resetData(state) {
-    state.allGrains = []
+    state.allFermentables = []
     state.sensoryData = []
     state.recipeData = []
-    state.grainCategories = []
+    state.fermentableCategories = []
     state.currentStyleSensory = ''
     state.currentStyleStats = ''
     state.lastChangedSensoryDescriptor = null
     state.lastSensoryData = null
+  },
+  setEditingFermentableCategory(state, value) {
+    state.editingFermentableCategory = value
   }
 }
 

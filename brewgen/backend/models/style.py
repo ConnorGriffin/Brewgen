@@ -50,6 +50,7 @@ class Style:
             grain_data.append({
                 'name': grain_object.name,
                 'slug': grain_object.slug,
+                'category': grain_object.category,
                 'min_percent': grain_object.min_percent,
                 'max_percent': grain_object.max_percent
             })

@@ -44,26 +44,26 @@ export default {
     RecipeBuilder
   },
   filters: {
-    inCategory: function (value, categoryName) {
+    inCategory: function(value, categoryName) {
       return value.filter(object => object.category == categoryName)
     }
   },
   methods: {
     ...mapActions([
-      'fetchGrainCategories',
-      'fetchAllGrains',
+      'fetchFermentableCategories',
+      'fetchAllFermentables',
       'fetchSensoryData',
       'fetchRecipeData',
       'fetchStyles'
     ]),
-    updateRecipeData: function () {
+    updateRecipeData: function() {
       this.fetchRecipeData({ colorOnly: true })
     }
   },
   computed: {
     ...mapGetters([
-      'grainCategories',
-      'allGrains',
+      'fermentableCategories',
+      'allFermentables',
       'sensoryData',
       'recipeData',
       'recipeColorData',
@@ -71,7 +71,7 @@ export default {
       'currentStyleStats',
       'currentStyleName'
     ]),
-    recipeChartData: function () {
+    recipeChartData: function() {
       if (this.currentStyleStats != '') {
         var annotations = {
           xaxis: [
@@ -123,14 +123,14 @@ export default {
         ]
       }
     },
-    sortedStyles: function () {
+    sortedStyles: function() {
       return this.styles.sort((a, b) => (a.name > b.name ? 1 : -1))
     }
   },
-  created () {
+  created() {
     document.title = 'Brewgen'
     this.fetchStyles()
-    // var prom2 = this.$store.dispatch('fetchAllGrains');
+    // var prom2 = this.$store.dispatch('fetchAllFermentables');
     // Promise.all([prom1, prom2]).then(() => {
     //   this.fetchSensoryData();
     //   this.fetchRecipeData({ colorOnly: true });
