@@ -1,6 +1,6 @@
 <template>
   <!-- Fermentable Category List -->
-  <div class="list is-hoverable">
+  <div class="list is-hoverable is-unselectable">
     <a
       :class="'list-item has-background-' + itemBg(category.name)"
       :key="index"
