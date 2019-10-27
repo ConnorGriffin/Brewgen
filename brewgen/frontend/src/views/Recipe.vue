@@ -21,7 +21,7 @@
           </b-step-item>
           <!-- Fermentables -->
           <b-step-item label="Fermentables">
-            <div class="columns is-mobile is-vcentered">
+            <div class="columns is-vcentered is-inline-block-mobile">
               <div class="column">
                 <h1 class="title is-4">Fermentables</h1>
               </div>
@@ -33,7 +33,7 @@
           </b-step-item>
           <!-- Wort Sensory -->
           <b-step-item label="Wort Sensory">
-            <div class="columns is-mobile is-vcentered">
+            <div class="columns is-vcentered is-inline-block-mobile">
               <div class="column">
                 <h1 class="title is-4">Wort Sensory</h1>
               </div>
@@ -45,7 +45,7 @@
           </b-step-item>
           <!-- Recipes -->
           <b-step-item label="Recipes">
-            <div class="columns is-mobile is-vcentered">
+            <div class="columns is-vcentered is-inline-block-mobile">
               <div class="column">
                 <h1 class="title is-4">Recipes</h1>
               </div>

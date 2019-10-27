@@ -18,22 +18,55 @@ export default {
           label: 'Name'
         },
         {
-          field: 'min_percent',
+          field: 'brand',
+          label: 'Brand'
+        },
+        {
+          field: 'styleUsage.min_percent',
           label: 'Min %',
           numeric: true
         },
         {
-          field: 'max_percent',
+          field: 'styleUsage.max_percent',
           label: 'Max %',
+          numeric: true
+        },
+        {
+          field: 'color',
+          label: 'Color (L)',
           numeric: true
         }
       ]
     }
   },
   computed: {
-    ...mapGetters(['editingFermentableCategory', 'allFermentables']),
+    ...mapGetters([
+      'editingFermentableCategory',
+      'allFermentables',
+      'currentStyleFermentables'
+    ]),
     categoryFermentables: function() {
-      return this.allFermentables
+      // Return fermentables in the category with details from allFermentables for each one
+      let allFermentables = this.allFermentables
+
+      // Add styleUsage to fermentable detail, set to zero if not used
+      allFermentables.forEach(fermentable => {
+        let styleUsage = this.fermentableStyleUsage(fermentable.slug)
+        if (styleUsage === undefined) {
+          Object.assign(fermentable, {
+            styleUsage: {
+              name: fermentable.name,
+              slug: fermentable.slug,
+              min_percent: 0,
+              max_percent: 0
+            }
+          })
+        } else {
+          Object.assign(fermentable, { styleUsage })
+        }
+      })
+
+      return allFermentables
         .filter(
           fermentable =>
             fermentable.category === this.editingFermentableCategory
@@ -48,6 +81,11 @@ export default {
   methods: {
     editFermentable: function(value) {
       console.log(value)
+    },
+    fermentableStyleUsage: function(fermentableSlug) {
+      return this.currentStyleFermentables.find(
+        fermentable => fermentable.slug == fermentableSlug
+      )
     }
   }
 }

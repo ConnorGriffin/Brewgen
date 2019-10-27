@@ -12,7 +12,7 @@
         Usage: {{ category.min_percent }} - {{ category.max_percent }}%
         <span
           class="is-pulled-right"
-        >{{ allFermentables | inCategory(category.name) | length }}</span>
+        >{{ currentStyleFermentables | inCategory(category.name) | length }}/{{ allFermentables | inCategory(category.name) | length }}</span>
       </p>
     </a>
   </div>
@@ -24,7 +24,11 @@ import { mapGetters } from 'vuex'
 export default {
   name: 'FermentableCategoryList',
   computed: {
-    ...mapGetters(['fermentableCategories', 'allFermentables']),
+    ...mapGetters([
+      'fermentableCategories',
+      'allFermentables',
+      'currentStyleFermentables'
+    ]),
     editingFermentableCategory: {
       get() {
         return this.$store.state.brewgen.editingFermentableCategory

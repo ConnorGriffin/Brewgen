@@ -102,17 +102,6 @@ export default {
         })
       }
     }
-  },
-  methods: {
-    ...mapActions(['fetchRecipeData'])
-  },
-  watch: {
-    originalSg: function(oldVal, newVal) {
-      // Adding this check to avoid multiple simultaneous calls when selecting a style
-      if (this.$store.state.brewgen.ogWatcherEnabled === true) {
-        this.fetchRecipeData({ colorOnly: true })
-      }
-    }
   }
 }
 </script>

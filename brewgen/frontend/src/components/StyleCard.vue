@@ -47,7 +47,7 @@ export default {
   name: 'StyleCard',
   props: ['styleData'],
   computed: {
-    hasStats: function () {
+    hasStats: function() {
       if (this.styleData.stats.exceptions === undefined) {
         return true
       } else {
@@ -62,10 +62,7 @@ export default {
       'fetchSensoryData',
       'fetchRecipeData'
     ]),
-    setCurrentStyle: function () {
-      // Disable the OG watcher to avoid multiple calls
-      this.$store.commit('setOgWatcherEnabled', false)
-
+    setCurrentStyle: function() {
       // Set the current style name, get the style fermentables and sensory data
       this.$store.commit('setCurrentStyleName', this.styleData.name)
       this.$store.dispatch('setDataFromStyle', this.styleData.slug).then(() => {
@@ -88,16 +85,9 @@ export default {
           key: 'maxSrm',
           value: this.$store.state.brewgen.currentStyleStats.srm.high
         })
-
-        // Get the sensory and recipe data after setting everything else
-        this.fetchSensoryData()
-        this.fetchRecipeData({ colorOnly: true })
       })
-
-      // Re-enable the OG watcher after setting values
-      this.$store.commit('setOgWatcherEnabled', true)
     },
-    setCurrentStyleAndClose: function () {
+    setCurrentStyleAndClose: function() {
       this.setCurrentStyle()
       this.$parent.$parent.close()
     }

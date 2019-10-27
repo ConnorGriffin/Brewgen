@@ -47,11 +47,9 @@ const state = {
 const getters = {
   fermentableCategories: state => state.fermentableCategories,
   allFermentables: state => state.allFermentables,
+  currentStyleFermentables: state => state.currentStyleFermentables,
   sensoryData: state => state.sensoryData,
   sensoryModel: state => state.sensoryModel,
-  getFermentableEnabled: state => slug => {
-    return state.allFermentables.find(fermentable => fermentable.slug == slug).enabled
-  },
   recipeData: state => state.recipeData,
   recipeColorData: state => state.recipeColorData,
   styles: state => state.styles,
@@ -504,10 +502,10 @@ const mutations = {
     state.bjcpSensory = value
   },
   resetData(state) {
-    state.allFermentables = []
     state.sensoryData = []
     state.recipeData = []
     state.fermentableCategories = []
+    state.currentStyleFermentables = []
     state.currentStyleSensory = ''
     state.currentStyleStats = ''
     state.lastChangedSensoryDescriptor = null
