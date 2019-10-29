@@ -25,6 +25,8 @@ const state = {
   ogWatcherEnabled: false,
   // Fermentable Category that is currently being edited
   editingFermentableCategory: null,
+  // Unsaved changes to fermentables in a fermentable category
+  fermentableChanges: null,
   // Sensory descriptors that are mentioned in the BJCP style guide
   bjcpSensory: null,
   // Need to work on saving the previous state so editing is faster in two scenerios:
@@ -74,7 +76,8 @@ const getters = {
   lastChangedSensoryDescriptor: state => state.lastChangedSensoryDescriptor,
   equipmentProfile: state => state.equipmentProfile,
   beerProfile: state => state.beerProfile,
-  editingFermentableCategory: state => state.editingFermentableCategory
+  editingFermentableCategory: state => state.editingFermentableCategory,
+  fermentableChanges: state => state.fermentableChanges
 }
 
 const actions = {
@@ -514,6 +517,9 @@ const mutations = {
   },
   setEditingFermentableCategory(state, value) {
     state.editingFermentableCategory = value
+  },
+  setFermentableChanges(state, payload) {
+    state.fermentableChanges = payload
   }
 }
 

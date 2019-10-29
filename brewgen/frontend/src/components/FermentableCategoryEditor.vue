@@ -1,47 +1,57 @@
 <template>
   <div>
-      <h1 class="title is-5">
-        Category Usage
-        <b-button type="is-success" class="is-pulled-right">Save Changes</b-button>
-      </h1>
-      <b-field grouped group-multiline>
-        <b-field label="Minimum Usage">
-          <b-field>
-            <b-input type="number" v-model.number="minUsage" min="0" max="100"></b-input>
-            <b-button class="is-static">%</b-button>
-          </b-field>
-        </b-field>
-
-        <b-field label="Maximum Usage">
-          <b-field>
-            <b-input type="number" v-model.number="maxUsage" min="0" max="100"></b-input>
-            <b-button class="is-static">%</b-button>
-          </b-field>
+    <h1 class="title is-5">
+      Category Usage
+      <b-button type="is-success" class="is-pulled-right">Save Changes</b-button>
+    </h1>
+    <b-field grouped group-multiline>
+      <b-field label="Minimum Usage">
+        <b-field>
+          <b-input type="number" v-model.number="minUsage" min="0" max="100"></b-input>
+          <b-button class="is-static">%</b-button>
         </b-field>
       </b-field>
 
-      <h1 class="title is-5" style="margin-top:1.25rem">Category Fermentables</h1>
-      <b-table
-        :data="categoryFermentables"
-        :columns="columns"
-        hoverable
-        @click="editFermentable"
-        default-sort="name"
-      ></b-table>
-    </div>
+      <b-field label="Maximum Usage">
+        <b-field>
+          <b-input type="number" v-model.number="maxUsage" min="0" max="100"></b-input>
+          <b-button class="is-static">%</b-button>
+        </b-field>
+      </b-field>
+    </b-field>
+
+    <h1 class="title is-5" style="margin-top:1.25rem">Category Fermentables</h1>
+    <b-table
+      :data="categoryFermentables"
+      :columns="columns"
+      hoverable
+      @click="editFermentable"
+      default-sort="name"
+    ></b-table>
+
+    <!-- Fermentable Configurator -->
+    <b-modal :active.sync="showFermentableConfigurator" has-modal-card trap-focus scroll="keep">
+      <FermentableConfigurator :fermentable="editingFermentable" />
+    </b-modal>
   </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
+import FermentableConfigurator from '@/components/FermentableConfigurator.vue'
 
 export default {
   name: 'FermentableCategoryEditor',
   props: ['category'],
+  components: {
+    FermentableConfigurator
+  },
   data() {
     return {
       minUsage: null,
       maxUsage: null,
+      showFermentableConfigurator: false,
+      editingFermentable: null,
       columns: [
         {
           field: 'name',
@@ -85,33 +95,29 @@ export default {
       },
       immediate: true
     },
-    // Increment min and max usage together if they collide
-    // Would like this to work in other cases (manually typing values) but input is updated with each keypress so it breaks
-    minUsage: function(newVal, oldVal) {
-      if (
-        oldVal === this.maxUsage &&
-        newVal > this.maxUsage &&
-        this.maxUsage <= 100
-      ) {
-        this.maxUsage = newVal
-      }
-    },
-    maxUsage: function(newVal, oldVal) {
-      if (
-        oldVal === this.minUsage &&
-        newVal < this.minUsage &&
-        this.minUsage >= 0
-      ) {
-        this.minUsage = newVal
-      }
-    }
+    // Increment min and max usage together if they conflict
+    minUsage: _.debounce(
+      function(value) {
+        this.fixUsage('minUsage')
+      },
+      600,
+      { trailing: true }
+    ),
+    maxUsage: _.debounce(
+      function(value) {
+        this.fixUsage('maxUsage')
+      },
+      600,
+      { trailing: true }
+    )
   },
   computed: {
     ...mapGetters([
       'fermentableCategories',
       'editingFermentableCategory',
       'allFermentables',
-      'currentStyleFermentables'
+      'currentStyleFermentables',
+      'fermentableChanges'
     ]),
     categoryFermentables: function() {
       // Return fermentables in the category with details from allFermentables for each one
@@ -141,12 +147,43 @@ export default {
   },
   methods: {
     editFermentable: function(value) {
-      console.log(value)
+      let styleUsage = this.fermentableStyleUsage(value.slug)
+      if (styleUsage === undefined) {
+        Object.assign(value, {
+          styleUsage: {
+            min_percent: 0,
+            max_percent: 0
+          }
+        })
+      } else {
+        Object.assign(value, { styleUsage })
+      }
+
+      this.editingFermentable = value
+      this.showFermentableConfigurator = true
     },
     fermentableStyleUsage: function(fermentableSlug) {
-      return this.currentStyleFermentables.find(
-        fermentable => fermentable.slug == fermentableSlug
-      )
+      // Return data from the unsaved fermentableChanges table if it exists, otherwise use the currentStyleFermentables
+      try {
+        return this.fermentableChanges.find(
+          fermentable => fermentable.slug == fermentableSlug
+        )
+      } catch {
+        return this.currentStyleFermentables.find(
+          fermentable => fermentable.slug == fermentableSlug
+        )
+      }
+    },
+    fixUsage: function(changedInput) {
+      if (changedInput === 'minUsage') {
+        if (this.minUsage > this.maxUsage) {
+          this.maxUsage = this.minUsage
+        }
+      } else if (changedInput === 'maxUsage') {
+        if (this.minUsage > this.maxUsage) {
+          this.minUsage = this.maxUsage
+        }
+      }
     }
   }
 }
