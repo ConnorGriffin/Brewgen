@@ -1,8 +1,18 @@
 <template>
   <div>
+    <b-message
+      type="is-danger"
+      has-icon
+      v-if="!isSaveable"
+    >Sum of minimum usage for top {{ equipmentProfile.maxUniqueFermentables }} fermentables is less than category minimum usage ({{ minUsage }}%)</b-message>
     <h1 class="title is-5">
       Category Usage
-      <b-button type="is-success" class="is-pulled-right">Save Changes</b-button>
+      <b-button
+        type="is-success"
+        class="is-pulled-right"
+        @click="saveChanges"
+        :disabled="!isSaveable"
+      >Save Changes</b-button>
     </h1>
     <b-field grouped group-multiline>
       <b-field label="Minimum Usage">
@@ -42,7 +52,6 @@ import FermentableConfigurator from '@/components/FermentableConfigurator.vue'
 
 export default {
   name: 'FermentableCategoryEditor',
-  props: ['category'],
   components: {
     FermentableConfigurator
   },
@@ -117,7 +126,8 @@ export default {
       'editingFermentableCategory',
       'allFermentables',
       'currentStyleFermentables',
-      'fermentableChanges'
+      'fermentableChanges',
+      'equipmentProfile'
     ]),
     categoryFermentables: function() {
       // Return fermentables in the category with details from allFermentables for each one
@@ -143,6 +153,24 @@ export default {
       return allFermentables.filter(
         fermentable => fermentable.category === this.editingFermentableCategory
       )
+    },
+    isSaveable: function() {
+      // Check if we can hit the minimum usage % for the category
+      let minValues = this.categoryFermentables
+        .map(fermentable => {
+          return fermentable.styleUsage.min_percent
+        })
+        .sort((a, b) => b - a)
+
+      let minUsage = minValues
+        .slice(0, this.equipmentProfile.maxUniqueFermentables)
+        .reduce((sum, usage) => sum + usage)
+
+      if (minUsage >= this.minUsage) {
+        return true
+      } else {
+        return false
+      }
     }
   },
   methods: {
@@ -186,6 +214,16 @@ export default {
           this.minUsage = this.maxUsage
         }
       }
+    },
+    saveChanges: function() {
+      // Commit the category changes
+      let usage = {
+        name: this.editingFermentableCategory,
+        min_percent: this.minUsage,
+        max_percent: this.maxUsage
+      }
+      this.$store.commit('saveFermentableChanges')
+      this.$store.commit('setCategoryUsage', usage)
     }
   }
 }

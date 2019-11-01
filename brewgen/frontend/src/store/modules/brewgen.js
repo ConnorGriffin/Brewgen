@@ -528,6 +528,32 @@ const mutations = {
     } else {
       state.fermentableChanges.push(payload)
     }
+  },
+  saveFermentableChanges(state) {
+    // Commit the unsaved fermentable changes to currentStyleFermentables
+    state.fermentableChanges.forEach(change => {
+      let matchFermentable = state.currentStyleFermentables.find(current => {
+        return current.slug === change.slug
+      })
+
+      if (matchFermentable) {
+        console.log({ matchFermentable })
+        Object.assign(matchFermentable, change.styleUsage)
+      } else {
+        state.currentStyleFermentables.push({
+          slug: change.slug,
+          min_percent: change.styleUsage.min_percent,
+          max_percent: change.styleUsage.max_percent
+        })
+      }
+    })
+    state.fermentableChanges = []
+  },
+  setCategoryUsage(state, payload) {
+    let matchCategory = state.fermentableCategories.find(
+      category => category.name === payload.name
+    )
+    Object.assign(matchCategory, payload)
   }
 }
 
