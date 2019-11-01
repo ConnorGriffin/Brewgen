@@ -36,6 +36,12 @@ export default {
       set(value) {
         this.$store.commit('setEditingFermentableCategory', value)
       }
+    },
+    isSaveable() {
+      /* Determine if the current model is possible
+        Shipping the math off to cp_sat may be the easiest way
+        Building proof of concept at /api/v1/helpers/grain-model
+      */
     }
   },
   methods: {

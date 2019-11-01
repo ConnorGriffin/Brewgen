@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, render_template
 from .models import grain, beer, category, equipment, style
 from flask_cors import CORS
 from difflib import SequenceMatcher
+from ortools.sat.python import cp_model
 
 app = Flask(__name__,
             static_folder='../dist/static',
@@ -320,3 +321,95 @@ def get_grain_list_recipes():
         response = recipe_response
 
     return jsonify(response), 200
+
+
+@app.route('/api/v1/helpers/grain-model', methods=['POST'])
+def is_grain_model_valid():
+    """Returns whether or not a grain model is mathematically valid
+    POST format:
+    {
+        max_unique_fermentables: int,
+        category_data: [
+            {
+                name: str,
+                min_percent: int,
+                max_percent: int
+            }, {
+                etc.
+            }
+        ]
+        fermentable_data: [
+            {
+                slug: str,
+                category: str,
+                min_percent: int,
+                max_percent: int
+            }, {
+                etc.
+            }
+        ]
+    ]
+    """
+
+    # TODO: Move all of this into Grains or something. Need to get it into a class.
+
+    # Get the data from the request
+    data = request.json
+    fermentable_data = data['fermentable_usage']
+    category_data = data['category_usage']
+    max_unique_fermentables = data['max_unique_fermentables']
+
+    # Set the ranges, we'll need to index into things a lot
+    fermentable_range = range(len(fermentable_data))
+    category_range = range(len(category_data))
+
+    # Create the model
+    model = cp_model.CpModel()
+
+    # Define model variables
+    fermentable_vars = [model.NewIntVar(
+        0, 100, 'fermentable{}'.format(i)) for i in fermentable_range]
+    category_vars = [model.NewIntVar(0, 100, 'category_{}'.format(
+        category['name'])) for category in category_data]
+    fermentable_used = [model.NewBoolVar(
+        'fermentable{}_used'.format(i)) for i in fermentable_data]
+
+    # Define constraints
+    # Fermentable usage total must be 100% - not sure why both of these are needed but it doens't work if they're not
+    model.Add(sum(fermentable_vars) == 100)
+    model.Add(sum(category_vars) == 100)
+
+    # Limit the max number of fermentables to the specified limit
+    for i in fermentable_range:
+        model.Add(fermentable_vars[i] == 0).OnlyEnforceIf(
+            fermentable_used[i].Not())
+        model.Add(fermentable_vars[i] > 0).OnlyEnforceIf(
+            fermentable_used[i])
+    model.Add(sum(fermentable_used) <= max_unique_fermentables)
+
+    # Keep each fermentable between the min and max percents, but only if they're in use
+    for i in fermentable_range:
+        model.Add(fermentable_vars[i] <= fermentable_data[i]
+                  ['max_percent']).OnlyEnforceIf(fermentable_used[i])
+        model.Add(fermentable_vars[i] >= fermentable_data[i]
+                  ['min_percent']).OnlyEnforceIf(fermentable_used[i])
+
+    # Keep each fermentable category at or above the min and at or below the max amounts
+    for i in category_range:
+        i_category = category_data[i]
+        model.Add(category_vars[i] == sum(
+            fermentable_vars[k] for k in fermentable_range if fermentable_data[k]['category'] == i_category['name']))
+
+        model.Add(category_vars[i] <= i_category['max_percent'])
+        model.Add(category_vars[i] >= i_category['min_percent'])
+
+    # Solve the model
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
+        result = True
+    else:
+        result = False
+
+    return jsonify(result), 200
