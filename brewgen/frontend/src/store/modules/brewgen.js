@@ -59,7 +59,7 @@ const getters = {
   currentStyleStats: state => state.currentStyleStats,
   currentStyleSensory: state => state.currentStyleSensory,
   currentStyleSensoryEdit: state => sensoryName => {
-    return state.currentStyleSensoryEdit.find(sensoryData => sensoryData.name == sensoryName)
+    return state.currentStyleSensoryEdit.find(sensoryData => sensoryData.name === sensoryName)
   },
   isLoading: state => loader => {
     // Get the state of a loader by name, returns false if loader doesn't exist
@@ -193,7 +193,7 @@ const actions = {
       name: 'recipeData',
       loading: true
     })
-    if (colorOnly == true) {
+    if (colorOnly === true) {
       let chartMin = state.beerProfile.minSrm
       let chartMax = state.beerProfile.maxSrm
       let params = '&chartrange=' + chartMin + ',' + chartMax
@@ -326,7 +326,7 @@ const mutations = {
     (state.fermentableCategories = fermentableCategories),
   setFermentableCategoryValue: (state, { fermentableCategory, key, value }) => {
     var matchCategory = state.fermentableCategories.find(
-      category => category.name == fermentableCategory
+      category => category.name === fermentableCategory
     )
     Object.assign(matchCategory, { [key]: value })
   },
@@ -340,7 +340,7 @@ const mutations = {
   setSensoryConstraint: (state, { name, min, max }) => {
     // Add a sensory constraint to the model, or modify an existing constraint
     let matchSensory = state.currentStyleSensory.find(
-      sensoryObject => sensoryObject.name == name
+      sensoryObject => sensoryObject.name === name
     )
     Object.assign(matchSensory, {
       configured: {
@@ -397,7 +397,7 @@ const mutations = {
     // Used by sliders in the recipe designer and eventually the chart data as well
     sensoryData.forEach(sensoryValue => {
       // Find the matching sensory object in the currentStyleSensory data so we can update it
-      let matchedSensory = state.currentStyleSensory.find(csSensory => csSensory.name == sensoryValue.name)
+      let matchedSensory = state.currentStyleSensory.find(csSensory => csSensory.name === sensoryValue.name)
       if (matchedSensory !== undefined) {
         Object.assign(matchedSensory, {
           possible: {
@@ -414,7 +414,7 @@ const mutations = {
     state.currentStyleSensoryEdit = JSON.parse(JSON.stringify(state.currentStyleSensory))
     sensoryData.forEach(sensoryValue => {
       // Find the matching sensory object in the currentStyleSensoryEdit data so we can update it
-      let matchedSensory = state.currentStyleSensoryEdit.find(csSensory => csSensory.name == sensoryValue.name)
+      let matchedSensory = state.currentStyleSensoryEdit.find(csSensory => csSensory.name === sensoryValue.name)
       if (matchedSensory !== undefined) {
         Object.assign(matchedSensory, {
           possible: {
@@ -438,11 +438,11 @@ const mutations = {
   setRecipeColorData: (state, recipeColorData) =>
     (state.recipeColorData = recipeColorData),
   setFermentableEnabled: (state, { slug, enabled }) => {
-    var matchFermentable = state.allFermentables.find(fermentable => fermentable.slug == slug)
+    var matchFermentable = state.allFermentables.find(fermentable => fermentable.slug === slug)
     Object.assign(matchFermentable, { enabled })
   },
   removeSensoryConstraint(state, name) {
-    let sensoryObj = state.currentStyleSensory.find(object => object.name == name)
+    let sensoryObj = state.currentStyleSensory.find(object => object.name === name)
     if (sensoryObj.configured !== undefined) {
       delete sensoryObj.configured
     }
@@ -451,7 +451,7 @@ const mutations = {
   },
   addSensoryToModel(state, { name, min, max }) {
     // Remove if already exists, just to be safe
-    var modelObject = state.sensoryModel.find(object => object.name == name)
+    var modelObject = state.sensoryModel.find(object => object.name === name)
     if (modelObject !== undefined) {
       var index = state.sensoryModel.indexOf(modelObject)
       state.sensoryModel.splice(index)
