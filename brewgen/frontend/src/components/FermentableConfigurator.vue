@@ -146,11 +146,28 @@ export default {
       }
     },
     saveChanges: function() {
-      // Add to store.fermentableChanges with a commit call
-      // Need to add action to vuex store to set the value
+      let storeChange = {}
+      Object.assign(storeChange, this.fermentable)
+      Object.assign(storeChange, {
+        styleUsage: {
+          min_percent: this.minUsage,
+          max_percent: this.maxUsage
+        }
+      })
+      this.$store.commit('addFermentableChange', storeChange)
+      this.$parent.close()
     },
     disableFermentable: function() {
-      // Set values to zero and save
+      let storeChange = {}
+      Object.assign(storeChange, this.fermentable)
+      Object.assign(storeChange, {
+        styleUsage: {
+          min_percent: 0,
+          max_percent: 0
+        }
+      })
+      this.$store.commit('addFermentableChange', storeChange)
+      this.$parent.close()
     }
   }
 }

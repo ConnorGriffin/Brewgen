@@ -26,7 +26,7 @@ const state = {
   // Fermentable Category that is currently being edited
   editingFermentableCategory: null,
   // Unsaved changes to fermentables in a fermentable category
-  fermentableChanges: null,
+  fermentableChanges: [],
   // Sensory descriptors that are mentioned in the BJCP style guide
   bjcpSensory: null,
   // Need to work on saving the previous state so editing is faster in two scenerios:
@@ -518,8 +518,16 @@ const mutations = {
   setEditingFermentableCategory(state, value) {
     state.editingFermentableCategory = value
   },
-  setFermentableChanges(state, payload) {
-    state.fermentableChanges = payload
+  addFermentableChange(state, payload) {
+    // Add an unsaved fermentable change to fermentableChanges
+    let matchFermentable = state.fermentableChanges.find(fermentable => {
+      return fermentable.slug === payload.slug
+    })
+    if (matchFermentable) {
+      Object.assign(matchFermentable, payload)
+    } else {
+      state.fermentableChanges.push(payload)
+    }
   }
 }
 

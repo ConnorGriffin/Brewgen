@@ -164,11 +164,13 @@ export default {
     },
     fermentableStyleUsage: function(fermentableSlug) {
       // Return data from the unsaved fermentableChanges table if it exists, otherwise use the currentStyleFermentables
-      try {
-        return this.fermentableChanges.find(
-          fermentable => fermentable.slug == fermentableSlug
-        )
-      } catch {
+      let usage = this.fermentableChanges.find(
+        fermentable => fermentable.slug == fermentableSlug
+      )
+
+      if (usage) {
+        return usage.styleUsage
+      } else {
         return this.currentStyleFermentables.find(
           fermentable => fermentable.slug == fermentableSlug
         )
