@@ -22,7 +22,8 @@ const state = {
   currentStyleName: 'None Selected',
   currentStyleStats: '',
   styleListFilter: '',
-  ogWatcherEnabled: false,
+  // Whether or not the current model is valid
+  fermentableModelValidity: null,
   // Fermentable Category that is currently being edited
   editingFermentableCategory: null,
   // Unsaved changes to fermentables in a fermentable category
@@ -77,7 +78,8 @@ const getters = {
   equipmentProfile: state => state.equipmentProfile,
   beerProfile: state => state.beerProfile,
   editingFermentableCategory: state => state.editingFermentableCategory,
-  fermentableChanges: state => state.fermentableChanges
+  fermentableChanges: state => state.fermentableChanges,
+  fermentableModelValidity: state => state.fermentableModelValidity
 }
 
 const actions = {
@@ -310,6 +312,21 @@ const actions = {
         throw err
       })
   },
+  async fetchFermentableModelValidity({ commit }) {
+    return axios
+      .post('http://10.31.36.49:5000/api/v1/helpers/grain-model-valid', {
+        fermentable_list: state.currentStyleFermentables,
+        category_model: state.fermentableCategories,
+        max_unique_fermentables: Number(state.equipmentProfile.maxUniqueFermentables)
+      })
+      .then(response => {
+        commit('setFermentableModelValidity', response.data)
+        Promise.resolve()
+      })
+      .catch(err => {
+        throw err
+      })
+  },
   addSensoryToModel({ commit }, name, min, max) {
     commit('addSensoryToModel', name, min, max)
   },
@@ -318,6 +335,10 @@ const actions = {
   },
   removeSensoryConstraint({ commit }, name) {
     commit('removeSensoryConstraint', name)
+  },
+  saveFermentableCategoryChanges({ commit }, payload) {
+    commit('saveFermentableChanges')
+    commit('setCategoryUsage', payload)
   }
 }
 
@@ -537,7 +558,6 @@ const mutations = {
       })
 
       if (matchFermentable) {
-        console.log({ matchFermentable })
         Object.assign(matchFermentable, change.styleUsage)
       } else {
         state.currentStyleFermentables.push({
@@ -554,6 +574,9 @@ const mutations = {
       category => category.name === payload.name
     )
     Object.assign(matchCategory, payload)
+  },
+  setFermentableModelValidity(state, payload) {
+    state.fermentableModelValidity = payload
   }
 }
 

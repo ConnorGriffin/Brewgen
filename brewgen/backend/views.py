@@ -175,7 +175,7 @@ def get_grain_category(category_name):
 
 
 @app.route('/api/v1/grains/sensory-keywords', methods=['GET', 'POST'])
-def get_grain_list_sensory_keywords():
+def get_fermentable_list_sensory_keywords():
     """GET: All possible sensory keywords
     POST: All possible sensory keywords for the posted grain list (list of slugs)
     """
@@ -187,21 +187,21 @@ def get_grain_list_sensory_keywords():
 
 
 @app.route('/api/v1/grains/sensory-profiles', methods=['POST'])
-def get_grain_list_sensory_values():
+def get_fermentable_list_sensory_values():
     """Return all possible sensory value min/max data for the given parameters.
     POST format:
     {
-        "grain_list": [grain1, grain2],
+        "fermentable_list": [grain1, grain2],
         "category_model": CategoryModel,
         "sensory_model": SensoryModel,
-        "max_unique_grains": int,
+        "max_unique_fermentables": int,
     }
     """
     data = request.json
 
     # Create a grain object from the list of slugs
     fermentable_list = []
-    for fermentable in data.get('grain_list', []):
+    for fermentable in data.get('fermentable_list', []):
         fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])
         fermentable_obj.set_usage(
             fermentable['min_percent'], fermentable['max_percent'])
@@ -219,27 +219,27 @@ def get_grain_list_sensory_values():
     profiles = fermentable_list_obj.get_sensory_profiles(
         category_model=category_profile,
         sensory_model=data.get('sensory_model'),
-        max_unique_grains=data.get('max_unique_grains')
+        max_unique_grains=data.get('max_unique_fermentables')
     )
 
     return jsonify(profiles), 200
 
 
 @app.route('/api/v1/grains/recipes', methods=['POST'])
-def get_grain_list_recipes():
+def get_fermentable_list_recipes():
     """Return all (or up to limit) possible recipies for the given parameters. Optionally return color distribution only.
     Parameters:
         coloronly=true: Return only color distribution data
         chartrange=x1,x2: Returns color data that contains at least x1 through x2, even if values are 0
     POST format:
     {
-        "grain_list": [
+        "fermentable_list": [
             {slug: 'grain1', max_percent: int, min:percent: int},
             {slug: 'grain2'...}
         ],
         "category_model": CategoryModel,
         "sensory_model": SensoryModel,
-        "max_unique_grains": int,
+        "max_unique_fermentables": int,
         "equipment_profile": EquipmentProfile,
         "style": str(style-slug)
     }
@@ -249,7 +249,7 @@ def get_grain_list_recipes():
 
     # Create a grain object from the list of slugs
     fermentable_list = []
-    for fermentable in data.get('grain_list', []):
+    for fermentable in data.get('fermentable_list', []):
         fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])
         fermentable_obj.set_usage(
             fermentable['min_percent'], fermentable['max_percent'])
@@ -282,7 +282,7 @@ def get_grain_list_recipes():
     recipes = fermentable_list_obj.get_grain_bills(
         category_model=category_profile,
         sensory_model=data.get('sensory_model'),
-        max_unique_grains=data.get('max_unique_grains'),
+        max_unique_grains=data.get('max_unique_fermentables'),
         equipment_profile=equipment_profile,
         beer_profile=beer_profile
     )
@@ -323,13 +323,13 @@ def get_grain_list_recipes():
     return jsonify(response), 200
 
 
-@app.route('/api/v1/helpers/grain-model', methods=['POST'])
+@app.route('/api/v1/helpers/grain-model-valid', methods=['POST'])
 def is_grain_model_valid():
     """Returns whether or not a grain model is mathematically valid
     POST format:
     {
-        max_unique_grains: int,
-        category_data: [
+        max_unique_fermentables: int,
+        category_model: [
             {
                 name: str,
                 min_percent: int,
@@ -338,7 +338,7 @@ def is_grain_model_valid():
                 etc.
             }
         ]
-        fermentable_data: [
+        fermentable_list: [
             {
                 slug: str,
                 min_percent: int,
@@ -352,10 +352,10 @@ def is_grain_model_valid():
 
     data = request.json
     category_profile = category.CategoryProfile([category.Category(
-        cat['name'], cat['min_percent'], cat['max_percent']) for cat in data['category_data']])
+        cat['name'], cat['min_percent'], cat['max_percent']) for cat in data['category_model']])
 
     fermentable_list = []
-    for data_fermentable in data['fermentable_data']:
+    for data_fermentable in data['fermentable_list']:
         matched_fermentable = all_grains.get_grain_by_slug(
             data_fermentable['slug'])
         fermentable_list.append(
@@ -373,6 +373,6 @@ def is_grain_model_valid():
 
     fermentable_profile = grain.GrainList(fermentable_list)
     result = fermentable_profile.is_valid_model(
-        category_profile, data['max_unique_grains'])
+        category_profile, data['max_unique_fermentables'])
 
     return jsonify(result), 200

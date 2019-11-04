@@ -1,10 +1,19 @@
 <template>
-  <div class="columns">
-    <div class="column is-4">
-      <FermentableCategoryList />
-    </div>
-    <div class="column is-8">
-      <FermentableCategoryEditor v-if="editingFermentableCategory" />
+  <div>
+    <b-message
+      title="Fermentable model is invalid!"
+      type="is-danger"
+      :closable="false"
+      v-if="fermentableModelValidity === false"
+    >Please adjust your category/fermentable usage numbers, or your Max Unique Fermentables to ensure the fermentable model is mathematically possible.</b-message>
+
+    <div class="columns">
+      <div class="column is-4">
+        <FermentableCategoryList />
+      </div>
+      <div class="column is-8">
+        <FermentableCategoryEditor v-if="editingFermentableCategory" />
+      </div>
     </div>
   </div>
 </template>
@@ -24,7 +33,7 @@ export default {
     return {}
   },
   computed: {
-    ...mapGetters(['editingFermentableCategory'])
+    ...mapGetters(['editingFermentableCategory', 'fermentableModelValidity'])
   }
 }
 </script>

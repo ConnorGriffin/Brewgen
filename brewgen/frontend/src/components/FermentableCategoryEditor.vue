@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 import FermentableConfigurator from '@/components/FermentableConfigurator.vue'
 
 export default {
@@ -174,6 +174,10 @@ export default {
     }
   },
   methods: {
+    ...mapActions([
+      'fetchFermentableModelValidity',
+      'saveFermentableCategoryChanges'
+    ]),
     editFermentable: function(value) {
       let styleUsage = this.fermentableStyleUsage(value.slug)
       if (styleUsage === undefined) {
@@ -222,8 +226,8 @@ export default {
         min_percent: this.minUsage,
         max_percent: this.maxUsage
       }
-      this.$store.commit('saveFermentableChanges')
-      this.$store.commit('setCategoryUsage', usage)
+      this.saveFermentableCategoryChanges(usage)
+      this.fetchFermentableModelValidity()
     }
   }
 }
