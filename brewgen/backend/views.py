@@ -341,7 +341,6 @@ def is_grain_model_valid():
         fermentable_data: [
             {
                 slug: str,
-                category: str,
                 min_percent: int,
                 max_percent: int
             }, {
