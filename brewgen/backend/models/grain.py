@@ -142,11 +142,11 @@ class GrainList(GrainModel):
         elif grain_slugs:
             self.grain_list = self.get_grain_by_slug(grain_slugs)
 
-    def __calculate_wort_properties(self, mode, max_unique_grains, grain_list, category_model, sensory_model):
+    def __calculate_wort_properties(self, mode, max_unique_grains, grain_list, category_model, sensory_model=None):
         """Return a beer grain bill or sensory data based on input data.
         Args:
-            mode (string): Defines which mode to use, either return a list of grain bills or a list of sensory data.
-                Valid options: grain_bill, sensory_data
+            mode (string): Defines which mode to use, either return a list of grain bills, a list of sensory data, or test if the model is valid at all.
+                Valid options: grain_bill, sensory_data, test_model
             max_unique_grains (int): Maximum number of unique grains to use in the recipe. Defaults to 4.
             grain_list (GrainList)
             category_model (CategoryModel)
@@ -187,18 +187,21 @@ class GrainList(GrainModel):
         # Build a list of all grains and their sensory data
         grain_map = []
         for grain in grain_data:
-            # Build a list of sensory data, add every possible keyword, set to zero if not mapped already
-            sensory_data = {}
-            for key in sensory_keys:
-                sensory_data[key] = int(
-                    grain['sensory_data'].get(key, 0) * scaling)
-
-            grain_map.append({
+            grain_object = {
                 'category': grain['category'],
                 'min_percent': grain['min_percent'],
-                'max_percent': grain['max_percent'],
-                'sensory_data': sensory_data
-            })
+                'max_percent': grain['max_percent']
+            }
+
+            # Build a list of sensory data, add every possible keyword, set to zero if not mapped already
+            if mode != 'test_model':
+                sensory_data = {}
+                for key in sensory_keys:
+                    sensory_data[key] = int(
+                        grain['sensory_data'].get(key, 0) * scaling)
+                grain_object['sensory_data'] = sensory_data
+
+            grain_map.append(grain_object)
 
         # Create the model
         model = cp_model.CpModel()
@@ -302,6 +305,16 @@ class GrainList(GrainModel):
 
             return grain_bills
 
+        if mode == 'test_model':
+            # Solve the model
+            solver = cp_model.CpSolver()
+            status = solver.Solve(model)
+
+            if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
+                return True
+            else:
+                return False
+
     def get_grain_bills(self, beer_profile, equipment_profile, category_model, sensory_model=None, max_unique_grains=4):
         """Return a list of GrainBill objects for valid recipes given the input parameters.
         Args:
@@ -350,6 +363,20 @@ class GrainList(GrainModel):
             grain_list=self
         )
         return sensory_model
+
+    def is_valid_model(self, category_model, max_unique_grains=4):
+        """Return whether or not a category_model is valid within the parameters of the grain list
+        Args:
+            category_model (CategoryProfile)
+            max_unique_grains: defaults to 4
+        """
+        is_valid = self.__calculate_wort_properties(
+            mode='test_model',
+            category_model=category_model,
+            max_unique_grains=max_unique_grains,
+            grain_list=self
+        )
+        return is_valid
 
     def add_grain(self, grain):
         """Adds a grain to the grain list object.

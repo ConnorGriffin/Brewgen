@@ -351,65 +351,29 @@ def is_grain_model_valid():
     ]
     """
 
-    # TODO: Move all of this into Grains or something. Need to get it into a class.
-
-    # Get the data from the request
     data = request.json
-    fermentable_data = data['fermentable_usage']
-    category_data = data['category_usage']
-    max_unique_fermentables = data['max_unique_fermentables']
+    category_profile = category.CategoryProfile([category.Category(
+        cat['name'], cat['min_percent'], cat['max_percent']) for cat in data['category_data']])
 
-    # Set the ranges, we'll need to index into things a lot
-    fermentable_range = range(len(fermentable_data))
-    category_range = range(len(category_data))
+    fermentable_list = []
+    for data_fermentable in data['fermentable_data']:
+        matched_fermentable = all_grains.get_grain_by_slug(
+            data_fermentable['slug'])
+        fermentable_list.append(
+            grain.Grain(
+                name=matched_fermentable.name,
+                brand=matched_fermentable.brand,
+                potential=matched_fermentable.potential,
+                color=matched_fermentable.color,
+                category=matched_fermentable.category,
+                sensory_data=matched_fermentable.sensory_data,
+                min_percent=data_fermentable['min_percent'],
+                max_percent=data_fermentable['max_percent']
+            )
+        )
 
-    # Create the model
-    model = cp_model.CpModel()
-
-    # Define model variables
-    fermentable_vars = [model.NewIntVar(
-        0, 100, 'fermentable{}'.format(i)) for i in fermentable_range]
-    category_vars = [model.NewIntVar(0, 100, 'category_{}'.format(
-        category['name'])) for category in category_data]
-    fermentable_used = [model.NewBoolVar(
-        'fermentable{}_used'.format(i)) for i in fermentable_data]
-
-    # Define constraints
-    # Fermentable usage total must be 100% - not sure why both of these are needed but it doens't work if they're not
-    model.Add(sum(fermentable_vars) == 100)
-    model.Add(sum(category_vars) == 100)
-
-    # Limit the max number of fermentables to the specified limit
-    for i in fermentable_range:
-        model.Add(fermentable_vars[i] == 0).OnlyEnforceIf(
-            fermentable_used[i].Not())
-        model.Add(fermentable_vars[i] > 0).OnlyEnforceIf(
-            fermentable_used[i])
-    model.Add(sum(fermentable_used) <= max_unique_fermentables)
-
-    # Keep each fermentable between the min and max percents, but only if they're in use
-    for i in fermentable_range:
-        model.Add(fermentable_vars[i] <= fermentable_data[i]
-                  ['max_percent']).OnlyEnforceIf(fermentable_used[i])
-        model.Add(fermentable_vars[i] >= fermentable_data[i]
-                  ['min_percent']).OnlyEnforceIf(fermentable_used[i])
-
-    # Keep each fermentable category at or above the min and at or below the max amounts
-    for i in category_range:
-        i_category = category_data[i]
-        model.Add(category_vars[i] == sum(
-            fermentable_vars[k] for k in fermentable_range if fermentable_data[k]['category'] == i_category['name']))
-
-        model.Add(category_vars[i] <= i_category['max_percent'])
-        model.Add(category_vars[i] >= i_category['min_percent'])
-
-    # Solve the model
-    solver = cp_model.CpSolver()
-    status = solver.Solve(model)
-
-    if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
-        result = True
-    else:
-        result = False
+    fermentable_profile = grain.GrainList(fermentable_list)
+    result = fermentable_profile.is_valid_model(
+        category_profile, data['max_unique_grains'])
 
     return jsonify(result), 200
