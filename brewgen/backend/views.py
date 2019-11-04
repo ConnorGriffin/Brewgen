@@ -328,7 +328,7 @@ def is_grain_model_valid():
     """Returns whether or not a grain model is mathematically valid
     POST format:
     {
-        max_unique_fermentables: int,
+        max_unique_grains: int,
         category_data: [
             {
                 name: str,
