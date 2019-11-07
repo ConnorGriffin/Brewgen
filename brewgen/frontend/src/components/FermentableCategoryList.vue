@@ -5,7 +5,7 @@
       :class="'list-item has-background-' + itemBg(category.name)"
       :key="index"
       v-for="(category, index) in fermentableCategories"
-      @click="setEditingFermentableCategory(category.name)"
+      @click="changeCategory(category.name)"
     >
       <span class="title is-6">{{category.name | titleCase }}</span>
       <p :class="textColor(category.name)">
@@ -15,35 +15,63 @@
         >{{ currentStyleFermentables | inCategory(category.name) | length }}/{{ allFermentables | inCategory(category.name) | length }}</span>
       </p>
     </a>
+    <b-modal :active.sync="showUnsavedChanges" has-modal-card trap-focus>
+      <UnsavedCategoryChanges :nextCategory="nextCategory" />
+    </b-modal>
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
+import UnsavedCategoryChanges from '@/components/UnsavedCategoryChanges.vue'
 
 export default {
   name: 'FermentableCategoryList',
+  components: {
+    UnsavedCategoryChanges
+  },
+  data() {
+    return {
+      showUnsavedChanges: false,
+      nextCategory: null
+    }
+  },
   computed: {
     ...mapGetters([
       'fermentableCategories',
       'allFermentables',
-      'currentStyleFermentables'
-    ]),
-    editingFermentableCategory: {
-      get() {
-        return this.$store.state.brewgen.editingFermentableCategory
-      },
-      set(value) {
-        this.$store.commit('setEditingFermentableCategory', value)
-      }
-    }
+      'currentStyleFermentables',
+      'fermentableChanges',
+      'editingFermentableCategory',
+      'fermentableCategoryUsageModified'
+    ])
   },
   methods: {
-    setEditingFermentableCategory(categoryName) {
-      if (this.editingFermentableCategory === categoryName) {
-        this.editingFermentableCategory = null
+    ...mapActions([
+      'setEditingFermentableCategory',
+      'clearEditingFermentableCategory'
+    ]),
+    changeCategory(categoryName) {
+      // Prompt if there are unsaved changes
+      if (
+        (this.fermentableChanges.length > 0 ||
+          this.fermentableCategoryUsageModified) &&
+        this.editingFermentableCategory
+      ) {
+        // Set next category to null if the current category is clicked
+        if (categoryName === this.editingFermentableCategory) {
+          this.nextCategory = null
+        } else {
+          this.nextCategory = categoryName
+        }
+        // Show the modal
+        this.showUnsavedChanges = true
       } else {
-        this.editingFermentableCategory = categoryName
+        if (this.editingFermentableCategory === categoryName) {
+          this.clearEditingFermentableCategory()
+        } else {
+          this.setEditingFermentableCategory(categoryName)
+        }
       }
     },
     itemBg(categoryName) {

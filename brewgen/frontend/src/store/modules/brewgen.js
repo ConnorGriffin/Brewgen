@@ -28,6 +28,8 @@ const state = {
   editingFermentableCategory: null,
   // Unsaved changes to fermentables in a fermentable category
   fermentableChanges: [],
+  // Unsaved category usage amounts (min, max)
+  fermentableCategoryUsageEdit: [],
   // Sensory descriptors that are mentioned in the BJCP style guide
   bjcpSensory: null,
   // Need to work on saving the previous state so editing is faster in two scenerios:
@@ -79,7 +81,24 @@ const getters = {
   beerProfile: state => state.beerProfile,
   editingFermentableCategory: state => state.editingFermentableCategory,
   fermentableChanges: state => state.fermentableChanges,
-  fermentableModelValidity: state => state.fermentableModelValidity
+  fermentableModelValidity: state => state.fermentableModelValidity,
+  fermentableCategoryUsageEdit: state => state.fermentableCategoryUsageEdit,
+  fermentableCategoryUsageModified: state => {
+    // Return true/false if category values differ from unsaved
+    let matchCategory = state.fermentableCategories.find(
+      category => category.name === state.editingFermentableCategory
+    )
+    if (matchCategory) {
+      if (
+        matchCategory.min_percent !== state.fermentableCategoryUsageEdit[0] ||
+        matchCategory.max_percent !== state.fermentableCategoryUsageEdit[1]
+      ) {
+        return true
+      } else {
+        return false
+      }
+    }
+  }
 }
 
 const actions = {
@@ -336,9 +355,29 @@ const actions = {
   removeSensoryConstraint({ commit }, name) {
     commit('removeSensoryConstraint', name)
   },
-  saveFermentableCategoryChanges({ commit }, payload) {
+  saveFermentableCategoryChanges({ commit }) {
+    let usage = {
+      name: state.editingFermentableCategory,
+      min_percent: state.fermentableCategoryUsageEdit[0],
+      max_percent: state.fermentableCategoryUsageEdit[1]
+    }
     commit('saveFermentableChanges')
-    commit('setCategoryUsage', payload)
+    commit('setCategoryUsage', usage)
+  },
+  setEditingFermentableCategory({ commit }, payload) {
+    commit('setEditingFermentableCategory', payload)
+  },
+  clearEditingFermentableCategory({ commit }) {
+    commit('setEditingFermentableCategory', null)
+    commit('clearFermentableChanges')
+    commit('setFermentableCategoryUsageEdit', [])
+  },
+  discardFermentableCategoryChanges({ commit }) {
+    commit('clearFermentableChanges')
+    commit('setFermentableCategoryUsageEdit', [])
+  },
+  setFermentableCategoryUsageEdit({ commit }, payload) {
+    commit('setFermentableCategoryUsageEdit', payload)
   }
 }
 
@@ -569,6 +608,9 @@ const mutations = {
     })
     state.fermentableChanges = []
   },
+  clearFermentableChanges(state) {
+    state.fermentableChanges = []
+  },
   setCategoryUsage(state, payload) {
     let matchCategory = state.fermentableCategories.find(
       category => category.name === payload.name
@@ -577,6 +619,9 @@ const mutations = {
   },
   setFermentableModelValidity(state, payload) {
     state.fermentableModelValidity = payload
+  },
+  setFermentableCategoryUsageEdit(state, payload) {
+    state.fermentableCategoryUsageEdit = payload
   }
 }
 

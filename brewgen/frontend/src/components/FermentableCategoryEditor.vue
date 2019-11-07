@@ -57,8 +57,6 @@ export default {
   },
   data() {
     return {
-      minUsage: null,
-      maxUsage: null,
       showFermentableConfigurator: false,
       editingFermentable: null,
       columns: [
@@ -99,8 +97,10 @@ export default {
         let category = this.fermentableCategories.find(category => {
           return category.name === this.editingFermentableCategory
         })
-        this.minUsage = category.min_percent
-        this.maxUsage = category.max_percent
+        this.setFermentableCategoryUsageEdit([
+          category.min_percent,
+          category.max_percent
+        ])
       },
       immediate: true
     },
@@ -127,7 +127,8 @@ export default {
       'allFermentables',
       'currentStyleFermentables',
       'fermentableChanges',
-      'equipmentProfile'
+      'equipmentProfile',
+      'fermentableCategoryUsageEdit'
     ]),
     categoryFermentables: function() {
       // Return fermentables in the category with details from allFermentables for each one
@@ -171,12 +172,29 @@ export default {
       } else {
         return false
       }
+    },
+    minUsage: {
+      get() {
+        return this.fermentableCategoryUsageEdit[0]
+      },
+      set(value) {
+        this.setFermentableCategoryUsageEdit([value, this.maxUsage])
+      }
+    },
+    maxUsage: {
+      get() {
+        return this.fermentableCategoryUsageEdit[1]
+      },
+      set(value) {
+        this.setFermentableCategoryUsageEdit([this.minUsage, value])
+      }
     }
   },
   methods: {
     ...mapActions([
       'fetchFermentableModelValidity',
-      'saveFermentableCategoryChanges'
+      'saveFermentableCategoryChanges',
+      'setFermentableCategoryUsageEdit'
     ]),
     editFermentable: function(value) {
       let styleUsage = this.fermentableStyleUsage(value.slug)
