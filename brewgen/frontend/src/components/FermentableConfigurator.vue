@@ -54,7 +54,7 @@
     <footer class="modal-card-foot">
       <button class="button" type="button" @click="$parent.close()">Cancel</button>
       <b-button type="is-primary" @click="saveChanges">Save Changes</b-button>
-      <b-button type="is-danger" outlined @click="disableFermentable">Disable Fermentable</b-button>
+      <b-button type="is-danger" outlined @click="disableFermentable">Disable</b-button>
     </footer>
   </div>
 </template>
