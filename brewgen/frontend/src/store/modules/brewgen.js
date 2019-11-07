@@ -149,9 +149,18 @@ const actions = {
         }
       })
 
+    // Build the fermentable list
+    let fermentable_list = state.currentStyleFermentables.map(fermentable => {
+      return {
+        slug: fermentable.slug,
+        min_percent: fermentable.min_percent,
+        max_percent: fermentable.max_percent
+      }
+    })
+
     return axios
       .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
-        fermentable_list: state.currentStyleFermentables,
+        fermentable_list: fermentable_list,
         category_model: state.fermentableCategories,
         sensory_model: sensoryModel,
         max_unique_fermentables: Number(state.equipmentProfile.maxUniqueFermentables)
@@ -247,9 +256,18 @@ const actions = {
         }
       })
 
+    // Build the fermentable list
+    let fermentable_list = state.currentStyleFermentables.map(fermentable => {
+      return {
+        slug: fermentable.slug,
+        min_percent: fermentable.min_percent,
+        max_percent: fermentable.max_percent
+      }
+    })
+
     return axios
       .post(uri, {
-        fermentable_list: state.allFermentables,
+        fermentable_list: fermentable_list,
         category_model: state.fermentableCategories,
         sensory_model: sensoryModel,
         max_unique_fermentables: Number(state.equipmentProfile.maxUniqueFermentables),
