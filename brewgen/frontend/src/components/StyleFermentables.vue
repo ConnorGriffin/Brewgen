@@ -1,9 +1,10 @@
 <template>
   <div>
     <b-message
-      title="Fermentable model is invalid!"
+      title="Invalid Fermentable Model"
       type="is-danger"
       :closable="false"
+      has-icon
       v-if="fermentableModelValidity === false"
     >Please adjust your category/fermentable usage numbers, or your Max Unique Fermentables to ensure the fermentable model is mathematically possible.</b-message>
 
