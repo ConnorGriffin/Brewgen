@@ -36,7 +36,7 @@ const state = {
   // 1. When editing the most recently set descriptor
   // 2. When re-editing a value that we clicked edit on but did not save changes, no need to recalc
   // Current style sensory stats including style, possible, and configured min/max values
-  currentStyleSensory: '',
+  currentStyleSensory: [],
   // Current style fermentable data (usage, slugs, and enabled/disabled only)
   currentStyleFermentables: null,
   // Current style sensory stats with a single descriptor's configured values nulled
@@ -151,7 +151,7 @@ const actions = {
 
     return axios
       .post('http://10.31.36.49:5000/api/v1/grains/sensory-profiles', {
-        fermentable_list: state.allFermentables,
+        fermentable_list: state.currentStyleFermentables,
         category_model: state.fermentableCategories,
         sensory_model: sensoryModel,
         max_unique_fermentables: Number(state.equipmentProfile.maxUniqueFermentables)

@@ -109,8 +109,22 @@ export default {
       activeStep: 1
     }
   },
+  watch: {
+    activeStep: function(activeStep) {
+      // Wort Sensory
+      if (activeStep === 2) {
+        this.fetchSensoryData()
+        this.fetchRecipeData({ colorOnly: true })
+      }
+    }
+  },
   methods: {
-    ...mapActions(['fetchStyles', 'fetchAllFermentables'])
+    ...mapActions([
+      'fetchStyles',
+      'fetchAllFermentables',
+      'fetchSensoryData',
+      'fetchRecipeData'
+    ])
   },
   computed: {
     ...mapGetters(['currentStyleName']),
@@ -121,6 +135,8 @@ export default {
             return true
           }
           return false
+          break
+        case 1: // fermentables
           break
       }
     }
