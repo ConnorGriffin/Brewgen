@@ -63,7 +63,7 @@
                 icon-pack="fas"
                 icon-left="backward"
                 :disabled="previous.disabled"
-                @click.prevent="previous.action"
+                @click.prevent="previousAction"
               >Previous</b-button>
               <b-button
                 outlined
@@ -124,7 +124,13 @@ export default {
       'fetchAllFermentables',
       'fetchSensoryData',
       'fetchRecipeData'
-    ])
+    ]),
+    previousAction: function() {
+      // Store activeStep in Vuex, show modal when switching from Wort Sensory to Fermentables
+      // Options: Cancel, Continue (Clear Sensory Model)
+      // Only show if there is any sensory model data
+      this.activeStep -= 1
+    }
   },
   computed: {
     ...mapGetters(['currentStyleName']),
