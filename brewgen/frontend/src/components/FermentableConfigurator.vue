@@ -47,13 +47,13 @@
           </p>
         </div>
         <div class="column">
-          <b-table :data="sensoryData" :columns="columns"></b-table>
+          <b-table :data="sensoryData" :columns="columns" :mobile-cards="false"></b-table>
         </div>
       </div>
     </section>
     <footer class="modal-card-foot">
       <button class="button" type="button" @click="$parent.close()">Cancel</button>
-      <b-button type="is-primary" @click="saveChanges">Save Changes</b-button>
+      <b-button type="is-primary" @click="saveChanges">Save</b-button>
       <b-button type="is-danger" outlined @click="disableFermentable">Disable</b-button>
     </footer>
   </div>
