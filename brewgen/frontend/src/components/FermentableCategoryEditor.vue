@@ -3,8 +3,8 @@
     <b-message
       type="is-danger"
       has-icon
-      v-if="!isSaveable"
-    >Sum of minimum usage for top {{ equipmentProfile.maxUniqueFermentables }} fermentables is less than category minimum usage ({{ minUsage }}%)</b-message>
+      v-if="!isPossible"
+    >Sum of minimum usage for top {{ equipmentProfile.maxUniqueFermentables }} fermentables is less than category minimum usage ({{ minUsage }}%).</b-message>
     <h1 class="title is-5">
       Category Usage
       <b-button
@@ -128,7 +128,8 @@ export default {
       'currentStyleFermentables',
       'fermentableChanges',
       'equipmentProfile',
-      'fermentableCategoryUsageEdit'
+      'fermentableCategoryUsageEdit',
+      'fermentableCategoryUsageModified'
     ]),
     categoryFermentables: function() {
       // Return fermentables in the category with details from allFermentables for each one
@@ -155,7 +156,7 @@ export default {
         fermentable => fermentable.category === this.editingFermentableCategory
       )
     },
-    isSaveable: function() {
+    isPossible: function() {
       // Check if we can hit the minimum usage % for the category
       let minValues = this.categoryFermentables
         .map(fermentable => {
@@ -171,6 +172,20 @@ export default {
         return true
       } else {
         return false
+      }
+    },
+    isSaveable: function() {
+      if (
+        !this.fermentableCategoryUsageModified &&
+        this.fermentableChanges.length === 0
+      ) {
+        return false
+      } else {
+        if (this.isPossible) {
+          return true
+        } else {
+          return false
+        }
       }
     },
     minUsage: {
