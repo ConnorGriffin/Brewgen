@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div>
     <div class="columns">
       <!-- Sensory Constraint Buuidler -->
       <div class="column is-4">

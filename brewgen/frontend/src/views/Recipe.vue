@@ -53,6 +53,7 @@
                 <CurrentStyleCard />
               </div>
             </div>
+            <RecipeStep />
           </b-step-item>
           <!-- Custom Nav -->
           <template slot="navigation" slot-scope="{previous, next}">
@@ -92,6 +93,7 @@ import StyleField from '@/components/StyleField.vue'
 import WortSensory from '@/components/WortSensory.vue'
 import StyleFermentables from '@/components/StyleFermentables.vue'
 import CurrentStyleCard from '@/components/CurrentStyleCard.vue'
+import RecipeStep from '@/components/RecipeStep.vue'
 
 export default {
   name: 'Recipe',
@@ -102,7 +104,8 @@ export default {
     StyleField,
     WortSensory,
     StyleFermentables,
-    CurrentStyleCard
+    CurrentStyleCard,
+    RecipeStep
   },
   data() {
     return {
@@ -110,11 +113,17 @@ export default {
     }
   },
   watch: {
-    activeStep: function(activeStep) {
-      // Wort Sensory
-      if (activeStep === 2) {
-        this.fetchSensoryData()
-        this.fetchRecipeData({ colorOnly: true })
+    activeStep: function(newStep, oldStep) {
+      switch (newStep) {
+        case 2:
+          if (oldStep === 1) {
+            this.fetchSensoryData()
+            this.fetchRecipeData({ colorOnly: true })
+          }
+          break
+        case 3:
+          this.fetchRecipeData({ colorOnly: false })
+          break
       }
     }
   },
