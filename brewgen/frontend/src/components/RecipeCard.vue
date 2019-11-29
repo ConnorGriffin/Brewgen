@@ -23,10 +23,12 @@ export default {
           field: 'name'
         },
         {
-          field: 'color'
+          field: 'color',
+          numeric: true
         },
         {
-          field: 'percent'
+          field: 'percent',
+          numeric: true
         }
       ]
     }
