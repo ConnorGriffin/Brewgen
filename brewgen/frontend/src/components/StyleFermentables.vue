@@ -14,6 +14,10 @@
       </div>
       <div class="column is-8">
         <FermentableCategoryEditor v-if="editingFermentableCategory" />
+        <b-message
+          type="is-primary"
+          v-else
+        >Select a fermentable category to modify the usage amounts of that category and the fermentables within it.</b-message>
       </div>
     </div>
   </div>
