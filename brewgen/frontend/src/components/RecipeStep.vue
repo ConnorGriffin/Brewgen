@@ -22,6 +22,7 @@
                   :min="srmSliderRange[0]"
                   :max="srmSliderRange[1]"
                   :step=".1"
+                  lazy
                   style="padding-left: .5rem; padding-right: .5rem"
                 >
                   <b-slider-tick :value="srmSliderRange[0]">{{ srmSliderRange[0] }}</b-slider-tick>
@@ -48,7 +49,7 @@
           <div class="card-content">
             <div class="content">
               <div
-                :class="filterClass(index)"
+                class="filteritem"
                 :key="index"
                 v-for="(category, index) in categoryFermentables"
               >
@@ -58,10 +59,27 @@
                   :key="index"
                   v-for="(fermentable, index) in category.fermentables"
                 >
-                  <b-checkbox
-                    v-model="category.fermentableCheckbox"
-                    :native-value="fermentable.slug"
-                  >{{ fermentable.name }}</b-checkbox>
+                  <div class="level">
+                    <div class="level-left">
+                      <b-checkbox
+                        v-model="category.fermentableCheckbox"
+                        :native-value="fermentable.slug"
+                        class="is-size-6"
+                      >
+                        {{ fermentable.name }}
+                        <br />
+                        <p
+                          class="is-size-7 has-text-grey"
+                        >{{ fermentable.brand | titleCase }} &ndash; {{ fermentable.color }} L</p>
+                      </b-checkbox>
+                    </div>
+                    <div class="level-right">
+                      <span
+                        class="is-pulled-right is-size-7 has-text-grey"
+                        style="margin-left: .5rem"
+                      >{{ fermentableRecipeCount(fermentable.slug).join(' | ') }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -208,11 +226,6 @@ export default {
     }
   },
   methods: {
-    filterClass: function(index) {
-      if (index !== 0) {
-        return 'has-mt-1rem'
-      }
-    },
     tickValues: function(range) {
       // Return all whole numbers between two values excluding those values
       var ticks = []
@@ -233,6 +246,15 @@ export default {
       }
 
       return ticks
+    },
+    fermentableRecipeCount: function(slug) {
+      let filteredCount = this.filteredRecipes.filter(recipe => {
+        return recipe.grains.map(grain => grain.slug).includes(slug)
+      }).length
+      let unfilteredCount = this.recipeData.filter(recipe => {
+        return recipe.grains.map(grain => grain.slug).includes(slug)
+      }).length
+      return [filteredCount, unfilteredCount]
     }
   },
   filters: {
@@ -251,7 +273,7 @@ export default {
 </script>
 
 <style scoped>
-.has-mt-1rem {
+.filteritem:not(:first-child) {
   margin-top: 1rem;
 }
 .filter:not(:last-child) {
