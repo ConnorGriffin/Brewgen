@@ -619,6 +619,8 @@ const mutations = {
       } else {
         state.currentStyleFermentables.push({
           slug: change.slug,
+          name: change.name,
+          category: change.category,
           min_percent: change.styleUsage.min_percent,
           max_percent: change.styleUsage.max_percent
         })

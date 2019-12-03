@@ -12,7 +12,7 @@
         Usage: {{ category.min_percent }} - {{ category.max_percent }}%
         <span
           class="is-pulled-right"
-        >{{ currentStyleFermentables | inCategory(category.name) | length }}/{{ allFermentables | inCategory(category.name) | length }}</span>
+        >{{ enabledFermentables | inCategory(category.name) | length }}/{{ allFermentables | inCategory(category.name) | length }}</span>
       </p>
     </a>
     <b-modal :active.sync="showUnsavedChanges" has-modal-card trap-focus>
@@ -44,7 +44,12 @@ export default {
       'fermentableChanges',
       'editingFermentableCategory',
       'fermentableCategoryUsageModified'
-    ])
+    ]),
+    enabledFermentables: function() {
+      return this.currentStyleFermentables.filter(fermentable => {
+        return fermentable.max_percent > 0
+      })
+    }
   },
   methods: {
     ...mapActions([
