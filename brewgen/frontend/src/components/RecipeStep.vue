@@ -5,7 +5,40 @@
       <div class="column is-narrow">
         <!-- Defines recipe filter section -->
         <h1 class="title is-5">Filter Recipes</h1>
-        <b-collapse class="card" open>
+        <!-- Wort properties filter -->
+        <b-collapse class="card filter" open>
+          <div slot="trigger" slot-scope="props" class="card-header" role="button">
+            <p class="card-header-title">Wort Properties</p>
+            <a class="card-header-icon">
+              <b-icon :icon="props.open ? 'caret-down' : 'caret-up'"></b-icon>
+            </a>
+          </div>
+          <div class="card-content">
+            <div class="content">
+              <b-field label="Color (SRM)">
+                <b-slider
+                  v-model="srmRange"
+                  type="is-primary"
+                  :min="srmSliderRange[0]"
+                  :max="srmSliderRange[1]"
+                  :step=".1"
+                  style="padding-left: .5rem; padding-right: .5rem"
+                >
+                  <b-slider-tick :value="srmSliderRange[0]">{{ srmSliderRange[0] }}</b-slider-tick>
+                  <b-slider-tick :value="srmSliderRange[1]">{{ srmSliderRange[1] }}</b-slider-tick>
+                  <b-slider-tick
+                    :value="tickValue"
+                    :key="index"
+                    v-for="(tickValue, index) in tickValues(srmSliderRange)"
+                  ></b-slider-tick>
+                </b-slider>
+              </b-field>
+            </div>
+          </div>
+        </b-collapse>
+
+        <!-- Fermentables filter -->
+        <b-collapse class="card filter" open>
           <div slot="trigger" slot-scope="props" class="card-header" role="button">
             <p class="card-header-title">Fermentables</p>
             <a class="card-header-icon">
@@ -58,6 +91,7 @@
 <script>
 import { mapGetters } from 'vuex'
 import RecipeCard from '@/components/RecipeCard.vue'
+import round from 'lodash'
 
 export default {
   name: 'RecipeStep',
@@ -68,14 +102,23 @@ export default {
     return {
       currentPage: 1,
       perPage: 5,
-      categoryFermentables: []
+      categoryFermentables: [],
+      srmRange: [],
+      srmSliderRange: []
     }
   },
   watch: {
     recipeData: {
       immediate: true,
       handler() {
-        console.log('recipe data changed?')
+        // Set the SRM slider values
+        let recipeSrm = this.recipeData.map(recipe => recipe.srm)
+        let srmRange = [
+          _.round(Math.min(...recipeSrm), 1),
+          _.round(Math.max(...recipeSrm), 1)
+        ]
+        this.srmRange = this.srmSliderRange = srmRange
+
         // Build a checkbox array for each fermentable category
         let newCategoryFermentables = []
         let uniqueFermentableSlugs = this.uniqueFermentables.map(
@@ -137,7 +180,11 @@ export default {
         let enabledRecipeFermentables = recipe.grains.filter(rf => {
           return this.enabledFermentables.includes(rf.slug)
         })
-        return enabledRecipeFermentables.length === recipe.grains.length
+        let roundedSrm = _.round(recipe.srm, 1)
+        return (
+          enabledRecipeFermentables.length === recipe.grains.length &&
+          (roundedSrm >= this.srmRange[0] && roundedSrm <= this.srmRange[1])
+        )
       })
     },
     uniqueFermentables: function() {
@@ -165,6 +212,27 @@ export default {
       if (index !== 0) {
         return 'has-mt-1rem'
       }
+    },
+    tickValues: function(range) {
+      // Return all whole numbers between two values excluding those values
+      var ticks = []
+      if (Number.isInteger(range[0])) {
+        var start = range[0] + 1
+      } else {
+        var start = Math.ceil(range[0])
+      }
+
+      if (Number.isInteger(range[1])) {
+        var end = range[1] - 1
+      } else {
+        var end = Math.floor(range[1])
+      }
+
+      for (let i = start; i <= end; i++) {
+        ticks.push(i)
+      }
+
+      return ticks
     }
   },
   filters: {
@@ -185,5 +253,8 @@ export default {
 <style scoped>
 .has-mt-1rem {
   margin-top: 1rem;
+}
+.filter:not(:last-child) {
+  margin-bottom: 1rem;
 }
 </style>
