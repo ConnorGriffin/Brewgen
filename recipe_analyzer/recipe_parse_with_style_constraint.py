@@ -1,3 +1,4 @@
+from brewgen.backend.models import grain, category
 from pathlib import Path
 from pybeerxml import Parser
 import sys
@@ -7,7 +8,7 @@ import csv
 import json
 
 sys.path.append('../')
-from brewgen.backend.models import grain, category
+
 
 def points(og):
     return (og - 1) * 1000
@@ -38,18 +39,18 @@ fermentable_rewrites = [
         'match': "^.*(Goldpils|Vienna.*US|US.*Vienna|Briess.*Vienna|Vienna.*Briess).*$",
         'max_color': 6
     },
-    # Weyermann as the catchall for Vienna
+    # as the catchall for Vienna
     {
-        'name': 'Weyermann Vienna Malt',
+        'name': 'Vienna Malt',
         'match': '^.*Vienna.*$',
         'max_color': 6
     }, {
-        'name': 'Weyermann Munich Malt I',
+        'name': 'Munich Malt I',
         "match": '^.*Munich.*$',
         'max_color': 7
     },
     {
-        'name': 'Weyermann Munich Malt II',
+        'name': 'Munich Malt II',
         "match": '^.*Munich.*$',
         'max_color': 9.9
     },
@@ -79,9 +80,9 @@ fermentable_rewrites = [
         'match': '^.*(Carafoam|US.*Carapils|Carapils.*US|Carapils.*Briess|Briess.*Carapils|Cara-Pils|Dextrine).*$',
         'max_color': 5
     },
-    # Weyermann as the catchall for Carapils
+    # as the catchall for Carapils
     {
-        'name': "Weyermann Carapils",
+        'name': "Carapils",
         'match': '^.*(Carapils).*$',
         'max_color': 5
     },
@@ -90,9 +91,9 @@ fermentable_rewrites = [
         'match': '^.*(Pilsen|US.*Pilsner|Pilsner.*US|Lager).*$',
         'max_color': 3
     },
-    # Weyermann as the catchall for Pilsner
+    # as the catchall for Pilsner
     {
-        'name': "Weyermann Pilsner Malt",
+        'name': "Pilsner Malt",
         'match': '^.*Pilsner.*$',
         'max_color': 3
     },
@@ -116,22 +117,22 @@ fermentable_rewrites = [
         'match': '^.*Special (W|B).*$'
     },
     {
-        'name': "Weyermann Caramunich I",
+        'name': "Caramunich I",
         'match': '^.*Cara ?munich(( I)?|.*Type 1).*$',
         'max_color': 40
     },
     {
-        'name': "Weyermann Caramunich II",
+        'name': "Caramunich II",
         'match': '^.*Cara ?munich(( II)?|.*Type 2).*$',
         'max_color': 50
     },
     {
-        'name': "Weyermann Caramunich III",
+        'name': "Caramunich III",
         'match': '^.*Cara ?munich(( III)?|.*Type 3).*$',
         'max_color': 60
     },
     {
-        'name': "Weyermann Pale Wheat Malt",
+        'name': "Pale Wheat Malt",
         'match': '^.*((Belgian|German).*Wheat|Wheat.*(DE|BE|Belgian|German)).*$'
     },
     {
@@ -175,7 +176,7 @@ fermentable_rewrites = [
         'max_color': 25
     },
     {
-        'name': "Weyermann Melanoidin Malt",
+        'name': "Melanoidin Malt",
         'match': '^.*Aromatic.*$',
         'min_color': 25,
         'max_color': 65
@@ -187,7 +188,7 @@ fermentable_rewrites = [
         'max_color': 6
     },
     {
-        'name': 'Weyermann Beech Smoked Barley Malt',
+        'name': 'Beech Smoked Barley Malt',
         'match': '^.*Smoked Malt.*$',
         'min_color': 1,
         'max_color': 4
@@ -237,8 +238,8 @@ fermentable_rewrites = [
         'match': '^.*Roast.*Barley.*$'
     },
     {
-        'name': "Weyermann Pale Wheat Malt",
-        'match': '^.*Weyermann Pale Wheat Malt.*$'
+        'name': "Pale Wheat Malt",
+        'match': '^.*Pale Wheat Malt.*$'
     },
     {
         'name': "Acid Malt",
@@ -249,7 +250,7 @@ fermentable_rewrites = [
         'match': '^.*(Sucrose|Table.*Sugar|Cane.*Sugar).*$'
     },
     {
-        'name': "Weyermann Melanoidin Malt",
+        'name': "Melanoidin Malt",
         'match': '^.*Mel.noid.*$'
     },
     {
@@ -419,7 +420,7 @@ uses_extract = 0
 # Get all recipe paths
 #beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:120000]
 beerxml_list = list(
-    Path("./brewersfriend_scrape/recipes").rglob("*.xml"))#[0:100000]
+    Path("./brewersfriend_scrape/recipes").rglob("*.xml"))  # [0:100000]
 for beerxml_file in beerxml_list:
     try:
         recipes = parser.parse('./{}'.format(str(beerxml_file)))
@@ -660,7 +661,7 @@ for style in styles:
             [style_category['category_object'] for style_category in style_category_usage])
         style_sensory_minmax = style_fermentable_list.get_sensory_profiles(
             category_profile)
-    except: 
+    except:
         print('Failed to get recipe data for {}'.format(style))
 
     # Iterate over each sensory keyword, get the average values for each keyword in the style
@@ -696,11 +697,11 @@ for style in styles:
                 'max': max(sensory_values)
             }
         })
-    
+
     # Remove the fermentable object, can't export it to JSON
     for style_fermentable in style_grain_usage:
         del style_fermentable['fermentable_object']
-    
+
     for category_usage in style_category_usage:
         del category_usage['category_object']
 

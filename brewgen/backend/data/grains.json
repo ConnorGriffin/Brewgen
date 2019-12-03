@@ -37,7 +37,7 @@
     }
   },
   {
-    "name": "Weyermann Beech Smoked Barley Malt",
+    "name": "Beech Smoked Barley Malt",
     "brand": "Weyermann",
     "potential": 1.0356,
     "color": 3,
@@ -699,7 +699,7 @@
     }
   },
   {
-    "name": "Weyermann Vienna Malt",
+    "name": "Vienna Malt",
     "brand": "Weyermann",
     "potential": 1.0365,
     "color": 3,
@@ -730,7 +730,7 @@
     }
   },
   {
-    "name": "Weyermann Pale Wheat Malt",
+    "name": "Pale Wheat Malt",
     "brand": "Weyermann",
     "potential": 1.0379,
     "color": 2,
@@ -759,7 +759,7 @@
     }
   },
   {
-    "name": "Weyermann Munich Malt I",
+    "name": "Munich Malt I",
     "brand": "Weyermann",
     "potential": 1.036,
     "color": 7,
@@ -791,7 +791,7 @@
     }
   },
   {
-    "name": "Weyermann Munich Malt II",
+    "name": "Munich Malt II",
     "brand": "Weyermann",
     "potential": 1.036,
     "color": 8.5,
@@ -879,7 +879,7 @@
     }
   },
   {
-    "name": "Weyermann Carapils",
+    "name": "Carapils",
     "brand": "Weyermann",
     "potential": 1.0347,
     "color": 2,
@@ -911,7 +911,7 @@
     }
   },
   {
-    "name": "Weyermann Melanoidin Malt",
+    "name": "Melanoidin Malt",
     "brand": "Weyermann",
     "potential": 1.0347,
     "color": 27,
@@ -942,7 +942,7 @@
     }
   },
   {
-    "name": "Weyermann Pilsner Malt",
+    "name": "Pilsner Malt",
     "brand": "Weyermann",
     "potential": 1.0372,
     "color": 1.7,
@@ -966,7 +966,7 @@
   },
   {
     "name": "Special B",
-    "note": "Using Weyermann Special W sensory analysis, none available for Special B.",
+    "note": "Using Special W sensory analysis, none available for Special B.",
     "brand": "Generic",
     "potential": 1.0347,
     "color": 150,
@@ -1137,7 +1137,7 @@
     }
   },
   {
-    "name": "Weyermann Caramunich I",
+    "name": "Caramunich I",
     "brand": "Weyermann",
     "potential": 1.0337,
     "color": 35,
@@ -1169,7 +1169,7 @@
     }
   },
   {
-    "name": "Weyermann Caramunich II",
+    "name": "Caramunich II",
     "brand": "Weyermann",
     "potential": 1.0337,
     "color": 45,
@@ -1201,7 +1201,7 @@
     }
   },
   {
-    "name": "Weyermann Caramunich III",
+    "name": "Caramunich III",
     "brand": "Weyermann",
     "potential": 1.0337,
     "color": 55,
