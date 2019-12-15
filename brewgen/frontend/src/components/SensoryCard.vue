@@ -20,13 +20,27 @@
         ></a>
 
         <!-- Show an Add button if not configured -->
-        <b-button
-          size="is-small"
-          type="is-primary"
-          outlined
-          @click="showSensoryConfigurator = true"
-          v-if="sensoryData.configured === undefined"
-        >Add to model</b-button>
+        <div class="buttons">
+          <b-button
+            size="is-small"
+            outlined
+            @click="addVisibleSensoryDescriptor(sensoryData.name)"
+            v-if="sensoryData.configured === undefined && !visibleSensoryDescriptors.includes(sensoryData.name)"
+          >Show in constraint builder</b-button>
+          <b-button
+            size="is-small"
+            outlined
+            @click="removeVisibleSensoryDescriptor(sensoryData.name)"
+            v-if="sensoryData.configured === undefined && visibleSensoryDescriptors.includes(sensoryData.name)"
+          >Hide</b-button>
+          <b-button
+            size="is-small"
+            type="is-primary"
+            outlined
+            @click="showSensoryConfigurator = true"
+            v-if="sensoryData.configured === undefined"
+          >Add to model</b-button>
+        </div>
         <b-modal
           :active.sync="showSensoryConfigurator"
           has-modal-card
@@ -183,7 +197,8 @@ export default {
     ...mapGetters([
       'isLoading',
       'lastSensoryData',
-      'lastChangedSensoryDescriptor'
+      'lastChangedSensoryDescriptor',
+      'visibleSensoryDescriptors'
     ]),
     possibleSliderRange: function() {
       if (this.configuratorData.possible !== undefined) {
@@ -239,7 +254,9 @@ export default {
       'removeSensoryConstraint',
       'fetchSensoryData',
       'fetchSensoryDataEdit',
-      'fetchRecipeData'
+      'fetchRecipeData',
+      'addVisibleSensoryDescriptor',
+      'removeVisibleSensoryDescriptor'
     ]),
     sliderTicks: function(min, max) {
       if (max - min >= this.tickSpace) {

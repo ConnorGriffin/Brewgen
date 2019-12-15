@@ -37,12 +37,15 @@ export default {
   },
   data() {
     return {
-      showSensoryPicker: false,
-      alwaysLoading: true
+      showSensoryPicker: false
     }
   },
   computed: {
-    ...mapGetters(['currentStyleSensory', 'isLoading']),
+    ...mapGetters([
+      'currentStyleSensory',
+      'isLoading',
+      'visibleSensoryDescriptors'
+    ]),
     sliderMin: function() {
       // Returns lowest possible min sensory value in sensory array
       let values = []
@@ -81,12 +84,8 @@ export default {
         if (sensoryData.configured !== undefined) {
           return true
         } else {
-          // Return items with certain tags only
-          var validTags = ['wide range', 'mentioned in style']
-          let matchTags = sensoryData.tags.filter(tag => {
-            return validTags.includes(tag.value)
-          })
-          return matchTags.length > 0
+          // Return items in visibleSensoryDescriptors
+          return this.visibleSensoryDescriptors.includes(sensoryData.name)
         }
       })
     }

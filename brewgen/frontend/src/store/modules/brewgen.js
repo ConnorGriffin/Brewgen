@@ -46,7 +46,9 @@ const state = {
   // Slug of the sensory keyword that was most most recently changed
   lastChangedSensoryDescriptor: null,
   // State of application API calls, used to set spinners and progress bars
-  loaders: []
+  loaders: [],
+  // Sensory descriptors that show up in the main Wort Sensory page
+  visibleSensoryDescriptors: []
 }
 
 const getters = {
@@ -98,7 +100,8 @@ const getters = {
         return false
       }
     }
-  }
+  },
+  visibleSensoryDescriptors: state => state.visibleSensoryDescriptors
 }
 
 const actions = {
@@ -396,6 +399,12 @@ const actions = {
   },
   setFermentableCategoryUsageEdit({ commit }, payload) {
     commit('setFermentableCategoryUsageEdit', payload)
+  },
+  addVisibleSensoryDescriptor({ commit }, name) {
+    commit('addVisibleSensoryDescriptor', name)
+  },
+  removeVisibleSensoryDescriptor({ commit }, name) {
+    commit('removeVisibleSensoryDescriptor', name)
   }
 }
 
@@ -429,6 +438,7 @@ const mutations = {
   },
   setCurrentStyleSensory: (state, sensoryData) => {
     // Format the sensory data for use in the recipe designer
+    state.visibleSensoryDescriptors = []
     state.currentStyleSensory = sensoryData.filter(sensoryValue => {
       return sensoryValue.max > 0
     })
@@ -448,6 +458,7 @@ const mutations = {
             value: 'wide range',
             type: 'is-info'
           })
+          state.visibleSensoryDescriptors.push(sensoryReturn.name)
         }
         if (sensoryValue.max <= 0.25) {
           sensoryReturn.tags.push({
@@ -466,6 +477,7 @@ const mutations = {
             value: 'mentioned in style',
             type: 'is-primary'
           })
+          state.visibleSensoryDescriptors.push(sensoryReturn.name)
         }
         return sensoryReturn
       })
@@ -502,6 +514,16 @@ const mutations = {
         })
       }
     })
+  },
+  addVisibleSensoryDescriptor: (state, name) => {
+    if (!state.visibleSensoryDescriptors.includes(name)) {
+      state.visibleSensoryDescriptors.push(name)
+    }
+  },
+  removeVisibleSensoryDescriptor: (state, name) => {
+    if (state.visibleSensoryDescriptors.includes(name)) {
+      state.visibleSensoryDescriptors.splice(state.visibleSensoryDescriptors.indexOf(name), 1)
+    }
   },
   updateEquipmentProfile: (state, { maxUniqueFermentables, targetVolumeGallons, mashEfficiency }) => {
     Object.assign(state.equipmentProfile, { maxUniqueFermentables, targetVolumeGallons, mashEfficiency })
