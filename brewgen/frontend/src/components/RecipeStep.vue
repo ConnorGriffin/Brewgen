@@ -38,7 +38,10 @@
                 </b-field>
               </div>
               <!-- Unique Fermentable Count Filter -->
-              <div class="filteritem">
+              <div
+                class="filteritem"
+                v-if="uniqueFermentablesSliderRange[0] !== uniqueFermentablesSliderRange[1]"
+              >
                 <b-field label="Unique Fermentables">
                   <b-slider
                     v-model="uniqueFermentablesRange"
