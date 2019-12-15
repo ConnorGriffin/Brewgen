@@ -15,25 +15,54 @@
           </div>
           <div class="card-content">
             <div class="content">
-              <b-field label="Color (SRM)">
-                <b-slider
-                  v-model="srmRange"
-                  type="is-primary"
-                  :min="srmSliderRange[0]"
-                  :max="srmSliderRange[1]"
-                  :step=".1"
-                  lazy
-                  style="padding-left: .5rem; padding-right: .5rem"
-                >
-                  <b-slider-tick :value="srmSliderRange[0]">{{ srmSliderRange[0] }}</b-slider-tick>
-                  <b-slider-tick :value="srmSliderRange[1]">{{ srmSliderRange[1] }}</b-slider-tick>
-                  <b-slider-tick
-                    :value="tickValue"
-                    :key="index"
-                    v-for="(tickValue, index) in tickValues(srmSliderRange)"
-                  ></b-slider-tick>
-                </b-slider>
-              </b-field>
+              <!-- Color Filter -->
+              <div class="filteritem">
+                <b-field label="Color (SRM)">
+                  <b-slider
+                    v-model="srmRange"
+                    type="is-primary"
+                    :min="srmSliderRange[0]"
+                    :max="srmSliderRange[1]"
+                    :step=".1"
+                    lazy
+                    style="padding-left: .5rem; padding-right: .5rem"
+                  >
+                    <b-slider-tick :value="srmSliderRange[0]">{{ srmSliderRange[0] }}</b-slider-tick>
+                    <b-slider-tick :value="srmSliderRange[1]">{{ srmSliderRange[1] }}</b-slider-tick>
+                    <b-slider-tick
+                      :value="tickValue"
+                      :key="index"
+                      v-for="(tickValue, index) in tickValues(srmSliderRange)"
+                    ></b-slider-tick>
+                  </b-slider>
+                </b-field>
+              </div>
+              <!-- Unique Fermentable Count Filter -->
+              <div class="filteritem">
+                <b-field label="Unique Fermentables">
+                  <b-slider
+                    v-model="uniqueFermentablesRange"
+                    type="is-primary"
+                    :min="uniqueFermentablesSliderRange[0]"
+                    :max="uniqueFermentablesSliderRange[1]"
+                    :step="1"
+                    lazy
+                    style="padding-left: .5rem; padding-right: .5rem"
+                  >
+                    <b-slider-tick
+                      :value="uniqueFermentablesSliderRange[0]"
+                    >{{ uniqueFermentablesSliderRange[0] }}</b-slider-tick>
+                    <b-slider-tick
+                      :value="uniqueFermentablesSliderRange[1]"
+                    >{{ uniqueFermentablesSliderRange[1] }}</b-slider-tick>
+                    <b-slider-tick
+                      :value="tickValue"
+                      :key="index"
+                      v-for="(tickValue, index) in tickValues(uniqueFermentablesSliderRange)"
+                    ></b-slider-tick>
+                  </b-slider>
+                </b-field>
+              </div>
             </div>
           </div>
         </b-collapse>
@@ -122,7 +151,8 @@ export default {
       perPage: 5,
       categoryFermentables: [],
       srmRange: [],
-      srmSliderRange: []
+      srmSliderRange: [],
+      uniqueFermentablesRange: []
     }
   },
   watch: {
@@ -136,6 +166,7 @@ export default {
           _.round(Math.max(...recipeSrm), 1)
         ]
         this.srmRange = this.srmSliderRange = srmRange
+        this.uniqueFermentablesRange = this.uniqueFermentablesSliderRange
 
         // Build a checkbox array for each fermentable category
         let newCategoryFermentables = []
@@ -201,7 +232,9 @@ export default {
         let roundedSrm = _.round(recipe.srm, 1)
         return (
           enabledRecipeFermentables.length === recipe.grains.length &&
-          (roundedSrm >= this.srmRange[0] && roundedSrm <= this.srmRange[1])
+          (roundedSrm >= this.srmRange[0] && roundedSrm <= this.srmRange[1]) &&
+          (recipe.grains.length >= this.uniqueFermentablesRange[0] &&
+            recipe.grains.length <= this.uniqueFermentablesRange[1])
         )
       })
     },
@@ -223,6 +256,13 @@ export default {
         })
       })
       return fermentableList
+    },
+    uniqueFermentablesSliderRange: function() {
+      // Return the min and max number of unique fermentables in each recipe (for filtering)
+      let fermentableCount = this.recipeData.map(recipe => {
+        return recipe.grains.length
+      })
+      return [Math.min(...fermentableCount), Math.max(...fermentableCount)]
     }
   },
   methods: {
@@ -274,7 +314,7 @@ export default {
 
 <style scoped>
 .filteritem:not(:first-child) {
-  margin-top: 1rem;
+  padding-top: 1rem;
 }
 .filter:not(:last-child) {
   margin-bottom: 1rem;
