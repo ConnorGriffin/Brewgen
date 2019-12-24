@@ -14,10 +14,16 @@
       </div>
       <div class="column is-8">
         <FermentableCategoryEditor v-if="editingFermentableCategory" />
-        <b-message
-          type="is-primary"
-          v-else
-        >Select a fermentable category to modify the usage amounts of that category and the fermentables within it.</b-message>
+        <b-message type="is-primary" v-else>
+          <p>
+            Recipes will be generated using a mix of different fermentables. A fermentable's min/max usage amounts will be considered only if the fermentable is included in the recipe, so multiple fermentables in a category
+            can have minimum usage amounts totaling more than 100% without causing an issue.
+          </p>
+          <br />
+          <p>Category usage amounts will be followed no matter what, meaning if a category has a minimum usage greater than 0%, at least one fermentable from that category will end up in every recipe.</p>
+          <br />
+          <p>Category and fermentable usage amounts are automatically configured to remain within the style guidelines, but you can modify them to your liking. Select a fermentable category to modify the usage amounts of that category and the fermentables within it.</p>
+        </b-message>
       </div>
     </div>
   </div>
