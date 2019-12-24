@@ -48,7 +48,9 @@ const state = {
   // State of application API calls, used to set spinners and progress bars
   loaders: [],
   // Sensory descriptors that show up in the main Wort Sensory page
-  visibleSensoryDescriptors: []
+  visibleSensoryDescriptors: [],
+  // Whether the sensory descriptor cards are expanded, collapsed, or mixed
+  sensoryDescriptorsExpanded: 'collapsed'
 }
 
 const getters = {
@@ -664,6 +666,9 @@ const mutations = {
   },
   setFermentableCategoryUsageEdit(state, payload) {
     state.fermentableCategoryUsageEdit = payload
+  },
+  setSensoryDescriptorsExpanded(state, payload) {
+    state.sensoryDescriptorsExpanded = payload
   }
 }
 

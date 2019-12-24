@@ -63,15 +63,24 @@
       </span>
 
       <!-- Descriptor name -->
-      <div>
-        <span class="has-text-weight-semibold">{{ sensoryData.name | deslug | titleCase }}</span>
-        <p class="content is-size-7 bjcp-sentences" v-if="bjcpSentences" v-html="bjcpSentences"></p>
-      </div>
+      <a class="has-text-black" @click="toggleExpanded()">
+        <div>
+          <div class="descriptor has-text-weight-semibold is-flex">
+            <span class="descriptor is-flex" v-if="expandable">
+              <b-icon :icon="expanded ? 'chevron-down' : 'chevron-right'" size="is-small"></b-icon>&nbsp;
+            </span>
+            {{ sensoryData.name | deslug | titleCase }}
+          </div>
+          <p
+            class="content is-size-7 bjcp-sentences"
+            v-if="bjcpSentences && (!expandable || (expandable && expanded))"
+            v-html="bjcpSentences"
+          ></p>
+        </div>
 
-      <!-- Descriptor values -->
-      <div>
+        <!-- Descriptor values -->
         <!-- Style Baseline - Show always -->
-        <div class="style-sliders">
+        <div class="style-sliders" v-if="expanded || !expandable">
           <div class="columns is-gapless is-mobile card-columns">
             <div class="column is-narrow">
               <h1 class="title is-7">Style</h1>
@@ -149,8 +158,9 @@
             v-for="(tag, index) in sensoryData.tags"
           >{{ tag.value }}</b-tag>
         </b-taglist>
-      </div>
+      </a>
     </div>
+
     <b-loading :is-full-page="false" :active.sync="this.isLoading('sensoryData')"></b-loading>
   </div>
 </template>
@@ -167,7 +177,8 @@ export default {
     sensoryData: Object,
     sliderMin: Number,
     sliderMax: Number,
-    tickSpace: Number
+    tickSpace: Number,
+    expandable: Boolean
   },
   components: {
     SensoryConfigurator
@@ -175,7 +186,23 @@ export default {
   data() {
     return {
       showSensoryConfigurator: false,
-      styleSliderRange: [this.sensoryData.style.min, this.sensoryData.style.max]
+      styleSliderRange: [
+        this.sensoryData.style.min,
+        this.sensoryData.style.max
+      ],
+      expanded: false
+    }
+  },
+  watch: {
+    sensoryDescriptorsExpanded: {
+      handler(value) {
+        if (value === 'expanded') {
+          this.expanded = true
+        } else if (value === 'collapsed') {
+          this.expanded = false
+        }
+      },
+      immediate: true
     }
   },
   filters: {
@@ -247,6 +274,14 @@ export default {
           .join(' ')
           .replace(regex, '<strong>$<sensory></strong>')
       }
+    },
+    sensoryDescriptorsExpanded: {
+      get() {
+        return this.$store.state.brewgen.sensoryDescriptorsExpanded
+      },
+      set(value) {
+        this.$store.commit('setSensoryDescriptorsExpanded', value)
+      }
     }
   },
   methods: {
@@ -317,6 +352,12 @@ export default {
       } else {
         return null
       }
+    },
+    toggleExpanded: function() {
+      if (this.expandable) {
+        this.expanded = !this.expanded
+        this.sensoryDescriptorsExpanded = 'mixed'
+      }
     }
   }
 }
@@ -367,5 +408,8 @@ export default {
 }
 .bjcp-sentences {
   margin-top: 0.5rem;
+}
+.descriptor {
+  align-items: center;
 }
 </style>

@@ -3,7 +3,22 @@
     <!-- Sensory constraint control buttons -->
     <div class="buttons">
       <b-button class="is-primary" @click="showSensoryPicker = true">Add Constraint</b-button>
-      <b-button :disabled="clearDisabled()" @click="clearSensoryModel">Clear</b-button>
+      <b-dropdown>
+        <button class="button" slot="trigger">
+          <span>Options</span>
+          <b-icon icon="caret-down"></b-icon>
+        </button>
+
+        <b-dropdown-item :disabled="clearDisabled" @click="clearSensoryModel">Reset Values</b-dropdown-item>
+        <b-dropdown-item
+          :disabled="sensoryDescriptorsExpanded === 'expanded'"
+          @click="sensoryDescriptorsExpanded = 'expanded'"
+        >Expand All</b-dropdown-item>
+        <b-dropdown-item
+          :disabled="sensoryDescriptorsExpanded === 'collapsed'"
+          @click="sensoryDescriptorsExpanded = 'collapsed'"
+        >Collapse All</b-dropdown-item>
+      </b-dropdown>
     </div>
     <!-- SensoryPicker modal and contents -->
     <b-modal :active.sync="showSensoryPicker" has-modal-card trap-focus scroll="keep">
@@ -19,6 +34,7 @@
         :sliderMax="sliderMax"
         cardBg="white"
         :tickSpace="1"
+        :expandable="true"
       />
     </div>
   </div>
@@ -37,7 +53,8 @@ export default {
   },
   data() {
     return {
-      showSensoryPicker: false
+      showSensoryPicker: false,
+      sensoryExpanded: false
     }
   },
   computed: {
@@ -88,6 +105,20 @@ export default {
           return this.visibleSensoryDescriptors.includes(sensoryData.name)
         }
       })
+    },
+    clearDisabled: function() {
+      let configuredSensory = this.currentStyleSensory.filter(sensoryData => {
+        return sensoryData.configured !== undefined
+      })
+      return !(configuredSensory.length > 0)
+    },
+    sensoryDescriptorsExpanded: {
+      get() {
+        return this.$store.state.brewgen.sensoryDescriptorsExpanded
+      },
+      set(value) {
+        this.$store.commit('setSensoryDescriptorsExpanded', value)
+      }
     }
   },
   methods: {
@@ -96,12 +127,6 @@ export default {
       this.$store.commit('clearSensoryConfiguredValues')
       this.fetchSensoryData()
       this.fetchRecipeData({ colorOnly: true })
-    },
-    clearDisabled: function() {
-      let configuredSensory = this.currentStyleSensory.filter(sensoryData => {
-        return sensoryData.configured !== undefined
-      })
-      return !(configuredSensory.length > 0)
     }
   }
 }
