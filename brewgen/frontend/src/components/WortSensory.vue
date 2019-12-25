@@ -46,12 +46,12 @@ export default {
       'recipeColorData',
       'currentStyleStats',
       'currentStyleSensory',
+      'visibleSensoryDescriptors',
       'isLoading'
     ]),
     sensoryChartData: function() {
       // Get the labels in deslugged title-case
-      var chartLabels = this.sensoryData.map(element => {
-        var value = element.name
+      var chartLabels = this.visibleSensoryDescriptors.map(value => {
         value = value
           .replace('_', ' ')
           .toLowerCase()
@@ -63,11 +63,30 @@ export default {
       })
 
       // Set Radar chart series data
-      var minData = this.sensoryData.map(element => {
-        return element.min
+      let sensoryData = this.visibleSensoryDescriptors.map(descriptor => {
+        return this.currentStyleSensory.find(
+          sensory => sensory.name === descriptor
+        )
       })
-      var maxData = this.sensoryData.map(element => {
-        return element.max
+
+      var minData = sensoryData.map(descriptor => {
+        if (descriptor.possible) {
+          return descriptor.possible.min
+        } else {
+          return descriptor.style.min
+        }
+      })
+
+      var maxData = sensoryData.map(descriptor => {
+        if (descriptor.possible) {
+          return descriptor.possible.max
+        } else {
+          return descriptor.style.max
+        }
+      })
+
+      var styleAvg = sensoryData.map(descriptor => {
+        return (descriptor.style.min + descriptor.style.max) / 2
       })
 
       // Return the data formatted for ApexCharts
@@ -76,23 +95,34 @@ export default {
           chart: {
             id: 'sensory-min-max'
           },
+          fill: {
+            opacity: 0.1
+          },
+          colors: ['#39A9DB', '#59CD90', '#EE6352'],
           plotOptions: {
             radar: {
-              fill: {
-                colors: ['#5C80BC', '#fff']
+              polygons: {
+                strokeColor: '#e9e9e9',
+                fill: {
+                  colors: ['#f7f9f9', '#fbfffe']
+                }
               }
             }
           },
-          labels: chartLabels.slice(0, 9)
+          labels: chartLabels
         },
         series: [
           {
             name: 'Minimum',
-            data: minData.slice(0, 9)
+            data: minData
           },
           {
             name: 'Maximum',
-            data: maxData.slice(0, 9)
+            data: maxData
+          },
+          {
+            name: 'Style Avg.',
+            data: styleAvg
           }
         ]
       }
