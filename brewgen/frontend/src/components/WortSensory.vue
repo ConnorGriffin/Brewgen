@@ -135,7 +135,7 @@ export default {
               x: this.$store.state.brewgen.beerProfile.minSrm,
               x2: this.$store.state.brewgen.beerProfile.maxSrm,
               fillColor: '#98C9A3',
-              opacity: 0.4,
+              opacity: 0.1,
               label: {
                 text: 'Target Color'
               }
@@ -152,6 +152,7 @@ export default {
           chart: {
             id: 'recipe-srm-distribution'
           },
+          colors: ['#39A9DB'],
           xaxis: {
             title: {
               text: 'SRM',
