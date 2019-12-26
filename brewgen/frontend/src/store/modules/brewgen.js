@@ -442,7 +442,7 @@ const mutations = {
     // Format the sensory data for use in the recipe designer
     state.visibleSensoryDescriptors = []
     state.currentStyleSensory = sensoryData.filter(sensoryValue => {
-      return sensoryValue.max > 0
+      return (sensoryValue.max > 0.25 && sensoryValue.max - sensoryValue.min > 0.25)
     })
       .map(sensoryValue => {
         let sensoryReturn = {
@@ -460,27 +460,19 @@ const mutations = {
             value: 'wide range',
             type: 'is-info'
           })
-          state.visibleSensoryDescriptors.push(sensoryReturn.name)
-        }
-        if (sensoryValue.max <= 0.25) {
-          sensoryReturn.tags.push({
-            value: 'minimal use',
-            type: 'is-danger'
-          })
-        }
-        if (sensoryValue.max - sensoryValue.min <= 0.25) {
-          sensoryReturn.tags.push({
-            value: 'narrow range',
-            type: 'is-warning'
-          })
         }
         if (Object.keys(state.bjcpSensory).includes(sensoryValue.name)) {
           sensoryReturn.tags.push({
             value: 'mentioned in style',
             type: 'is-primary'
           })
+        }
+
+        let tagValues = sensoryReturn.tags.map(tag => tag.value)
+        if (tagValues.includes('mentioned in style') || tagValues.includes('wide range')) {
           state.visibleSensoryDescriptors.push(sensoryReturn.name)
         }
+
         return sensoryReturn
       })
   },
@@ -616,6 +608,7 @@ const mutations = {
     state.lastChangedSensoryDescriptor = null
     state.lastSensoryData = null
     state.editingFermentableCategory = null
+    state.visibleSensoryDescriptors = []
   },
   setEditingFermentableCategory(state, value) {
     state.editingFermentableCategory = value
