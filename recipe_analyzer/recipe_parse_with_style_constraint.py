@@ -1,4 +1,3 @@
-from brewgen.backend.models import grain, category
 from pathlib import Path
 from pybeerxml import Parser
 import sys
@@ -6,9 +5,10 @@ import numpy as np
 import re
 import csv
 import json
+import concurrent.futures
 
 sys.path.append('../')
-
+from brewgen.backend.models import grain, category
 
 def points(og):
     return (og - 1) * 1000
@@ -66,13 +66,13 @@ fermentable_rewrites = [
     },
     {
         'name': "Brewer's Malt",
-        'match': '^.*((2|Two)(-| )Row|Pale Malt).*$',
+        'match': '^.*((2|Two)(-| )Row|Pale Malt|Ale Malt).*$',
         'max_color': 3.5
     },
     # No sensory available for Maris Otter so lumping that in with Pale Ale Malt
     {
         'name': "Pale Ale Malt",
-        'match': '^.*(Pale Ale|Maris|Marris).*$',
+        'match': '^.*(Pale Ale|Maris|Marris|Ale Malt).*$',
         'max_color': 5
     },
     {
@@ -87,6 +87,23 @@ fermentable_rewrites = [
         'max_color': 5
     },
     {
+        'name': "CaraHell",
+        'match': '^.*(Cara Malt|Hell).*$',
+        'min_color': 5,
+        'max_color': 15
+    },
+    {
+        'name': "CaraHell",
+        'match': '^.*Caramel Pils.*$',
+        'min_color': 5,
+        'max_color': 15
+    },
+    {
+        'name': "Carapils Malt",
+        'match': '^.*Caramel Pils.*$',
+        'max_color': 5
+    },
+    {
         'name': "Pilsen Malt",
         'match': '^.*(Pilsen|US.*Pilsner|Pilsner.*US|Lager).*$',
         'max_color': 3
@@ -95,7 +112,7 @@ fermentable_rewrites = [
     {
         'name': "Pilsner Malt",
         'match': '^.*Pilsner.*$',
-        'max_color': 3
+        'max_color': 3.5
     },
     {
         'name': "Pale Chocolate Malt",
@@ -117,19 +134,34 @@ fermentable_rewrites = [
         'match': '^.*Special (W|B).*$'
     },
     {
-        'name': "Caramunich I",
+        'name': "Amber Malt",
+        'match': '^(Amber|Amber.*UK.*|(Crisp|British) Amber|.*Amber Malt.*)$'
+    },
+    {
+        'name': "CaraMunich I",
         'match': '^.*Cara ?munich(( I)?|.*Type 1).*$',
         'max_color': 40
     },
     {
-        'name': "Caramunich II",
+        'name': "CaraMunich II",
         'match': '^.*Cara ?munich(( II)?|.*Type 2).*$',
         'max_color': 50
     },
     {
-        'name': "Caramunich III",
+        'name': "CaraMunich III",
         'match': '^.*Cara ?munich(( III)?|.*Type 3).*$',
         'max_color': 60
+    },
+    {
+        'name': "Caramel Malt 10L",
+        'match': '^.*(Crystal|Caramel).*15.*$',
+        'max_color': 15.1
+    },
+    {
+        'name': "Caramel Malt 20L",
+        'match': '^.*(Crystal|Caramel).*15.*$',
+        'min_color': 15.1,
+        'max_color': 20
     },
     {
         'name': "Pale Wheat Malt",
@@ -168,6 +200,14 @@ fermentable_rewrites = [
     {
         'name': "Brewers Rye Flakes",
         'match': '^.*(Rye.*Flaked|Flaked.*Rye).*$'
+    },
+    {
+        'name': 'Flaked Rice',
+        'match': '^Rice, Flaked$'
+    },
+    {
+        'name': 'Caramel Vienne Malt 20L',
+        'match': '^.*(CaraVienn(a|e)|Cara Vienna).*$'
     },
     {
         'name': "Munich Malt 20L",
@@ -262,6 +302,21 @@ fermentable_rewrites = [
         'name': "Brown Sugar, Dark",
         'match': '^.*Brown Sugar.*$',
         'max_color': 60
+    },
+    {
+        'name': "Carafa Special I",
+        'match': '^.*Carafa.*$',
+        'max_color': 375
+    },
+    {
+        'name': "Carafa Special II",
+        'match': '^.*Carafa.*$',
+        'max_color': 475
+    },
+    {
+        'name': "Carafa Special III",
+        'match': '^.*Carafa.*$',
+        'max_color': 575
     }
 ]
 
@@ -411,102 +466,107 @@ for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
         'match': '^.*(Caramel|Crystal).*{}.*$'.format(lov)
     })
 
-unmatched = []
-not_to_style = 0
-unmatched_fermentable = 0
-unmatched_style = 0
-uses_extract = 0
-
 # Get all recipe paths
-#beerxml_list = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:120000]
-beerxml_list = list(
+brewtoad = list(Path("./brewtoad_scrape").rglob("*.xml"))  # [0:120000]
+brewers_friend = list(
     Path("./brewersfriend_scrape/recipes").rglob("*.xml"))  # [0:100000]
-for beerxml_file in beerxml_list:
+beersmith = list(
+    Path("./beersmith_scrape/recipes").rglob("*.xml"))
+
+beerxml_list = brewtoad + brewers_friend + beersmith
+
+def parse_beerxml_file(beerxml_file):
     try:
-        recipes = parser.parse('./{}'.format(str(beerxml_file)))
+        recipe = parser.parse('./{}'.format(str(beerxml_file)))[0]
     except:
         print("Failed to parse ./{}".format(str(beerxml_file)))
         recipes = []
+    
+    try:
+        style = recipe.style.name
 
-    for recipe in recipes:
-        try:
-            style = recipe.style.name
-            # Rewrite style names
-            for rule in style_rewrites:
-                match = re.match(rule['old'], style, flags=re.IGNORECASE)
-                if match:
-                    #print('Rewriting style: {} -> {}'.format(style, rule['new']))
-                    style = rule['new']
-                    break
+        # Rewrite style names
+        for rule in style_rewrites:
+            match = re.match(rule['old'], style, flags=re.IGNORECASE)
+            if match:
+                #print('Rewriting style: {} -> {}'.format(style, rule['new']))
+                style = rule['new']
+                break
 
-            specs = bjcp_name(style)
-            if specs:
-                og_match = points(float(specs.get('og', {}).get('low', 1)))*.85 <= points(
-                    recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.15
-                srm_match = float(specs.get('srm', {}).get('low', 0))*.85 <= recipe.color <= float(
-                    specs.get('srm', {}).get('high', 999))*1.15
-                # ibu_match = float(specs.get('ibu', {}).get('low', 0))*.5 <= recipe.ibu <= float(
-                #     specs.get('ibu', {}).get('high', 999))*1.5
-                ibu_match = True
+        specs = bjcp_name(style)
+        if specs:
+            og_match = points(float(specs.get('og', {}).get('low', 1)))*.75 <= points(
+                 recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.25
+            srm_match = float(specs.get('srm', {}).get('low', 0))*.75 <= recipe.color <= float(
+                 specs.get('srm', {}).get('high', 999))*1.25
+            # ibu_match = float(specs.get('ibu', {}).get('low', 0))*.5 <= recipe.ibu <= float(
+            #     specs.get('ibu', {}).get('high', 999))*1.5
+            ibu_match = True
 
-                # Only include recipes with a to-style OG and color
-                if og_match and srm_match and ibu_match:
-                    fermentables = []
-                    for fermentable in recipe.fermentables:
-                        fermentable_name = fermentable.name.strip()
-                        # Remove all LME/DME by raising an exception and killing all future parsing of the recipe
-                        extract = re.match(
-                            "^.*(CBW|DME|LME|Extract|Malt Syrup).*$", fermentable_name, flags=re.IGNORECASE)
-                        if extract:
-                            uses_extract += 1
-                            raise Exception(
-                                'Recipe contains extract: {}'.format(fermentable_name))
+            # Only include recipes with a to-style OG and color
+            if og_match and srm_match and ibu_match:
+                fermentables = []
+                for fermentable in recipe.fermentables:
+                    fermentable_name = fermentable.name.strip()
+                    # Remove all LME/DME by raising an exception and killing all future parsing of the recipe
+                    extract = re.match(
+                        "^.*(CBW|DME|LME|Extract|Malt Syrup).*$", fermentable_name, flags=re.IGNORECASE)
+                    if extract:
+                        return {
+                            'status': 'uses_extract',
+                            'data': fermentable_name
+                        }                
 
-                        # Rewrite fermentable names
-                        for rule in fermentable_rewrites:
-                            match = re.match(
-                                rule['match'], fermentable.name, flags=re.IGNORECASE)
-                            if match and rule.get('min_color', 0) <= fermentable.color <= rule.get('max_color', 999):
-                                # print('Rewriting {} -> {}'.format(fermentable_name, rule['name']))
-                                fermentable_name = rule['name']
-                                break
-
-                        # Don't worry about malts in our bypass list, pretend they don't exist and go to the next one
-                        if fermentable_name in fermentable_bypass:
+                    # Rewrite fermentable names
+                    for rule in fermentable_rewrites:
+                        match = re.match(
+                            rule['match'], fermentable.name, flags=re.IGNORECASE)
+                        if match and rule.get('min_color', 0) <= fermentable.color <= rule.get('max_color', 999):
+                            # print('Rewriting {} -> {}'.format(fermentable_name, rule['name']))
+                            fermentable_name = rule['name']
                             break
 
-                        matched_fermentable = all_grains.get_grain_by_name(
-                            fermentable_name)
-                        if not matched_fermentable:
-                            unmatched_fermentable += 1
-                            unmatched.append({
+                    # Don't worry about malts in our bypass list, pretend they don't exist and go to the next one
+                    if fermentable_name in fermentable_bypass:
+                        break
+
+                    matched_fermentable = all_grains.get_grain_by_name(
+                        fermentable_name)
+                    if not matched_fermentable:
+                        return {
+                            'status': 'unmatched_fermentable',
+                            'data': {
                                 'name': fermentable_name,
-                                'type': 'fermentable'
-                            })
-                            raise Exception(
-                                'Recipe contains unmatched fermentable: {}'.format(fermentable_name))
+                                'type': 'fermentable',
+                                'color': fermentable.color,
+                                'recipe_style': style
+                            }
+                        }         
+                        
 
-                        # Calculate total amount of grains ignoring the bypass list
-                        total_amount = sum(
-                            fermentable.amount for fermentable in recipe.fermentables if fermentable_name not in fermentable_bypass)
+                    # Calculate total amount of grains ignoring the bypass list
+                    total_amount = sum(
+                        fermentable.amount for fermentable in recipe.fermentables if fermentable_name not in fermentable_bypass)
 
-                        fermentables.append({
-                            'name': fermentable_name,
-                            'category': matched_fermentable.category,
-                            'percent': fermentable.amount / total_amount * 100,
-                            'color': fermentable.color,
-                            'ppg': fermentable.ppg,
-                            'addition': fermentable.addition,
-                            'matched_fermentable': matched_fermentable
-                        })
+                    fermentables.append({
+                        'name': fermentable_name,
+                        'category': matched_fermentable.category,
+                        'percent': fermentable.amount / total_amount * 100,
+                        'color': fermentable.color,
+                        'ppg': fermentable.ppg,
+                        'addition': fermentable.addition,
+                        'matched_fermentable': matched_fermentable
+                    })
 
-                    grain_bill = grain.GrainBill(
-                        [fermentable['matched_fermentable']
-                         for fermentable in fermentables],
-                        [fermentable['percent']
-                            for fermentable in fermentables]
-                    )
-                    recipe_db.append({
+                grain_bill = grain.GrainBill(
+                    [fermentable['matched_fermentable']
+                        for fermentable in fermentables],
+                    [fermentable['percent']
+                        for fermentable in fermentables]
+                )
+                return {
+                    'status': 'success',
+                    'data': {
                         'style': style,
                         'category': recipe.style.category,
                         'og': recipe.og,
@@ -514,69 +574,90 @@ for beerxml_file in beerxml_list:
                         'fermentables': fermentables,
                         'grain_bill': grain_bill,
                         'sensory_data': grain_bill.get_sensory_data()
-                    })
-
-                else:
-                    style_spec = {
-                        'og': {
-                            'low': points(float(specs.get('og', {}).get('low', 1))),
-                            'high': points(float(specs.get('og', {}).get('high', 1.200))),
-                            'recipe': points(recipe.og)
-                        },
-                        'srm': {
-                            'low': float(specs.get('srm', {}).get('low', 0)),
-                            'high': float(specs.get('srm', {}).get('high', 999)),
-                            'recipe': recipe.color
-                        },
-                        'ibu': {
-                            'low': float(specs.get('ibu', {}).get('low', 0)),
-                            'high': float(specs.get('ibu', {}).get('high', 999)),
-                            'recipe': recipe.ibu
-                        }
                     }
-                    not_to_style += 1
+                }
+
             else:
-                unmatched_style += 1
-                unmatched.append({
-                    'name': style,
-                    'type': 'style'
-                })
-                raise Exception('No style found: {}'.format(style))
+                # style_spec = {
+                #     'og': {
+                #         'low': points(float(specs.get('og', {}).get('low', 1))),
+                #         'high': points(float(specs.get('og', {}).get('high', 1.200))),
+                #         'recipe': points(recipe.og)
+                #     },
+                #     'srm': {
+                #         'low': float(specs.get('srm', {}).get('low', 0)),
+                #         'high': float(specs.get('srm', {}).get('high', 999)),
+                #         'recipe': recipe.color
+                #     },
+                #     'ibu': {
+                #         'low': float(specs.get('ibu', {}).get('low', 0)),
+                #         'high': float(specs.get('ibu', {}).get('high', 999)),
+                #         'recipe': recipe.ibu
+                #     }
+                # }
+                return {
+                    'status': 'not_to_style',
+                    'data': 'Recipe not to style'
+                }         
+        else:
+            return {
+                    'status': 'unmatched_style',
+                    'data': {
+                        'name': style,
+                        'type': 'style',
+                        'color': None,
+                        'recipe_style': None
+                    }
+                } 
 
-        except Exception as err:
-            pass
-            # print(err)
-            # print("Failed to parse recipe in ./{}".format(str(beerxml_file)))
+    except Exception as err:
+        return {
+            'status': 'failure',
+            'data': err
+        }
+        # print(err)
+        # print("Failed to parse recipe in ./{}".format(str(beerxml_file)))
 
-    # Get a list of style and grain category games
-    styles = list(set([recipe['style'] for recipe in recipe_db]))
-    categories = category_model.get_category_names()
+# Parse the recipes (multi-process)
+executor = concurrent.futures.ProcessPoolExecutor()
+futures = executor.map(parse_beerxml_file, beerxml_list)
+parse_results = list(futures)
 
-print('Unmatched Style:       {}'.format(unmatched_style))
-print('Unmatched Fermentable: {}'.format(unmatched_fermentable))
-print('Not to Style:          {}'.format(not_to_style))
-print('Contains Extract:      {}'.format(uses_extract))
-print('USABLE RECIPES:        {}'.format(len(recipe_db)))
+recipe_db = [result['data'] for result in parse_results if result['status'] == 'success']
 
-# Create a list of list of dicts containing grains and their usage percents for every style
-style_data = []
-for style in styles:
+# Get a list of style and grain category games
+styles = list(set([recipe['style'] for recipe in recipe_db]))
+categories = category_model.get_category_names()
+
+print('Unmatched Style:       {}'.format(sum(1 for result in parse_results if result['status'] == 'unmatched_style')))
+print('Unmatched Fermentable: {}'.format(sum(1 for result in parse_results if result['status'] == 'unmatched_fermentable')))
+print('Not to Style:          {}'.format(sum(1 for result in parse_results if result['status'] == 'not_to_style')))
+print('Contains Extract:      {}'.format(sum(1 for result in parse_results if result['status'] == 'uses_extract')))
+print('TOTAL RECIPES:         {}'.format(sum(1 for result in parse_results)))
+print('USABLE RECIPES:        {}'.format(sum(1 for result in parse_results if result['status'] == 'success')))
+
+
+def analyze_style(style):
     recipe_count = 0
     fermentable_list = []
     fermentable_usage = []
     style_grain_usage = []
     style_category_data = []
     style_category_usage = []
+    style_category_fermentable_count = []
     style_sensory_data = []
+    style_unique_fermentables = []
 
     # Calculate the average grain usage from each category, only use recipes with 100% grain coverage, remove any recipes that use extracts
     for recipe in recipe_db:
         if recipe['style'] == style:
             recipe_count += 1
+            style_unique_fermentables.append(len(recipe['fermentables']))
             for category_name in categories:
                 category_usage = sum(
                     fermentable['percent'] for fermentable in recipe['fermentables'] if fermentable['category'] == category_name)
                 style_category_data.append((category_name, category_usage))
+                style_category_fermentable_count.append((category_name, sum(1 for fermentable in recipe['fermentables'] if fermentable['category'] == category_name)))
 
     # Get the average fermentable category usage for the style
     for category_name in categories:
@@ -584,6 +665,10 @@ for style in styles:
                           usage in style_category_data if name == category_name]
         if category_usage == []:
             category_usage = [0]
+        
+        category_unique_fermentables = [count for name, count in style_category_fermentable_count if name == category_name and count > 0]
+        if category_unique_fermentables == []:
+            category_unique_fermentables = [0]
 
         std_dev = np.std(category_usage)
         mean = np.mean(category_usage)
@@ -602,6 +687,7 @@ for style in styles:
                 'min': max(0, int(mean - 1 * std_dev)),
                 'max': min(100, int(mean + 1 * std_dev))
             },
+            'unique_fermentables': int(round(np.median(category_unique_fermentables))),
             'category_object': category.Category(category_name, int(np.min(category_usage)), int(np.max(category_usage)))
         })
 
@@ -661,8 +747,9 @@ for style in styles:
             [style_category['category_object'] for style_category in style_category_usage])
         style_sensory_minmax = style_fermentable_list.get_sensory_profiles(
             category_profile)
-    except:
+    except Exception as err:
         print('Failed to get recipe data for {}'.format(style))
+        return
 
     # Iterate over each sensory keyword, get the average values for each keyword in the style
     for keyword in all_grains.get_sensory_keywords():
@@ -705,13 +792,19 @@ for style in styles:
     for category_usage in style_category_usage:
         del category_usage['category_object']
 
-    style_data.append({
+    return {
         'style': style,
         'recipe_count': recipe_count,
         'grain_usage': style_grain_usage,
+        'unique_fermentables': int(round(np.median(style_unique_fermentables))),
         'category_usage': style_category_usage,
         'sensory_data': style_sensory_data
-    })
+    }
+
+# Parse the recipes (multi-process)
+executor = concurrent.futures.ProcessPoolExecutor()
+futures = executor.map(analyze_style, styles)
+style_data = list(futures)
 
 with open('styles.json', 'w') as f:
     json.dump(style_data, f)
@@ -725,6 +818,7 @@ with open('recipe_db.json', 'w') as f:
     json.dump(recipe_db, f)
 
 with open('unmatched.csv', 'w') as f:
-    writer = csv.DictWriter(f, fieldnames=['name', 'type'])
+    writer = csv.DictWriter(
+        f, fieldnames=['name', 'type', 'color', 'recipe_style'])
     writer.writeheader()
-    writer.writerows(unmatched)
+    writer.writerows([result['data'] for result in parse_results if result['status'] == 'unmatched_fermentable'])
