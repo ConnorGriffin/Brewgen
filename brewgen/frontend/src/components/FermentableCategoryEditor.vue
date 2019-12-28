@@ -28,6 +28,17 @@
           <b-button class="is-static">%</b-button>
         </b-field>
       </b-field>
+
+      <b-field label="Max Fermentables">
+        <b-field>
+          <b-input
+            type="number"
+            v-model.number="uniqueFermentableCount"
+            min="0"
+            :max="equipmentProfile.maxUniqueFermentables"
+          ></b-input>
+        </b-field>
+      </b-field>
     </b-field>
 
     <h1 class="title is-5" style="margin-top:1.25rem">Category Fermentables</h1>
@@ -97,10 +108,11 @@ export default {
         let category = this.fermentableCategories.find(category => {
           return category.name === this.editingFermentableCategory
         })
-        this.setFermentableCategoryUsageEdit([
-          category.min_percent,
-          category.max_percent
-        ])
+        this.setFermentableCategoryUsageEdit({
+          minUsage: category.min_percent,
+          maxUsage: category.max_percent,
+          uniqueFermentableCount: category.unique_fermentable_count
+        })
       },
       immediate: true
     },
@@ -190,18 +202,38 @@ export default {
     },
     minUsage: {
       get() {
-        return this.fermentableCategoryUsageEdit[0]
+        return this.fermentableCategoryUsageEdit.minUsage
       },
       set(value) {
-        this.setFermentableCategoryUsageEdit([value, this.maxUsage])
+        this.setFermentableCategoryUsageEdit({
+          minUsage: value,
+          maxUsage: this.maxUsage,
+          uniqueFermentableCount: this.uniqueFermentableCount
+        })
       }
     },
     maxUsage: {
       get() {
-        return this.fermentableCategoryUsageEdit[1]
+        return this.fermentableCategoryUsageEdit.maxUsage
       },
       set(value) {
-        this.setFermentableCategoryUsageEdit([this.minUsage, value])
+        this.setFermentableCategoryUsageEdit({
+          minUsage: this.minUsage,
+          maxUsage: value,
+          uniqueFermentableCount: this.uniqueFermentableCount
+        })
+      }
+    },
+    uniqueFermentableCount: {
+      get() {
+        return this.fermentableCategoryUsageEdit.uniqueFermentableCount
+      },
+      set(value) {
+        this.setFermentableCategoryUsageEdit({
+          minUsage: this.minUsage,
+          maxUsage: this.maxUsage,
+          uniqueFermentableCount: value
+        })
       }
     }
   },

@@ -5,8 +5,9 @@ import os.path
 class Category:
     """Defines a category and all of its properties."""
 
-    def __init__(self, name, min_percent, max_percent):
+    def __init__(self, name, unique_fermentable_count, min_percent, max_percent):
         self.name = name
+        self.unique_fermentable_count = unique_fermentable_count
         self.min_percent = int(min_percent)
         self.max_percent = int(max_percent)
 
@@ -14,6 +15,7 @@ class Category:
         """Return category data as a dict."""
         return {
             'name': self.name,
+            'unique_fermentable_count': self.unique_fermentable_count,
             'min_percent': self.min_percent,
             'max_percent': self.max_percent
         }
@@ -34,6 +36,7 @@ class CategoryModel:
         for category in category_data:
             self.category_list.append(Category(
                 name=category['name'],
+                unique_fermentable_count=None,
                 min_percent=category['min_percent'],
                 max_percent=category['max_percent']
             ))

@@ -8,7 +8,7 @@ from . import grain, category
 class Style:
     """Defines a style and all of its properties."""
 
-    def __init__(self, name, bjcp_id, bjcp_category, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list, sensory_data):
+    def __init__(self, name, bjcp_id, bjcp_category, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list, sensory_data, unique_fermentable_count):
         self.name = name
         self.slug = slugify(name, replacements=[["'", ''], ['®', '']])
         self.id = bjcp_id
@@ -28,6 +28,7 @@ class Style:
         self.grain_list = grain_list
         self.category_list = category_list
         self.sensory_data = sensory_data
+        self.unique_fermentable_count = unique_fermentable_count
         self.exceptions = self.stats.get('exceptions', None)
 
     def __contains_word(self, string, word):
@@ -60,11 +61,7 @@ class Style:
         """Return categories and their min/max usage"""
         category_data = []
         for category_object in self.category_list:
-            category_data.append({
-                'name': category_object.name,
-                'min_percent': category_object.min_percent,
-                'max_percent': category_object.max_percent
-            })
+            category_data.append(category_object.get_category_data())
         return category_data
 
     def og_range(self):
@@ -211,6 +208,7 @@ class StyleModel:
             for category_data in style['category_usage']:
                 style_category_list.append(category.Category(
                     name=category_data['name'],
+                    unique_fermentable_count=category_data['unique_fermentables'],
                     min_percent=category_data['usage']['min'],
                     max_percent=category_data['usage']['max']
                 ))
@@ -241,7 +239,8 @@ class StyleModel:
                 stats=bjcp_style.get('stats'),
                 grain_list=grain.GrainList(style_grain_list),
                 category_list=style_category_list,
-                sensory_data=style_sensory_data
+                sensory_data=style_sensory_data,
+                unique_fermentable_count=style['unique_fermentables']
             ))
 
     def __bjcp_lookup(self, name, return_category=False):

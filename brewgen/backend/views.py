@@ -114,6 +114,7 @@ def get_style_data(style_slug):
         'grain_usage': style_object.get_grain_usage(),
         'category_usage': style_object.get_category_usage(),
         'sensory_data': style_object.sensory_data,
+        'unique_fermentable_count': style_object.unique_fermentable_count,
         'bjcp_sensory': bjcp_sensory_response
     }), 200
 
@@ -212,7 +213,7 @@ def get_fermentable_list_sensory_values():
     categories = []
     for category_data in data.get('category_model', []):
         categories.append(category.Category(
-            category_data['name'], category_data['min_percent'], category_data['max_percent']))
+            category_data['name'], category_data['unique_fermentable_count'], category_data['min_percent'], category_data['max_percent']))
     category_profile = category.CategoryProfile(categories)
 
     # Get the profile list and return to the client
@@ -260,7 +261,7 @@ def get_fermentable_list_recipes():
     categories = []
     for category_data in data.get('category_model', []):
         categories.append(category.Category(
-            category_data['name'], category_data['min_percent'], category_data['max_percent']))
+            category_data['name'], category_data['unique_fermentable_count'], category_data['min_percent'], category_data['max_percent']))
     category_profile = category.CategoryProfile(categories)
 
     # Create an equipment profile from the parameters
@@ -352,7 +353,7 @@ def is_grain_model_valid():
 
     data = request.json
     category_profile = category.CategoryProfile([category.Category(
-        cat['name'], cat['min_percent'], cat['max_percent']) for cat in data['category_model']])
+        cat['name'], cat['unique_fermentable_count'], cat['min_percent'], cat['max_percent']) for cat in data['category_model']])
 
     fermentable_list = []
     for data_fermentable in data['fermentable_list']:

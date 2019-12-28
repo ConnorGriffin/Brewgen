@@ -94,8 +94,9 @@ const getters = {
     )
     if (matchCategory) {
       if (
-        matchCategory.min_percent !== state.fermentableCategoryUsageEdit[0] ||
-        matchCategory.max_percent !== state.fermentableCategoryUsageEdit[1]
+        matchCategory.min_percent !== state.fermentableCategoryUsageEdit.minUsage ||
+        matchCategory.max_percent !== state.fermentableCategoryUsageEdit.maxUsage ||
+        matchCategory.unique_fermentable_count !== state.fermentableCategoryUsageEdit.uniqueFermentableCount
       ) {
         return true
       } else {
@@ -107,7 +108,9 @@ const getters = {
 }
 
 const actions = {
-  async fetchFermentableCategories({ commit }) {
+  async fetchFermentableCategories({
+    commit
+  }) {
     return axios
       .get('http://10.31.36.49:5000/api/v1/style-data/grains/categories')
       .then(response => {
@@ -118,10 +121,14 @@ const actions = {
         throw err
       })
   },
-  updateFermentableCategoryValue({ commit }, fermentableCategory, key, value) {
+  updateFermentableCategoryValue({
+    commit
+  }, fermentableCategory, key, value) {
     commit('setFermentableCategoryValue', fermentableCategory, key, value)
   },
-  async fetchAllFermentables({ commit }) {
+  async fetchAllFermentables({
+    commit
+  }) {
     return axios
       .get('http://10.31.36.49:5000/api/v1/grains')
       .then(response => {
@@ -132,10 +139,14 @@ const actions = {
         throw err
       })
   },
-  updateEquipmentProfile({ commit }, maxUniqueFermentables, targetVolumeGallons, mashEfficiency) {
+  updateEquipmentProfile({
+    commit
+  }, maxUniqueFermentables, targetVolumeGallons, mashEfficiency) {
     commit('updateEquipmentProfile', maxUniqueFermentables, targetVolumeGallons, mashEfficiency)
   },
-  async fetchSensoryData({ commit }) {
+  async fetchSensoryData({
+    commit
+  }) {
     commit('setLoader', {
       name: 'sensoryData',
       loading: true
@@ -183,7 +194,9 @@ const actions = {
         throw err
       })
   },
-  async fetchSensoryDataEdit({ commit }, name) {
+  async fetchSensoryDataEdit({
+    commit
+  }, name) {
     // Fetches current style sensory data but excludes configured values for a single descriptor
     commit('setLoader', {
       name: 'sensoryDataEdit',
@@ -223,7 +236,11 @@ const actions = {
         throw err
       })
   },
-  async fetchRecipeData({ commit }, { colorOnly }) {
+  async fetchRecipeData({
+    commit
+  }, {
+    colorOnly
+  }) {
     commit('setLoader', {
       name: 'recipeData',
       loading: true
@@ -296,7 +313,9 @@ const actions = {
         throw err
       })
   },
-  async fetchStyles({ commit }) {
+  async fetchStyles({
+    commit
+  }) {
     commit('setLoader', {
       name: 'styles',
       loading: true
@@ -315,7 +334,9 @@ const actions = {
         throw err
       })
   },
-  async setDataFromStyle({ commit }, styleSlug) {
+  async setDataFromStyle({
+    commit
+  }, styleSlug) {
     commit('resetData')
     return axios
       .get('http://10.31.36.49:5000/api/v1/styles/' + styleSlug)
@@ -347,6 +368,7 @@ const actions = {
         commit('setBjcpSensory', response.data.bjcp_sensory)
         commit('setCurrentStyleSensory', response.data.sensory_data)
         // commit('setSensoryModel', response.data.sensory_data)
+        commit('setMaxUniqueFermentables', response.data.unique_fermentable_count)
         commit('setCurrentStyleStats', stats)
         Promise.resolve()
       })
@@ -354,7 +376,9 @@ const actions = {
         throw err
       })
   },
-  async fetchFermentableModelValidity({ commit }) {
+  async fetchFermentableModelValidity({
+    commit
+  }) {
     return axios
       .post('http://10.31.36.49:5000/api/v1/helpers/grain-model-valid', {
         fermentable_list: state.currentStyleFermentables,
@@ -369,43 +393,64 @@ const actions = {
         throw err
       })
   },
-  addSensoryToModel({ commit }, name, min, max) {
+  addSensoryToModel({
+    commit
+  }, name, min, max) {
     commit('addSensoryToModel', name, min, max)
   },
-  setSensoryConstraint({ commit }, name, min, max) {
+  setSensoryConstraint({
+    commit
+  }, name, min, max) {
     commit('setSensoryConstraint', name, min, max)
   },
-  removeSensoryConstraint({ commit }, name) {
+  removeSensoryConstraint({
+    commit
+  }, name) {
     commit('removeSensoryConstraint', name)
   },
-  saveFermentableCategoryChanges({ commit }) {
+  saveFermentableCategoryChanges({
+    commit
+  }) {
     let usage = {
       name: state.editingFermentableCategory,
-      min_percent: state.fermentableCategoryUsageEdit[0],
-      max_percent: state.fermentableCategoryUsageEdit[1]
+      min_percent: state.fermentableCategoryUsageEdit.minUsage,
+      max_percent: state.fermentableCategoryUsageEdit.maxUsage,
+      unique_fermentable_count: state.fermentableCategoryUsageEdit.uniqueFermentableCount
     }
     commit('saveFermentableChanges')
     commit('setCategoryUsage', usage)
   },
-  setEditingFermentableCategory({ commit }, payload) {
+  setEditingFermentableCategory({
+    commit
+  }, payload) {
     commit('setEditingFermentableCategory', payload)
   },
-  clearEditingFermentableCategory({ commit }) {
+  clearEditingFermentableCategory({
+    commit
+  }) {
     commit('setEditingFermentableCategory', null)
     commit('clearFermentableChanges')
     commit('setFermentableCategoryUsageEdit', [])
   },
-  discardFermentableCategoryChanges({ commit }) {
+  discardFermentableCategoryChanges({
+    commit
+  }) {
     commit('clearFermentableChanges')
     commit('setFermentableCategoryUsageEdit', [])
   },
-  setFermentableCategoryUsageEdit({ commit }, payload) {
+  setFermentableCategoryUsageEdit({
+    commit
+  }, payload) {
     commit('setFermentableCategoryUsageEdit', payload)
   },
-  addVisibleSensoryDescriptor({ commit }, name) {
+  addVisibleSensoryDescriptor({
+    commit
+  }, name) {
     commit('addVisibleSensoryDescriptor', name)
   },
-  removeVisibleSensoryDescriptor({ commit }, name) {
+  removeVisibleSensoryDescriptor({
+    commit
+  }, name) {
     commit('removeVisibleSensoryDescriptor', name)
   }
 }
@@ -413,11 +458,17 @@ const actions = {
 const mutations = {
   setFermentableCategories: (state, fermentableCategories) =>
     (state.fermentableCategories = fermentableCategories),
-  setFermentableCategoryValue: (state, { fermentableCategory, key, value }) => {
+  setFermentableCategoryValue: (state, {
+    fermentableCategory,
+    key,
+    value
+  }) => {
     var matchCategory = state.fermentableCategories.find(
       category => category.name === fermentableCategory
     )
-    Object.assign(matchCategory, { [key]: value })
+    Object.assign(matchCategory, {
+      [key]: value
+    })
   },
   setAllFermentables: (state, allFermentables) => {
     state.allFermentables = allFermentables
@@ -426,7 +477,11 @@ const mutations = {
     // Store the fermentable data for the style in allFermentables
     state.currentStyleFermentables = value
   },
-  setSensoryConstraint: (state, { name, min, max }) => {
+  setSensoryConstraint: (state, {
+    name,
+    min,
+    max
+  }) => {
     // Add a sensory constraint to the model, or modify an existing constraint
     let matchSensory = state.currentStyleSensory.find(
       sensoryObject => sensoryObject.name === name
@@ -442,8 +497,8 @@ const mutations = {
     // Format the sensory data for use in the recipe designer
     state.visibleSensoryDescriptors = []
     state.currentStyleSensory = sensoryData.filter(sensoryValue => {
-      return (sensoryValue.max > 0.25 && sensoryValue.max - sensoryValue.min > 0.25)
-    })
+        return (sensoryValue.max > 0.25 && sensoryValue.max - sensoryValue.min > 0.25)
+      })
       .map(sensoryValue => {
         let sensoryReturn = {
           name: sensoryValue.name,
@@ -519,10 +574,21 @@ const mutations = {
       state.visibleSensoryDescriptors.splice(state.visibleSensoryDescriptors.indexOf(name), 1)
     }
   },
-  updateEquipmentProfile: (state, { maxUniqueFermentables, targetVolumeGallons, mashEfficiency }) => {
-    Object.assign(state.equipmentProfile, { maxUniqueFermentables, targetVolumeGallons, mashEfficiency })
+  updateEquipmentProfile: (state, {
+    maxUniqueFermentables,
+    targetVolumeGallons,
+    mashEfficiency
+  }) => {
+    Object.assign(state.equipmentProfile, {
+      maxUniqueFermentables,
+      targetVolumeGallons,
+      mashEfficiency
+    })
   },
-  setBeerProfileKey: (state, { key, value }) =>
+  setBeerProfileKey: (state, {
+      key,
+      value
+    }) =>
     (state.beerProfile[key] = value),
   setSensoryData: (state, sensoryData) => {
     // TODO: Charts are using this data still, want to move it to the Possible data instead
@@ -531,9 +597,14 @@ const mutations = {
   setRecipeData: (state, recipeData) => (state.recipeData = recipeData),
   setRecipeColorData: (state, recipeColorData) =>
     (state.recipeColorData = recipeColorData),
-  setFermentableEnabled: (state, { slug, enabled }) => {
+  setFermentableEnabled: (state, {
+    slug,
+    enabled
+  }) => {
     var matchFermentable = state.allFermentables.find(fermentable => fermentable.slug === slug)
-    Object.assign(matchFermentable, { enabled })
+    Object.assign(matchFermentable, {
+      enabled
+    })
   },
   removeSensoryConstraint(state, name) {
     let sensoryObj = state.currentStyleSensory.find(object => object.name === name)
@@ -543,7 +614,11 @@ const mutations = {
     state.lastChangedSensoryDescriptor = null
     state.lastSensoryData = null
   },
-  addSensoryToModel(state, { name, min, max }) {
+  addSensoryToModel(state, {
+    name,
+    min,
+    max
+  }) {
     // Remove if already exists, just to be safe
     var modelObject = state.sensoryModel.find(object => object.name === name)
     if (modelObject !== undefined) {
@@ -572,14 +647,24 @@ const mutations = {
   setOgWatcherEnabled(state, value) {
     state.ogWatcherEnabled = value
   },
-  setLoader(state, { name, loading }) {
+  setMaxUniqueFermentables(state, value) {
+    state.equipmentProfile.maxUniqueFermentables = value
+  },
+  setLoader(state, {
+    name,
+    loading
+  }) {
     // Creates or updates a loader's status
     let loader = state.loaders.find(loader => loader.name === name)
     if (loader !== undefined) {
-      Object.assign(loader, { name, loading })
+      Object.assign(loader, {
+        name,
+        loading
+      })
     } else {
       state.loaders.push({
-        name, loading
+        name,
+        loading
       })
     }
   },

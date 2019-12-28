@@ -209,7 +209,9 @@ class GrainList(GrainModel):
         # Define model variables
         grain_vars = [model.NewIntVar(
             0, 100, 'grain{}'.format(i)) for i in grain_range]
-        category_vars = [model.NewIntVar(0, 100, 'category_{}'.format(
+        category_usage = [model.NewIntVar(0, 100, 'category_usage_{}'.format(
+            category['name'])) for category in category_data]
+        category_fermentable_count = [model.NewIntVar(0, max_unique_grains, 'category_fermentable_count_{}'.format(
             category['name'])) for category in category_data]
         grain_used = [model.NewBoolVar(
             'grain{}_used'.format(i)) for i in grain_map]
@@ -217,7 +219,7 @@ class GrainList(GrainModel):
         # Define constraints
         # Grain usage total must be 100% - not sure why both of these are needed but it doens't work if they're not
         model.Add(sum(grain_vars) == 100)
-        model.Add(sum(category_vars) == 100)
+        model.Add(sum(category_usage) == 100)
 
         # Limit the max number of grains to the specified limit
         for i in grain_range:
@@ -232,14 +234,20 @@ class GrainList(GrainModel):
             model.Add(grain_vars[i] >= grain_map[i]
                       ['min_percent']).OnlyEnforceIf(grain_used[i])
 
-        # Keep each grain category at or above the min and at or below the max amounts
         for i in category_range:
             category = category_data[i]
-            model.Add(category_vars[i] == sum(
-                grain_vars[k] for k in grain_range if grain_map[k]['category'] == category['name']))
 
-            model.Add(category_vars[i] <= category['max_percent'])
-            model.Add(category_vars[i] >= category['min_percent'])
+            # Keep each grain category at or above the min and at or below the max amounts
+            model.Add(category_usage[i] == sum(
+                grain_vars[k] for k in grain_range if grain_map[k]['category'] == category['name']))
+            model.Add(category_usage[i] <= category['max_percent'])
+            model.Add(category_usage[i] >= category['min_percent'])
+
+            # Keep the number of grains in the category at or below the max category fermentable count
+            model.Add(category_fermentable_count[i] == sum(
+                grain_used[k] for k in grain_range if grain_map[k]['category'] == category['name'] and grain_used[k]))
+            model.Add(
+                category_fermentable_count[i] <= category['unique_fermentable_count'])
 
         # If a sensory model is provided we need to add more constraints
         if sensory_model:
