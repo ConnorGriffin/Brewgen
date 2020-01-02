@@ -85,8 +85,8 @@ export default {
         }
       })
 
-      var styleAvg = sensoryData.map(descriptor => {
-        return (descriptor.style.min + descriptor.style.max) / 2
+      var styleMean = sensoryData.map(descriptor => {
+        return descriptor.style.mean
       })
 
       // Return the data formatted for ApexCharts
@@ -121,8 +121,8 @@ export default {
             data: maxData
           },
           {
-            name: 'Style Avg.',
-            data: styleAvg
+            name: 'Style Average',
+            data: styleMean
           }
         ]
       }

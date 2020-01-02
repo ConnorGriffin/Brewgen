@@ -217,7 +217,8 @@ class StyleModel:
                 style_sensory_data.append({
                     'name': sensory_keyword['name'],
                     'min': sensory_keyword['min'],
-                    'max': sensory_keyword['max']
+                    'max': sensory_keyword['max'],
+                    'mean': sensory_keyword['stats']['mean']
                 })
 
             self.style_list.append(Style(

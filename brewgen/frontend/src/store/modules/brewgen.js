@@ -504,7 +504,8 @@ const mutations = {
           name: sensoryValue.name,
           style: {
             min: sensoryValue.min,
-            max: sensoryValue.max
+            max: sensoryValue.max,
+            mean: sensoryValue.mean
           },
           possible: undefined,
           configured: undefined,
