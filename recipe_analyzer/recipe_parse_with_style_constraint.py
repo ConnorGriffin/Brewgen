@@ -481,7 +481,7 @@ def parse_beerxml_file(beerxml_file):
     except:
         print("Failed to parse ./{}".format(str(beerxml_file)))
         recipes = []
-    
+
     try:
         style = recipe.style.name
 
@@ -499,9 +499,9 @@ def parse_beerxml_file(beerxml_file):
                  recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.25
             srm_match = float(specs.get('srm', {}).get('low', 0))*.75 <= recipe.color <= float(
                  specs.get('srm', {}).get('high', 999))*1.25
-            # ibu_match = float(specs.get('ibu', {}).get('low', 0))*.5 <= recipe.ibu <= float(
-            #     specs.get('ibu', {}).get('high', 999))*1.5
-            ibu_match = True
+            ibu_match = float(specs.get('ibu', {}).get('low', 0))*.75 <= recipe.ibu <= float(
+                specs.get('ibu', {}).get('high', 999))*1.25
+            # ibu_match = True
 
             # Only include recipes with a to-style OG and color
             if og_match and srm_match and ibu_match:
@@ -515,7 +515,7 @@ def parse_beerxml_file(beerxml_file):
                         return {
                             'status': 'uses_extract',
                             'data': fermentable_name
-                        }                
+                        }
 
                     # Rewrite fermentable names
                     for rule in fermentable_rewrites:
@@ -541,8 +541,8 @@ def parse_beerxml_file(beerxml_file):
                                 'color': fermentable.color,
                                 'recipe_style': style
                             }
-                        }         
-                        
+                        }
+
 
                     # Calculate total amount of grains ignoring the bypass list
                     total_amount = sum(
@@ -597,8 +597,12 @@ def parse_beerxml_file(beerxml_file):
                 # }
                 return {
                     'status': 'not_to_style',
-                    'data': 'Recipe not to style'
-                }         
+                    'data': {
+                        'og_match': og_match, 
+                        'srm_match': srm_match, 
+                        'ibu_match': ibu_match
+                    }
+                }
         else:
             return {
                     'status': 'unmatched_style',
@@ -608,7 +612,7 @@ def parse_beerxml_file(beerxml_file):
                         'color': None,
                         'recipe_style': None
                     }
-                } 
+                }
 
     except Exception as err:
         return {
@@ -665,7 +669,7 @@ def analyze_style(style):
                           usage in style_category_data if name == category_name]
         if category_usage == []:
             category_usage = [0]
-        
+
         category_unique_fermentables = [count for name, count in style_category_fermentable_count if name == category_name and count > 0]
         if category_unique_fermentables == []:
             category_unique_fermentables = [0]
