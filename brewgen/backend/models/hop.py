@@ -1,18 +1,20 @@
 import json
 import os.path
+import math
 from slugify import slugify
 
 
 class Hop:
     """Defines a hop and all of its properties."""
 
-    def __init__(self, name, alpha, beta, cohumulone, total_oil):
+    def __init__(self, name, alpha, beta, cohumulone, total_oil, aroma=dict()):
         self.name = name
         self.slug = slugify(name, replacements=[["'", ''], ['®', '']])
         self.alpha = alpha
         self.beta = beta
         self.cohumulone = cohumulone
         self.total_oil = total_oil
+        self.aroma = aroma
 
 
 class HopModel:
@@ -31,11 +33,12 @@ class HopModel:
 
         for hop in hop_data:
             self.hop_list.append(Hop(
-                name=hop['Name'],
-                alpha=(hop['AlphaMin'] + hop['AlphaMax']) / 2,
-                beta=(hop['BetaMin'] + hop['BetaMax']) / 2,
-                cohumulone=(hop['CoHumuloneMin'] + hop['CoHumuloneMax']) / 2,
-                total_oil=(hop['TotalOilMin'] + hop['TotalOilMax']) / 2
+                name=hop['name'],
+                alpha=hop['alpha'],
+                beta=hop['beta'],
+                cohumulone=hop['cohumulone'],
+                total_oil=hop['total_oil'],
+                aroma=hop['aroma']
             ))
 
     def get_hop_names(self):
@@ -55,3 +58,63 @@ class HopModel:
         for hop in self.hop_list:
             if hop.name == name:
                 return hop
+
+    def get_sensory_keywords(self):
+        """Return a list of unique sensory keywords"""
+        sensory_keys = []
+        for hop in self.hop_list:
+            if hop.aroma:
+                hop_keys = [key for key in hop.aroma.keys()]
+                for key in hop_keys:
+                    if key not in sensory_keys:
+                        sensory_keys.append(key)
+        return sensory_keys
+
+
+class HopAddition:
+    """Defines a hop addition to a recipe.
+    Args:
+        hop: Hop object
+        time: Hop duration in minutes
+        usage: Hop usage (first wort, boil, aroma, whirlpool, dry hop)
+        amount: Hop amount in grams
+    """
+
+    def __init__(self, hop, time, usage, amount):
+        self.hop = hop
+        self.time = time
+        self.usage = usage.lower()
+        self.amount = amount
+
+    def __flavor_factor(self, og, batch_size):
+        if self.usage in ['boil', 'first wort']:
+            multiplier = (math.e ** (-.04 * self.time))
+        elif self.usage in ['aroma', 'whirlpool']:
+            multiplier = 1.15
+        elif self.usage in ['dry hop']:
+            multiplier = 1.25
+        else:
+            raise Exception("Unknown Usage method {}!".format(self.usage))
+
+        bigness_factor = 1.65 * .000125 ** (og - 1) * multiplier
+        return (multiplier * bigness_factor / (batch_size / 3.78541))
+
+    def get_sensory_data(self, og, batch_size):
+        """Returns sensory data for the given grain bill
+        Args:
+            og: Recipe OG in specific gravity (1.xxx)
+            batch_size: Recipe batch size in liters
+        """
+
+        sensory_data = {}
+        # Iterate over every possible keyword, not just the possible ones in the hop list
+        for sensory_keyword in HopModel.get_sensory_keywords(HopModel()):
+            sensory_data[sensory_keyword] = 0
+            # Sum the sensory value contributions of each hop
+            for key, value in self.hop.aroma.items():
+                if key == sensory_keyword:
+                    hop_flavor = value * self.hop.total_oil
+                    sensory_data[key] = self.amount * hop_flavor * \
+                        self.__flavor_factor(og, batch_size) * 3.5274
+
+        return sensory_data
