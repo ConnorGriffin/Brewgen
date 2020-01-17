@@ -118,3 +118,26 @@ class HopAddition:
                         self.__flavor_factor(og, batch_size) * 3.5274
 
         return sensory_data
+
+
+class HopBill:
+    """Defines all hop additions for a recipe.
+    Args:
+        hop_additions: A list of HopAddition objects.
+    """
+
+    def __init__(self, hop_additions):
+        self.hop_additions = hop_additions
+
+    def get_sensory_data(self, og, batch_size):
+        sensory_data = {}
+        sensory_keywords = HopModel.get_sensory_keywords(HopModel())
+        for keyword in sensory_keywords:
+            sensory_data[keyword] = 0
+
+        for hop in self.hop_additions:
+            hop_sensory = hop.get_sensory_data(og, batch_size)
+            for key, value in hop_sensory.items():
+                sensory_data[key] += value
+
+        return sensory_data
