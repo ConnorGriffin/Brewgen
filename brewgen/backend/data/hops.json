@@ -179,7 +179,7 @@
     "cohumulone": 17.5,
     "total_oil": 1.75,
     "aroma": {
-        "Floral Bouquet": 1,
+        "Floral": 1,
         "Spicy": 1
     }
 }, {
@@ -190,7 +190,7 @@
     "total_oil": 1.2,
     "aroma": {
         "Noble": 1,
-        "Floral Boquet": 1,
+        "Floral": 1,
         "Spicy": 1
     }
 }, {
@@ -199,9 +199,7 @@
     "beta": 5.75,
     "cohumulone": 27.0,
     "total_oil": 2.45,
-    "aroma": {
-        "": 1
-    }
+    "aroma": {}
 }, {
     "name": "Millennium",
     "alpha": 15.5,
