@@ -56,7 +56,7 @@ class HopModel:
 
     def get_hop_by_name(self, name):
         for hop in self.hop_list:
-            if hop.name == name:
+            if str(hop.name).strip().lower() == str(name).strip().lower():
                 return hop
 
     def get_sensory_keywords(self):
@@ -119,6 +119,16 @@ class HopAddition:
 
         return sensory_data
 
+    def ibu(self, og, batch_size):
+        """Return IBUs for the hop addition.
+        Args:
+            og: Recipe OG in specific gravity (1.xxx)
+            batch_size: Recipe batch size in liters
+        """
+        bitterness = 1.65 * math.pow(0.000125, og - 1.0) * ((1 - math.pow(math.e, -0.04 * self.time)) / 4.15) * (
+            (self.hop.alpha / 100.0 * self.amount * 1000) / batch_size) * 1.15
+        return bitterness
+
 
 class HopBill:
     """Defines all hop additions for a recipe.
@@ -140,4 +150,23 @@ class HopBill:
             for key, value in hop_sensory.items():
                 sensory_data[key] += value
 
-        return sensory_data
+        return {
+            'total': sum(value for key, value in sensory_data.items()),
+            'descriptors': sensory_data
+        }
+
+    def ibu(self, og, batch_size):
+        """Return IBUs for the hop bill.
+        Args:
+            og: Recipe OG in specific gravity (1.xxx)
+            batch_size: Recipe batch size in liters
+        """
+        return sum(h.ibu(og, batch_size) for h in self.hop_additions)
+
+    def amount(self):
+        """Return hop amount in grams."""
+        return sum(h.amount for h in self.hop_additions)
+
+    def unique_hops(self):
+        """Return a list of unique hop names in the recipe"""
+        return list(set(addition.hop.name for addition in self.hop_additions))
