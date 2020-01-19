@@ -52,19 +52,19 @@
 
     <!-- Fermentable Configurator -->
     <b-modal :active.sync="showFermentableConfigurator" has-modal-card trap-focus scroll="keep">
-      <FermentableConfigurator :fermentable="editingFermentable" />
+      <FermentableSetupFermentableEditor :fermentable="editingFermentable" />
     </b-modal>
   </div>
 </template>
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import FermentableConfigurator from '@/components/FermentableConfigurator.vue'
+import FermentableSetupFermentableEditor from '@/components/FermentableSetup/FermentableSetupFermentableEditor.vue'
 
 export default {
-  name: 'FermentableCategoryEditor',
+  name: 'FermentableSetupCategoryEditor',
   components: {
-    FermentableConfigurator
+    FermentableSetupFermentableEditor
   },
   data() {
     return {

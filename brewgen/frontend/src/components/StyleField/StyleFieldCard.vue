@@ -44,7 +44,7 @@
 import { mapActions } from 'vuex'
 
 export default {
-  name: 'StyleCard',
+  name: 'StyleFieldCard',
   props: ['styleData'],
   computed: {
     hasStats: function() {

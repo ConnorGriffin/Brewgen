@@ -126,7 +126,7 @@
           size="is-small"
         ></b-pagination>
         <hr />
-        <RecipeCard
+        <RecipeOutputRecipeCard
           v-for="(recipe, index) in currentPageRecipes"
           :key="index"
           :recipe="recipe"
@@ -140,13 +140,13 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import RecipeCard from '@/components/RecipeCard.vue'
+import RecipeOutputRecipeCard from '@/components/RecipeOutput/RecipeOutputRecipeCard.vue'
 import round from 'lodash'
 
 export default {
-  name: 'RecipeStep',
+  name: 'RecipeOutput',
   components: {
-    RecipeCard
+    RecipeOutputRecipeCard
   },
   data() {
     return {
@@ -235,9 +235,10 @@ export default {
         let roundedSrm = _.round(recipe.srm, 1)
         return (
           enabledRecipeFermentables.length === recipe.grains.length &&
-          (roundedSrm >= this.srmRange[0] && roundedSrm <= this.srmRange[1]) &&
-          (recipe.grains.length >= this.uniqueFermentablesRange[0] &&
-            recipe.grains.length <= this.uniqueFermentablesRange[1])
+          roundedSrm >= this.srmRange[0] &&
+          roundedSrm <= this.srmRange[1] &&
+          recipe.grains.length >= this.uniqueFermentablesRange[0] &&
+          recipe.grains.length <= this.uniqueFermentablesRange[1]
         )
       })
     },

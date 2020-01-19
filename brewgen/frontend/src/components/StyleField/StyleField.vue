@@ -4,7 +4,7 @@
 
     <!-- Style list and selection modal -->
     <b-modal :active.sync="showStyleListModal" has-modal-card trap-focus scroll="keep">
-      <StyleList />
+      <StyleFieldPicker />
     </b-modal>
 
     <!-- Style name and selector button -->
@@ -59,12 +59,12 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import StyleList from '@/components/StyleList.vue'
+import StyleFieldPicker from '@/components/StyleField/StyleFieldPicker.vue'
 
 export default {
   name: 'StyleField',
   components: {
-    StyleList
+    StyleFieldPicker
   },
   data() {
     return {

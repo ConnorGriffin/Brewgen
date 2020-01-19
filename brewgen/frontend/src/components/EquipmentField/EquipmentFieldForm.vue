@@ -11,7 +11,13 @@
         <b-numberinput id="mash_efficiency" min="1" max="100" step="1" v-model="mashEfficiency" />
       </b-field>
       <b-field label="Max Unique Fermentables" labelPosition="on-border">
-        <b-numberinput id="maxUniqueFermentables" min="1" max="7" step="1" v-model="maxUniqueFermentables" />
+        <b-numberinput
+          id="maxUniqueFermentables"
+          min="1"
+          max="7"
+          step="1"
+          v-model="maxUniqueFermentables"
+        />
       </b-field>
     </section>
     <footer class="modal-card-foot">
@@ -24,22 +30,22 @@
 <script>
 import { mapActions } from 'vuex'
 export default {
-  name: 'EquipmentForm',
-  data () {
+  name: 'EquipmentFieldForm',
+  data() {
     return {
       maxUniqueFermentables: 0,
       targetVolumeGallons: 0,
       mashEfficiency: 0
     }
   },
-  created () {
+  created() {
     this.maxUniqueFermentables = this.$store.state.brewgen.equipmentProfile.maxUniqueFermentables
     this.targetVolumeGallons = this.$store.state.brewgen.equipmentProfile.targetVolumeGallons
     this.mashEfficiency = this.$store.state.brewgen.equipmentProfile.mashEfficiency
   },
   methods: {
     ...mapActions(['updateEquipmentProfile']),
-    updateEquipmentProfileAndClose: function () {
+    updateEquipmentProfileAndClose: function() {
       this.updateEquipmentProfile({
         maxUniqueFermentables: this.maxUniqueFermentables,
         targetVolumeGallons: this.targetVolumeGallons,

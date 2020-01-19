@@ -16,7 +16,7 @@
           autofocus
       ></b-input>-->
       <div class="list">
-        <SensoryCard
+        <FermentableSensoryDescriptorCard
           v-for="(sensoryData, index) in currentStyleSensory"
           :key="index"
           :sensoryData="sensoryData"
@@ -35,12 +35,12 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
-import SensoryCard from '@/components/SensoryCard'
+import FermentableSensoryDescriptorCard from '@/components/FermentableSensory/FermentableSensoryDescriptorCard'
 
 export default {
-  name: 'SensoryPicker',
+  name: 'FermentableSensoryDescriptorPicker',
   components: {
-    SensoryCard
+    FermentableSensoryDescriptorCard
   },
   computed: {
     ...mapGetters(['currentStyleSensory']),

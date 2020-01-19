@@ -108,7 +108,7 @@
 import { mapActions, mapGetters } from 'vuex'
 
 export default {
-  name: 'SensoryConfigurator',
+  name: 'FermentableSensoryDescriptorEditor',
   props: {
     name: String,
     slug: String,

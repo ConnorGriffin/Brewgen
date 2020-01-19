@@ -16,7 +16,7 @@
         autofocus
       ></b-input>
       <div class="list is-hoverable">
-        <StyleCard :key="style.slug" v-for="style in filteredStyles" :styleData="style" />
+        <StyleFieldCard :key="style.slug" v-for="style in filteredStyles" :styleData="style" />
       </div>
     </section>
     <footer class="modal-card-foot">
@@ -27,28 +27,28 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import StyleCard from '@/components/StyleCard.vue'
+import StyleFieldCard from '@/components/StyleField/StyleFieldCard.vue'
 
 export default {
-  name: 'StyleList',
+  name: 'StyleFieldPicker',
   components: {
-    StyleCard
+    StyleFieldCard
   },
   computed: {
     ...mapGetters(['styles']),
-    sortedStyles: function () {
+    sortedStyles: function() {
       return this.styles.sort((a, b) => (a.name > b.name ? 1 : -1))
     },
     styleListFilter: {
-      get () {
+      get() {
         return this.$store.state.brewgen.styleListFilter
       },
-      set (value) {
+      set(value) {
         this.$store.commit('setStyleListFilter', value)
       }
     },
     //
-    filteredStyles: function () {
+    filteredStyles: function() {
       let filterWords = this.styleListFilter.trim().split(' ')
 
       // Search for each filter word in each name or category
@@ -74,7 +74,7 @@ export default {
     }
   },
   methods: {
-    intersection: function () {
+    intersection: function() {
       var result = []
       var lists
 
@@ -90,7 +90,7 @@ export default {
           var currentValue = currentList[y]
           if (result.indexOf(currentValue) === -1) {
             if (
-              lists.filter(function (obj) {
+              lists.filter(function(obj) {
                 return obj.indexOf(currentValue) == -1
               }).length == 0
             ) {

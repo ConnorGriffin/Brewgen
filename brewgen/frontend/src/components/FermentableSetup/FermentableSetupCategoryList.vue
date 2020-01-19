@@ -16,19 +16,19 @@
       </p>
     </a>
     <b-modal :active.sync="showUnsavedChanges" has-modal-card trap-focus>
-      <UnsavedCategoryChanges :nextCategory="nextCategory" />
+      <FermentableSetupCategoryUnsaved :nextCategory="nextCategory" />
     </b-modal>
   </div>
 </template>
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import UnsavedCategoryChanges from '@/components/UnsavedCategoryChanges.vue'
+import FermentableSetupCategoryUnsaved from '@/components/FermentableSetup/FermentableSetupCategoryUnsaved.vue'
 
 export default {
-  name: 'FermentableCategoryList',
+  name: 'FermentableSetupCategoryList',
   components: {
-    UnsavedCategoryChanges
+    FermentableSetupCategoryUnsaved
   },
   data() {
     return {

@@ -3,17 +3,17 @@
     <div class="columns">
       <!-- Sensory Constraint Buuidler -->
       <div class="column is-4">
-        <SensoryBox v-if="currentStyleSensory !== ''" />
+        <FermentableSensoryDescriptorBox v-if="currentStyleSensory !== ''" />
       </div>
       <!-- Radar Chart -->
       <div class="column is-8">
         <b-tabs v-model="activeTab">
           <b-tab-item label="Sensory">
-            <SensoryRadar :chartData="sensoryChartData" />
+            <FermentableSensoryChartDescriptors :chartData="sensoryChartData" />
             <b-loading :is-full-page="false" :active.sync="this.isLoading('sensoryData')"></b-loading>
           </b-tab-item>
           <b-tab-item label="Beer Color">
-            <RecipeChart :chartData="recipeChartData" />
+            <FermentableSensoryChartColor :chartData="recipeChartData" />
             <b-loading :is-full-page="false" :active.sync="this.isLoading('recipeData')"></b-loading>
           </b-tab-item>
         </b-tabs>
@@ -24,16 +24,16 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import SensoryRadar from '@/components/SensoryRadar.vue'
-import RecipeChart from '@/components/RecipeChart.vue'
-import SensoryBox from '@/components/SensoryBox.vue'
+import FermentableSensoryChartDescriptors from '@/components/FermentableSensory/FermentableSensoryChartDescriptors'
+import FermentableSensoryChartColor from '@/components/FermentableSensory/FermentableSensoryChartColor.vue'
+import FermentableSensoryDescriptorBox from '@/components/FermentableSensory/FermentableSensoryDescriptorBox'
 
 export default {
-  name: 'WortSensory',
+  name: 'FermentableSensory',
   components: {
-    SensoryRadar,
-    RecipeChart,
-    SensoryBox
+    FermentableSensoryChartDescriptors,
+    FermentableSensoryChartColor,
+    FermentableSensoryDescriptorBox
   },
   data() {
     return {

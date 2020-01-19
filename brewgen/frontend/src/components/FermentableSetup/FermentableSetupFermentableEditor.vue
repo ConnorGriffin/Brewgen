@@ -63,7 +63,7 @@
 import { debounce } from 'lodash'
 
 export default {
-  name: 'FermentableConfigurator',
+  name: 'FermentableSetupFermentableEditor',
   props: ['fermentable'],
   data() {
     return {

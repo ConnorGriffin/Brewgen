@@ -18,7 +18,7 @@
 import { mapActions, mapGetters } from 'vuex'
 
 export default {
-  name: 'UnsavedCategoryChanges',
+  name: 'FermentableSetupCategoryUnsaved',
   props: ['nextCategory'],
   methods: {
     ...mapActions([

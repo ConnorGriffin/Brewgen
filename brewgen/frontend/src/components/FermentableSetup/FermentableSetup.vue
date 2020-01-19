@@ -10,10 +10,10 @@
 
     <div class="columns">
       <div class="column is-4">
-        <FermentableCategoryList />
+        <FermentableSetupCategoryList />
       </div>
       <div class="column is-8">
-        <FermentableCategoryEditor v-if="editingFermentableCategory" />
+        <FermentableSetupCategoryEditor v-if="editingFermentableCategory" />
         <b-message type="is-primary" v-else>
           <p>
             Recipes will be generated using a mix of different fermentables. A fermentable's min/max usage amounts will be considered only if the fermentable is included in the recipe, so multiple fermentables in a category
@@ -31,14 +31,14 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import FermentableCategoryList from '@/components/FermentableCategoryList.vue'
-import FermentableCategoryEditor from '@/components/FermentableCategoryEditor.vue'
+import FermentableSetupCategoryList from '@/components/FermentableSetup/FermentableSetupCategoryList.vue'
+import FermentableSetupCategoryEditor from '@/components/FermentableSetup/FermentableSetupCategoryEditor.vue'
 
 export default {
-  name: 'StyleFermentables',
+  name: 'FermentableSetup',
   components: {
-    FermentableCategoryList,
-    FermentableCategoryEditor
+    FermentableSetupCategoryList,
+    FermentableSetupCategoryEditor
   },
   data() {
     return {}

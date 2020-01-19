@@ -5,7 +5,7 @@
       <div class="buttons is-pulled-right">
         <b-button size="is-small" @click="showEditEquipmentModal = true">Edit</b-button>
         <b-modal :active.sync="showEditEquipmentModal" has-modal-card trap-focus>
-          <EquipmentForm />
+          <EquipmentFieldForm />
         </b-modal>
       </div>
     </h1>
@@ -25,12 +25,12 @@
 </template>
 
 <script>
-import EquipmentForm from '@/components/EquipmentForm.vue'
+import EquipmentFieldForm from '@/components/EquipmentField/EquipmentFieldForm.vue'
 
 export default {
   name: 'EquipmentField',
   components: {
-    EquipmentForm
+    EquipmentFieldForm
   },
   data() {
     return {

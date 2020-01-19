@@ -14,7 +14,7 @@
 import { mapGetters } from 'vuex'
 
 export default {
-  name: 'RecipeCard',
+  name: 'RecipeOutputRecipeCard',
   props: ['recipe', 'has-margin-top'],
   data() {
     return {

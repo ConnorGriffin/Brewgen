@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Nav bar -->
-    <Navbar />
+    <TheNavbar />
     <!-- Main Body-->
     <div class="container">
       <section class="section">
@@ -20,28 +20,28 @@
             </div>
           </b-step-item>
           <!-- Fermentables -->
-          <b-step-item label="Fermentables">
+          <b-step-item label="Fermentable Setup">
             <div class="columns is-vcentered is-inline-block-mobile">
               <div class="column">
-                <h1 class="title is-4">Fermentables</h1>
+                <h1 class="title is-4">Fermentable Setup</h1>
               </div>
               <div class="column">
                 <CurrentStyleCard />
               </div>
             </div>
-            <StyleFermentables />
+            <FermentableSetup />
           </b-step-item>
           <!-- Wort Sensory -->
-          <b-step-item label="Wort Sensory">
+          <b-step-item label="Fermentable Sensory">
             <div class="columns is-vcentered is-inline-block-mobile">
               <div class="column">
-                <h1 class="title is-4">Wort Sensory</h1>
+                <h1 class="title is-4">Fermentable Sensory</h1>
               </div>
               <div class="column">
                 <CurrentStyleCard />
               </div>
             </div>
-            <WortSensory />
+            <FermentableSensory />
           </b-step-item>
           <!-- Recipes -->
           <b-step-item label="Recipes">
@@ -53,7 +53,7 @@
                 <CurrentStyleCard />
               </div>
             </div>
-            <RecipeStep />
+            <RecipeOutput />
           </b-step-item>
           <!-- Custom Nav -->
           <template slot="navigation" slot-scope="{previous, next}">
@@ -80,36 +80,36 @@
       </section>
     </div>
     <!-- Footer -->
-    <Footer />
+    <TheFooter />
   </div>
 </template>
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import Navbar from '@/components/Navbar.vue'
-import Footer from '@/components/Footer.vue'
-import EquipmentField from '@/components/EquipmentField.vue'
-import StyleField from '@/components/StyleField.vue'
-import WortSensory from '@/components/WortSensory.vue'
-import StyleFermentables from '@/components/StyleFermentables.vue'
+import TheNavbar from '@/components/TheNavbar.vue'
+import TheFooter from '@/components/TheFooter.vue'
+import EquipmentField from '@/components/EquipmentField/EquipmentField.vue'
+import StyleField from '@/components/StyleField/StyleField.vue'
+import FermentableSensory from '@/components/FermentableSensory/FermentableSensory.vue'
+import FermentableSetup from '@/components/FermentableSetup/FermentableSetup.vue'
 import CurrentStyleCard from '@/components/CurrentStyleCard.vue'
-import RecipeStep from '@/components/RecipeStep.vue'
+import RecipeOutput from '@/components/RecipeOutput/RecipeOutput.vue'
 
 export default {
   name: 'Recipe',
   components: {
-    Navbar,
-    Footer,
+    TheNavbar,
+    TheFooter,
     EquipmentField,
     StyleField,
-    WortSensory,
-    StyleFermentables,
+    FermentableSensory,
+    FermentableSetup,
     CurrentStyleCard,
-    RecipeStep
+    RecipeOutput
   },
   data() {
     return {
-      activeStep: 1
+      activeStep: 0
     }
   },
   watch: {

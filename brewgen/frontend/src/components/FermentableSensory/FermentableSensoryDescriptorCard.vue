@@ -48,7 +48,7 @@
           scroll="keep"
           v-if="possibleSliderRange !== null"
         >
-          <SensoryConfigurator
+          <FermentableSensoryDescriptorEditor
             :styleRange="[sensoryData.style.min, sensoryData.style.max]"
             :possibleRange="possibleSliderRange"
             :name="sensoryData.name | deslug | titleCase"
@@ -167,10 +167,10 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import SensoryConfigurator from '@/components/SensoryConfigurator.vue'
+import FermentableSensoryDescriptorEditor from '@/components/FermentableSensory/FermentableSensoryDescriptorEditor.vue'
 
 export default {
-  name: 'SensoryCard',
+  name: 'FermentableSensoryDescriptorCard',
   props: {
     cardBg: String,
     type: String,
@@ -181,7 +181,7 @@ export default {
     expandable: Boolean
   },
   components: {
-    SensoryConfigurator
+    FermentableSensoryDescriptorEditor
   },
   data() {
     return {

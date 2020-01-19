@@ -20,13 +20,13 @@
         >Collapse All</b-dropdown-item>
       </b-dropdown>
     </div>
-    <!-- SensoryPicker modal and contents -->
+    <!-- FermentableSensoryDescriptorPicker modal and contents -->
     <b-modal :active.sync="showSensoryPicker" has-modal-card trap-focus scroll="keep">
-      <SensoryPicker />
+      <FermentableSensoryDescriptorPicker />
     </b-modal>
     <!-- Box containing sensory constraint cards -->
     <div class="keyword-box">
-      <SensoryCard
+      <FermentableSensoryDescriptorCard
         v-for="(sensoryData, index) in filteredStyleSensory"
         :key="index"
         :sensoryData="sensoryData"
@@ -42,14 +42,14 @@
 
 <script>
 import { mapActions, mapGetters } from 'vuex'
-import SensoryCard from '@/components/SensoryCard.vue'
-import SensoryPicker from '@/components/SensoryPicker.vue'
+import FermentableSensoryDescriptorCard from '@/components/FermentableSensory/FermentableSensoryDescriptorCard.vue'
+import FermentableSensoryDescriptorPicker from '@/components/FermentableSensory/FermentableSensoryDescriptorPicker.vue'
 
 export default {
-  name: 'SensoryBox',
+  name: 'FermentableSensoryDescriptorBox',
   components: {
-    SensoryCard,
-    SensoryPicker
+    FermentableSensoryDescriptorCard,
+    FermentableSensoryDescriptorPicker
   },
   data() {
     return {
