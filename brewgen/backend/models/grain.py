@@ -209,6 +209,13 @@ class GrainList(GrainModel):
         # Define model variables
         grain_vars = [model.NewIntVar(
             0, 100, 'grain{}'.format(i)) for i in grain_range]
+        # # Scrapped after testing, provides no real benefit in current state
+        # grain_below_range = [model.NewBoolVar(
+        #     'grain{}_below_range'.format(i)) for i in grain_range]
+        # grain_above_range = [model.NewBoolVar(
+        #     'grain{}_above_range'.format(i)) for i in grain_range]
+        # grain_mod_5 = [model.NewIntVar(
+        #     0, 4, 'grain{}_mod_5'.format(i)) for i in grain_range]
         category_usage = [model.NewIntVar(0, 100, 'category_usage_{}'.format(
             category['name'])) for category in category_data]
         category_fermentable_count = [model.NewIntVar(0, max_unique_grains, 'category_fermentable_count_{}'.format(
@@ -227,12 +234,27 @@ class GrainList(GrainModel):
             model.Add(grain_vars[i] > 0).OnlyEnforceIf(grain_used[i])
         model.Add(sum(grain_used) <= max_unique_grains)
 
-        # Keep each grain between the min and max percents, but only if they're in use
         for i in grain_range:
+            # Keep each grain between the min and max percents, but only if they're in use
             model.Add(grain_vars[i] <= grain_map[i]
                       ['max_percent']).OnlyEnforceIf(grain_used[i])
             model.Add(grain_vars[i] >= grain_map[i]
                       ['min_percent']).OnlyEnforceIf(grain_used[i])
+
+            # # Force grain amounts to be divisible by 5 if usage is between 20-80 percent to limit number of similar recipes
+            # # Scrapped after testing, provides no real benefit in current state
+            # model.AddModuloEquality(grain_mod_5[i], grain_vars[i], 5)
+
+            # model.Add(grain_vars[i] >= 20).OnlyEnforceIf(
+            #     [grain_below_range[i].Not(), grain_above_range[i].Not()])
+            # model.Add(grain_vars[i] <= 80).OnlyEnforceIf(
+            #     [grain_below_range[i].Not(), grain_above_range[i].Not()])
+            # model.Add(grain_vars[i] < 20).OnlyEnforceIf(grain_below_range[i])
+            # model.Add(grain_vars[i] > 80).OnlyEnforceIf(grain_above_range[i])
+
+            # model.Add(grain_mod_5[i] == 0).OnlyEnforceIf(
+            #     [grain_below_range[i].Not(), grain_above_range[i].Not()]
+            # )
 
         for i in category_range:
             category = category_data[i]
