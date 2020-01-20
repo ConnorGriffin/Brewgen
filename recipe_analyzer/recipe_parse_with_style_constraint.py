@@ -456,6 +456,133 @@ style_rewrites = [
     }
 ]
 
+hop_rewrites = [
+    {
+        'match': r'^.*east.*kent.*$',
+        'replace': 'East Kent Golding (UK)'
+    },
+    {
+        'match': r'^.*Galaxy.*$',
+        'replace': 'Galaxy (AU)'
+    }, {
+        'match': r'^.*premiant.*$',
+        'replace': 'Premiant (CZ)'
+    },
+    {
+        'match': r'^.*sladek.*$',
+        'replace': 'Sladek (CZ)'
+    },
+    {
+        'match': r'^.*styrian.*celeia.*$',
+        'replace': 'Celeia (SI)'
+    },
+    {
+        'match': r'^.*styrian.*golding.*$',
+        'replace': 'Golding (SI)'
+    },
+    {
+        'match': r'(Centennial|Citra|Amarillo|Cascade|Simcoe|Chinook|Columbus|Willamette|Nugget|Mosaic|Warrior|Crystal|Cluster|Summit|Cluster|Crystal|Liberty|Galena|Ahtanum|Sterling|Glacier|Palisade|El Dorado|Apollo|Horizon|Bravo|Calypso|Santiam|Newport|Super Galena).*\(US\)',
+        'replace': r'\g<1>'
+    },
+    {
+        'match': r'^.*bobek.*$',
+        'replace': 'Bobek (SI)'
+    },
+    {
+        'match': r'^.*eureka.*$',
+        'replace': 'Eureka'
+    },
+    {
+        'match': r'^.*h.*mittel.*$|^Mittel.*$',
+        'replace': 'Hallertau Mittelfrüh (DE)'
+    },
+    {
+        'match': r'^.*hersbruck.*$',
+        'replace': 'Hersbrucker (DE)'
+    },
+    {
+        'match': r'^.*nelson.*$',
+        'replace': 'Nelson Sauvin (NZ)'
+    },
+    {
+        'match': r'^.*sorachi.*$',
+        'replace': 'Sorachi Ace'
+    },
+    {
+        'match': r'^.*willam.*$',
+        'replace': 'Willamette'
+    },
+    {
+        'match': r'^.*william.*$',
+        'replace': 'Willamette'
+    },
+    {
+        'match': r'^(.*kent.*|golding.*uk.*|uk.*golding.*|.*ek.*|golding(|s))$',
+        'replace': 'East Kent Golding (UK)'
+    },
+    {
+        'match': r'^(.*styrian.*a(|u)rora.*|super.*styrian.*)$',
+        'replace': 'Aurora (SI)'
+    },
+    {
+        'match': r'^((ger|hal|gr|de).*magnum|magnum.*(ger|hal|gr|de).*)$',
+        'replace': 'Magnum (DE)'
+    },
+    {
+        'match': r'^((Yakima|US) Magnum|Magnum|magnum.*us.*|us.*magnum.*)$',
+        'replace': 'Magnum (US)'
+    },
+    {
+        'match': r'^(cz.*saaz|saaz|saaz.*cz.*)$',
+        'replace': 'Saaz (CZ)'
+    },
+    {
+        'match': r'^(fugg.*(uk|u\.k\.).*|(uk|u\.k\.).*fugg.*|fuggle(|s))$',
+        'replace': 'Fuggle (UK)'
+    },
+    {
+        'match': r'^(fugg.*(us|u\.s\.).*|(us|u\.s\.).*fugg.*)$',
+        'replace': 'Fuggle (US)'
+    },
+    {
+        'match': r'^(german |)hallert(au|eau)(|er)(| \(de\))$',
+        'replace': 'Hallertau Mittelfrüh (DE)'
+    },
+    {
+        'match': r'^(german |)hallertau(|er)(| \(de\))$',
+        'replace': 'Hallertau Mittelfrüh (DE)'
+    },
+    {
+        'match': r'^(gold.*bread.*|.*bread.*gold.*)$',
+        'replace': 'Whitbread Golding Variety (UK)'
+    },
+    {
+        'match': r'^(tettn(a|e)ng(|er)|(ger|gr|de).*tettn(a|e)ng(|er)|tettn(a|e)ng(|er).*(ger|gr|de).*)$',
+        'replace': 'Tettnang (DE)'
+    },
+    {
+        'match': r'^(tettn(a|e)ng(|er)|(us|ych|u\.s\.).*tettn(a|e)ng(|er)|tettn(a|e)ng(|er).*(us|ych|u\.s\.).*)$',
+        'replace': 'Tettnang (US)'
+    },
+    {
+        'match': r'^(us.*golding.*|golding.*us.*)$',
+        'replace': 'Golding (US)'
+    },
+    {
+        'match': r'^(us.*saaz|saaz|saaz.*us.*)$',
+        'replace': 'Saaz (US)'
+    },
+    {
+        'match': r'^m.*hood.*$',
+        'replace': 'Mt. Hood'
+    },
+    {
+        'match': r'Domestic Hallertau',
+        'replace': 'Hallertau (US)'
+    }
+]
+
+
 # We don't care about these at all, they contribute nothing to the recipes from a flavor perspective
 fermentable_bypass = ['Rice Hulls', 'Acid Malt']
 
@@ -474,6 +601,7 @@ beersmith = list(
     Path("./beersmith_scrape/recipes").rglob("*.xml"))
 
 beerxml_list = brewtoad + brewers_friend + beersmith
+
 
 def parse_beerxml_file(beerxml_file):
     try:
@@ -496,9 +624,9 @@ def parse_beerxml_file(beerxml_file):
         specs = bjcp_name(style)
         if specs:
             og_match = points(float(specs.get('og', {}).get('low', 1)))*.75 <= points(
-                 recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.25
+                recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.25
             srm_match = float(specs.get('srm', {}).get('low', 0))*.75 <= recipe.color <= float(
-                 specs.get('srm', {}).get('high', 999))*1.25
+                specs.get('srm', {}).get('high', 999))*1.25
             ibu_match = float(specs.get('ibu', {}).get('low', 0))*.75 <= recipe.ibu <= float(
                 specs.get('ibu', {}).get('high', 999))*1.25
             # ibu_match = True
@@ -542,7 +670,6 @@ def parse_beerxml_file(beerxml_file):
                                 'recipe_style': style
                             }
                         }
-
 
                     # Calculate total amount of grains ignoring the bypass list
                     total_amount = sum(
@@ -598,21 +725,21 @@ def parse_beerxml_file(beerxml_file):
                 return {
                     'status': 'not_to_style',
                     'data': {
-                        'og_match': og_match, 
-                        'srm_match': srm_match, 
+                        'og_match': og_match,
+                        'srm_match': srm_match,
                         'ibu_match': ibu_match
                     }
                 }
         else:
             return {
-                    'status': 'unmatched_style',
-                    'data': {
-                        'name': style,
-                        'type': 'style',
-                        'color': None,
-                        'recipe_style': None
-                    }
+                'status': 'unmatched_style',
+                'data': {
+                    'name': style,
+                    'type': 'style',
+                    'color': None,
+                    'recipe_style': None
                 }
+            }
 
     except Exception as err:
         return {
@@ -622,23 +749,30 @@ def parse_beerxml_file(beerxml_file):
         # print(err)
         # print("Failed to parse recipe in ./{}".format(str(beerxml_file)))
 
+
 # Parse the recipes (multi-process)
 executor = concurrent.futures.ProcessPoolExecutor()
 futures = executor.map(parse_beerxml_file, beerxml_list)
 parse_results = list(futures)
 
-recipe_db = [result['data'] for result in parse_results if result['status'] == 'success']
+recipe_db = [result['data']
+             for result in parse_results if result['status'] == 'success']
 
 # Get a list of style and grain category games
 styles = list(set([recipe['style'] for recipe in recipe_db]))
 categories = category_model.get_category_names()
 
-print('Unmatched Style:       {}'.format(sum(1 for result in parse_results if result['status'] == 'unmatched_style')))
-print('Unmatched Fermentable: {}'.format(sum(1 for result in parse_results if result['status'] == 'unmatched_fermentable')))
-print('Not to Style:          {}'.format(sum(1 for result in parse_results if result['status'] == 'not_to_style')))
-print('Contains Extract:      {}'.format(sum(1 for result in parse_results if result['status'] == 'uses_extract')))
+print('Unmatched Style:       {}'.format(
+    sum(1 for result in parse_results if result['status'] == 'unmatched_style')))
+print('Unmatched Fermentable: {}'.format(sum(
+    1 for result in parse_results if result['status'] == 'unmatched_fermentable')))
+print('Not to Style:          {}'.format(
+    sum(1 for result in parse_results if result['status'] == 'not_to_style')))
+print('Contains Extract:      {}'.format(
+    sum(1 for result in parse_results if result['status'] == 'uses_extract')))
 print('TOTAL RECIPES:         {}'.format(sum(1 for result in parse_results)))
-print('USABLE RECIPES:        {}'.format(sum(1 for result in parse_results if result['status'] == 'success')))
+print('USABLE RECIPES:        {}'.format(
+    sum(1 for result in parse_results if result['status'] == 'success')))
 
 
 def analyze_style(style):
@@ -661,7 +795,8 @@ def analyze_style(style):
                 category_usage = sum(
                     fermentable['percent'] for fermentable in recipe['fermentables'] if fermentable['category'] == category_name)
                 style_category_data.append((category_name, category_usage))
-                style_category_fermentable_count.append((category_name, sum(1 for fermentable in recipe['fermentables'] if fermentable['category'] == category_name)))
+                style_category_fermentable_count.append((category_name, sum(
+                    1 for fermentable in recipe['fermentables'] if fermentable['category'] == category_name)))
 
     # Get the average fermentable category usage for the style
     for category_name in categories:
@@ -670,7 +805,8 @@ def analyze_style(style):
         if category_usage == []:
             category_usage = [0]
 
-        category_unique_fermentables = [count for name, count in style_category_fermentable_count if name == category_name and count > 0]
+        category_unique_fermentables = [
+            count for name, count in style_category_fermentable_count if name == category_name and count > 0]
         if category_unique_fermentables == []:
             category_unique_fermentables = [0]
 
@@ -805,6 +941,7 @@ def analyze_style(style):
         'sensory_data': style_sensory_data
     }
 
+
 # Parse the recipes (multi-process)
 executor = concurrent.futures.ProcessPoolExecutor()
 futures = executor.map(analyze_style, styles)
@@ -825,4 +962,5 @@ with open('unmatched.csv', 'w') as f:
     writer = csv.DictWriter(
         f, fieldnames=['name', 'type', 'color', 'recipe_style'])
     writer.writeheader()
-    writer.writerows([result['data'] for result in parse_results if result['status'] == 'unmatched_fermentable'])
+    writer.writerows([result['data']
+                      for result in parse_results if result['status'] == 'unmatched_fermentable'])

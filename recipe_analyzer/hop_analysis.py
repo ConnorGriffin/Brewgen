@@ -355,6 +355,7 @@ all_hops = hop.HopModel()
 
 def hop_analysis(recipe):
     try:
+        addition_data = {}
         dry_hops = [hop for hop in recipe.hops if hop.alpha and hop.use.lower() in [
             'dry hop']]
         whirl_hops = [hop for hop in recipe.hops if hop.alpha and hop.use.lower() in [
@@ -414,14 +415,6 @@ def hop_analysis(recipe):
                 # Ignore recipes where we can't match all hops
                 raise Exception('Unmatched hop: {}'.format(h.name))
 
-        bill_60 = hop.HopBill(min_60)
-        bill_45 = hop.HopBill(min_45)
-        bill_30 = hop.HopBill(min_30)
-        bill_15 = hop.HopBill(min_15)
-        bill_10 = hop.HopBill(min_10)
-        bill_5 = hop.HopBill(min_5)
-        bill_flameout = hop.HopBill(flameout)
-        bill_dryhop = hop.HopBill(dryhop)
         boil = min_60 + min_45 + min_30 + min_15 + min_10 + min_5
         recipe_hops = hop.HopBill(boil + flameout + dryhop)
 
@@ -436,6 +429,71 @@ def hop_analysis(recipe):
             # Ignore recipes with no boil hops
             raise Exception('No boil hops.')
 
+        if min_60:
+            bill = hop.HopBill(min_60)
+            addition_data['60'] = {      
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+        if min_45:
+            bill = hop.HopBill(min_45)
+            addition_data['45'] = {      
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+        if min_30:
+            bill = hop.HopBill(min_30)
+            addition_data['45'] = {
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+        if min_15:
+            bill = hop.HopBill(min_15)
+            addition_data['15'] = {
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+        if min_10:
+            bill = hop.HopBill(min_10)
+            addition_data['10'] = {
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+        if min_5:
+            bill = hop.HopBill(min_5)
+            addition_data['5'] = {      
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+        if flameout:
+            bill = hop.HopBill(flameout)
+            addition_data['flameout'] = {      
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+        if dryhop:
+            bill = hop.HopBill(dryhop)
+            addition_data['dryhop'] = {
+                'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                'amount': bill.amount() / recipe.batch_size,
+                'unique_hops': len(bill.unique_hops()),
+                'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+            }
+
         # Exclude recipes with more than 1lb/5gal or 454g/19L in the whirlpool or dry hop
         non_boil_amount = sum(hop.amount for hop in dry_hops + whirl_hops)
         if non_boil_amount / recipe.batch_size > 0.02396:
@@ -449,56 +507,7 @@ def hop_analysis(recipe):
                 'unique_hops': len(recipe_hops.unique_hops()),
                 'flavor': recipe_hops.get_sensory_data(recipe.og, recipe.batch_size)
             },
-            'additions': {
-                '60': {
-                    'ibu': bill_60.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_60.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_60.unique_hops()),
-                    'flavor': bill_60.get_sensory_data(recipe.og, recipe.batch_size)
-                },
-                '45': {
-                    'ibu': bill_45.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_45.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_45.unique_hops()),
-                    'flavor': bill_45.get_sensory_data(recipe.og, recipe.batch_size)
-                },
-                '30': {
-                    'ibu': bill_30.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_30.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_30.unique_hops()),
-                    'flavor': bill_30.get_sensory_data(recipe.og, recipe.batch_size)
-                },
-                '15': {
-                    'ibu': bill_15.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_15.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_15.unique_hops()),
-                    'flavor': bill_15.get_sensory_data(recipe.og, recipe.batch_size)
-                },
-                '10': {
-                    'ibu': bill_10.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_10.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_10.unique_hops()),
-                    'flavor': bill_10.get_sensory_data(recipe.og, recipe.batch_size)
-                },
-                '5': {
-                    'ibu': bill_5.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_5.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_5.unique_hops()),
-                    'flavor': bill_5.get_sensory_data(recipe.og, recipe.batch_size)
-                },
-                'flameout': {
-                    'ibu': bill_flameout.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_flameout.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_flameout.unique_hops()),
-                    'flavor': bill_flameout.get_sensory_data(recipe.og, recipe.batch_size)
-                },
-                'dryhop': {
-                    'ibu': bill_dryhop.ibu(recipe.og, recipe.batch_size),
-                    'amount': bill_dryhop.amount() / recipe.batch_size,
-                    'unique_hops': len(bill_dryhop.unique_hops()),
-                    'flavor': bill_dryhop.get_sensory_data(recipe.og, recipe.batch_size)
-                }
-            }
+            'additions': addition_data
         }
     except Exception as e:
         pass
@@ -541,7 +550,7 @@ def get_stats(data):
     # }
 
 
-all_keywords = all_hops.get_sensory_keywords()
+hop_keywords = all_hops.get_sensory_keywords()
 
 for style in ['German Pils']:
     style_flavor = {}
@@ -570,7 +579,7 @@ for style in ['German Pils']:
     results = [result for result in results if flavor_max > result['recipe']['flavor']['total'] > flavor_min]
 
     # Build the overall flavor profile data for the style
-    for keyword in all_keywords:
+    for keyword in hop_keywords:
         flavor_data = [result['recipe']['flavor']['descriptors'][keyword]
                     for result in results if result['recipe']['flavor']['descriptors'][keyword]]
         nonzero = [value for value in flavor_data if value > 0]
@@ -590,9 +599,30 @@ for style in ['German Pils']:
     amt_data = [result['recipe']['amount'] for result in results]
     style_amount = get_stats(amt_data)
 
-    # # Build all of the above data, but specific to each hop addition timing
-    # for addition in ['60', '45', '30', '15' '10', '5', 'flameout', 'dryhop']:
-    #     flavor_data = 
+    # Build all of the above data, but specific to each hop addition timing
+    for addition in ['60', '45', '30', '15' '10', '5', 'flameout', 'dryhop']:
+        addition_flavor = {}
+        addition_results = [result['additions'].get(addition) for result in results if result['additions'].get(addition, None)]
+    
+        if addition_results:
+            # Parse flavor results only for keywords that are in the overall style data as well
+            for keyword in style_flavor.keys():
+                keyword_results = [result['flavor']['descriptors'][keyword] for result in addition_results]
+                addition_flavor[keyword] = get_stats(keyword_results)
+                addition_flavor[keyword]['recipe_count'] = sum(1 for result in keyword_results if result > 0)
+
+            addition_data[addition] = {
+                'ibu': get_stats([result['ibu'] for result in addition_results]),
+                'amount': get_stats([result['amount'] for result in addition_results]),
+                'unique_hops': int(round(np.mean([result['unique_hops'] for result in addition_results]))),
+                'flavor': {
+                    'total': get_stats([result['flavor']['total'] for result in addition_results]),
+                    'descriptors': addition_flavor
+                },
+                'recipe_count': len(addition_results)
+            }
+            
+            
 
     
     print(json.dumps({
@@ -606,5 +636,6 @@ for style in ['German Pils']:
                 'total': get_stats([result['recipe']['flavor']['total'] for result in results]),
                 'descriptors': style_flavor
             }
-        }
+        },
+        'additions': addition_data
     }))
