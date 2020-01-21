@@ -828,7 +828,7 @@ def analyze_style(style):
                 'max': min(100, int(mean + 1 * std_dev))
             },
             'unique_fermentables': int(round(np.median(category_unique_fermentables))),
-            'category_object': category.Category(category_name, int(np.min(category_usage)), int(np.max(category_usage)))
+            'category_object': category.Category(category_name, int(round(np.median(category_unique_fermentables))), int(np.min(category_usage)), int(np.max(category_usage)))
         })
 
     # Add fermentables for each recipe in the style to fermentable_data

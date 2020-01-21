@@ -957,93 +957,95 @@ recipe_results = [result
 
 
 style_results = []
-for style in ['American IPA']:#styles:
+for style in styles:
     style_flavor = {}
+    style_grain_usage = []
+    style_sensory_data = []
     addition_data = {}
-    category_usage_data = []
+    style_category_usage = []
 
     results = [result for result in recipe_results if result['style'] == style]
 
-    # # Analyze hop data
-    # try:
-    #     hop_results = [result['hop_data']['data']
-    #                for result in results if result['hop_data']['status'] == 'success']
+    # Analyze hop data
+    try:
+        hop_results = [result['hop_data']['data']
+                   for result in results if result['hop_data']['status'] == 'success']
 
-    #     # Get the flavor range and dump recipes that are outliers
-    #     flavor_totals = reject_outliers(np.array([result['recipe']['flavor']['total']
-    #                                             for result in hop_results]))
-    #     flavor_min = np.amin(flavor_totals)
-    #     flavor_max = np.amax(flavor_totals)
-    #     hop_results = [result for result in hop_results if flavor_max >
-    #             result['recipe']['flavor']['total'] > flavor_min]
+        # Get the flavor range and dump recipes that are outliers
+        flavor_totals = reject_outliers(np.array([result['recipe']['flavor']['total']
+                                                for result in hop_results]))
+        flavor_min = np.amin(flavor_totals)
+        flavor_max = np.amax(flavor_totals)
+        hop_results = [result for result in hop_results if flavor_max >
+                result['recipe']['flavor']['total'] > flavor_min]
 
-    #     if not hop_results:
-    #         raise Exception('No results')
+        if not hop_results:
+            raise Exception('No results')
         
-    #     # Build the overall flavor profile data for the style
-    #     for keyword in hop_keywords:
-    #         flavor_data = [result['recipe']['flavor']['descriptors'][keyword]
-    #                     for result in hop_results if result['recipe']['flavor']['descriptors'][keyword]]
-    #         nonzero = [value for value in flavor_data if value > 0]
+        # Build the overall flavor profile data for the style
+        for keyword in hop_keywords:
+            flavor_data = [result['recipe']['flavor']['descriptors'][keyword]
+                        for result in hop_results if result['recipe']['flavor']['descriptors'][keyword]]
+            nonzero = [value for value in flavor_data if value > 0]
 
-    #         # Filter out hop flavor descriptors that are in less than 5% of recipes
-    #         if len(nonzero) >= len(results) * .05:
-    #             f_std = np.std(flavor_data)
-    #             f_mean = np.mean(flavor_data)
+            # Filter out hop flavor descriptors that are in less than 5% of recipes
+            if len(nonzero) >= len(results) * .05:
+                f_std = np.std(flavor_data)
+                f_mean = np.mean(flavor_data)
 
-    #             style_flavor[keyword] = get_stats(flavor_data)
-    #             style_flavor[keyword]['recipe_count'] = len(flavor_data)
+                style_flavor[keyword] = get_stats(flavor_data)
+                style_flavor[keyword]['recipe_count'] = len(flavor_data)
 
-    #     # Get the overall style IBU and hop amounts
-    #     ibu_data = [result['recipe']['ibu'] for result in hop_results]
-    #     style_ibu = get_stats(ibu_data)
+        # Get the overall style IBU and hop amounts
+        ibu_data = [result['recipe']['ibu'] for result in hop_results]
+        style_ibu = get_stats(ibu_data)
 
-    #     amt_data = [result['recipe']['amount'] for result in hop_results]
-    #     style_amount = get_stats(amt_data)
+        amt_data = [result['recipe']['amount'] for result in hop_results]
+        style_amount = get_stats(amt_data)
 
-    #     # Build all of the above data, but specific to each hop addition timing
-    #     for addition in ['60', '45', '30', '15' '10', '5', 'flameout', 'dryhop']:
-    #         addition_flavor = {}
-    #         addition_results = [result['additions'].get(
-    #             addition) for result in hop_results if result['additions'].get(addition, None)]
+        # Build all of the above data, but specific to each hop addition timing
+        for addition in ['60', '45', '30', '15' '10', '5', 'flameout', 'dryhop']:
+            addition_flavor = {}
+            addition_results = [result['additions'].get(
+                addition) for result in hop_results if result['additions'].get(addition, None)]
 
-    #         if addition_results:
-    #             # Parse flavor results only for keywords that are in the overall style data as well
-    #             for keyword in style_flavor.keys():
-    #                 keyword_results = [result['flavor']['descriptors']
-    #                                 [keyword] for result in addition_results]
-    #                 addition_flavor[keyword] = get_stats(keyword_results)
-    #                 addition_flavor[keyword]['recipe_count'] = sum(
-    #                     1 for result in keyword_results if result > 0)
+            if addition_results:
+                # Parse flavor results only for keywords that are in the overall style data as well
+                for keyword in style_flavor.keys():
+                    keyword_results = [result['flavor']['descriptors']
+                                    [keyword] for result in addition_results]
+                    addition_flavor[keyword] = get_stats(keyword_results)
+                    addition_flavor[keyword]['recipe_count'] = sum(
+                        1 for result in keyword_results if result > 0)
 
-    #             addition_data[addition] = {
-    #                 'ibu': get_stats([result['ibu'] for result in addition_results]),
-    #                 'amount': get_stats([result['amount'] for result in addition_results]),
-    #                 'unique_hops': int(round(np.mean([result['unique_hops'] for result in addition_results]))),
-    #                 'flavor': {
-    #                     'total': get_stats([result['flavor']['total'] for result in addition_results]),
-    #                     'descriptors': addition_flavor
-    #                 },
-    #                 'recipe_count': len(addition_results)
-    #             }
-    # except Exception as e:
-    #     print("Error analyzing hops for         {}: {}".format(style, e))
-    #     hop_analysis = None
+                addition_data[addition] = {
+                    'ibu': get_stats([result['ibu'] for result in addition_results]),
+                    'amount': get_stats([result['amount'] for result in addition_results]),
+                    'unique_hops': int(round(np.mean([result['unique_hops'] for result in addition_results]))),
+                    'flavor': {
+                        'total': get_stats([result['flavor']['total'] for result in addition_results]),
+                        'descriptors': addition_flavor
+                    },
+                    'recipe_count': len(addition_results)
+                }
+    except Exception as e:
+        print("Error analyzing hops for         {}: {}".format(style, e))
+        hop_analysis = None
 
 
-    # hop_analysis = {
-    #     'recipe_count': len(hop_results),
-    #     'recipe': {
-    #         'ibu': style_ibu,
-    #         'amount': style_amount,  # in g/L
-    #         'unique_hops': int(round(np.mean([result['recipe']['unique_hops'] for result in hop_results]))),
-    #         'flavor': {
-    #             'total': get_stats([result['recipe']['flavor']['total'] for result in hop_results]),
-    #             'descriptors': style_flavor
-    #         }
-    #     },
-    #     'additions': addition_data
-    # }
+    hop_analysis = {
+        'recipe_count': len(hop_results),
+        'recipe': {
+            'ibu': style_ibu,
+            'amount': style_amount,  # in g/L
+            'unique_hops': int(round(np.mean([result['recipe']['unique_hops'] for result in hop_results]))),
+            'flavor': {
+                'total': get_stats([result['recipe']['flavor']['total'] for result in hop_results]),
+                'descriptors': style_flavor
+            }
+        },
+        'additions': addition_data
+    }
 
     try:
         fermentable_results = [result['fermentable_data']['data']
@@ -1052,40 +1054,140 @@ for style in ['American IPA']:#styles:
         # Get the average fermentable category usage for the style
         for category_name in fermentable_categories:
             category_usage_list = [[fermentable['percent']
-                                   for fermentable in result['fermentables'] if fermentable['category'] == category_name] for result in fermentable_results]
-
+                                for fermentable in result['fermentables'] if fermentable['category'] == category_name] for result in fermentable_results]
             category_usage = reject_outliers(np.array([sum(usage) for usage in category_usage_list]))
-            category_unique_fermentables = [
-                len(usage) for usage in category_usage_list if len(usage) > 0]
-
+            category_unique_fermentables = [len(usage) for usage in category_usage_list if len(usage) > 0]
             try:
-                category_usage_data.append({
-                    'name': category_name,
-                    'stats': get_stats(category_usage),
-                    'usage': {
-                        'min': np.amin(category_usage),
-                        'max': np.amax(category_usage)
-                    },
-                    'unique_fermentables': int(round(np.mean(category_unique_fermentables))),
-                    'category_object': category.Category(category_name, int(round(np.mean(category_unique_fermentables))), int(np.amin(category_usage)), int(np.amax(category_usage))),
-                    'recipe_count': len(category_usage)
-                })
+                unique_fermentables = int(
+                    round(np.mean(category_unique_fermentables)))
             except:
-                print(category_usage)
+                unique_fermentables = 1
+                category_unique_fermentables = [1]
+
+            style_category_usage.append({
+                'name': category_name,
+                'stats': get_stats(category_usage),
+                'usage': {
+                    'min': np.amin(category_usage),
+                    'max': np.amax(category_usage)
+                },
+                'unique_fermentables': int(round(np.mean(category_unique_fermentables))),
+                'category_object': category.Category(category_name, int(round(np.mean(category_unique_fermentables))), int(np.amin(category_usage)), int(np.amax(category_usage))),
+                'recipe_count': len(category_usage)
+            })
+ 
+        # Get the average usage for each fermentable
+        fermentable_list = []
+        recipe_fermentables = [recipe['fermentables'] for recipe in fermentable_results]
+        for recipe in recipe_fermentables:
+            for recipe_fermentable in recipe:
+                fermentable_list.append(recipe_fermentable)
+        
+        # Get unique fermentable names
+        names = [fermentable['name']
+                for fermentable in fermentable_list]
+        unique_names = list(set(names))
+
+        # Iterate over each fermentable, getting its average usage and adding to the style database
+        for fermentable_name in unique_names:
+            # Check if the name exists in our grain db, only add to the database if we have it
+            matched_fermentable = all_grains.get_grain_by_name(fermentable_name)
+            if matched_fermentable:
+                # Get the fermentable usage
+                usage = [fermentable['percent'] for fermentable in fermentable_list
+                        if fermentable['name'] == fermentable_name]
+                usage = reject_outliers(np.array(usage))
+
+                style_grain_usage.append({
+                    'slug': matched_fermentable.slug,
+                    'stats': get_stats(usage),
+                    'usage': {
+                        'min': np.amin(usage),
+                        'max': np.amax(usage)
+                    },
+                    'fermentable_object': grain.Grain(
+                        name=matched_fermentable.name,
+                        brand=matched_fermentable.brand,
+                        potential=matched_fermentable.potential,
+                        color=matched_fermentable.color,
+                        category=matched_fermentable.category,
+                        sensory_data=matched_fermentable.sensory_data,
+                        min_percent=int(round(np.amin(usage))),
+                        max_percent=int(round(np.amax(usage)))
+                    ),
+                    'recipe_count': len(usage)
+                })
+        
+        # Get min/max style data for the given grain profile
+        try:
+            style_fermentable_list = grain.GrainList(
+                            [style_fermentable['fermentable_object'] for style_fermentable in style_grain_usage])
+            category_profile = category.CategoryProfile(
+                [style_category['category_object'] for style_category in style_category_usage])
+            style_sensory_minmax = style_fermentable_list.get_sensory_profiles(
+                category_profile)
+        except Exception as err:
+            print('Failed to get recipe data for {}'.format(style))
+            print(err)
+        
+        # Iterate over each sensory keyword, get the average values for each keyword in the style
+        for keyword in fermentable_keywords:
+            # Get average sensory data for the given style data for all recipes
+            sensory_values = [recipe['sensory_data'][keyword]
+                            for recipe in fermentable_results]
+            sensory_values = reject_outliers(np.array(sensory_values))
+
+            # Get the sensory data possible from the grain profile
+            for sensory_minmax in style_sensory_minmax:
+                if sensory_minmax['name'] == keyword:
+                    sensory_from_grains = sensory_minmax
+                    break
+
+            if not sensory_from_grains:
+                sensory_from_grains = {
+                    'name': keyword,
+                    'min': 0,
+                    'max': 0
+                }
+            
+            stats = get_stats(sensory_values)
+            style_sensory_data.append({
+                'name': keyword,
+                'min': round(max(0, stats['min'], sensory_from_grains['min']), 3),
+                'max': round(min(5, stats['max'], sensory_from_grains['max']), 3),
+                'stats': stats
+            })
+
+        # Remove the fermentable object, can't export it to JSON
+        for style_fermentable in style_grain_usage:
+            del style_fermentable['fermentable_object']
+
+        for category_usage in style_category_usage:
+            del category_usage['category_object']
+
+        fermentable_analysis = {
+            'recipe_count': len(fermentable_results),
+            'grain_usage': style_grain_usage,
+            'unique_fermentables': int(round(np.mean([len(recipe['fermentables']) for recipe in fermentable_results]))),
+            'category_usage': style_category_usage, 
+            'sensory_data': style_sensory_data
+        }
+
 
     except Exception as e:
         print("Error analyzing fermentables for {}: {}".format(style, e))
         fermentable_analysis = None
 
-    
-    # style_results.append({
-    #     'style': style,
-    #     'recipe_count': len(results),
-    #     'fermentables': None,
-    #     'hops': hop_analysis
-    # })
 
-    print(category_usage_data)
+    style_results.append({
+        'style': style,
+        'recipe_count': len(results),
+        'fermentables': fermentable_analysis,
+        'hops': hop_analysis
+    })
+
+with open('styles.json', 'w') as f:
+    json.dump(style_results, f)
 
 # TODO: Work this into the hop analysis
 # if not recipe.hops:
