@@ -40,15 +40,25 @@ def reject_outliers(data, m=2.):
 
 
 def get_stats(data):
-    std = np.std(data)
-    mean = np.mean(data)
-    return {
-        'min': max(0, mean - std * 3),
-        'max': mean + std * 3,
-        'mean': mean,
-        'median': np.median(data),
-        'std': std
-    }
+    data = np.array(data)
+    if not data.any():
+        return {
+            'min': 0,
+            'max': 0,
+            'mean': 0,
+            'median': 0,
+            'std': 0
+        }
+    else:
+        std = np.std(data)
+        mean = np.mean(data)
+        return {
+            'min': round(max(0, mean - std * 2), 3),
+            'max': round(mean + std * 2, 3),
+            'mean': round(mean, 3),
+            'median': round(np.median(data), 3),
+            'std': round(std, 3)
+        }
 
 
 all_grains = grain.GrainModel()
@@ -629,14 +639,14 @@ for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
     })
 
 # Get all recipe paths
-# brewtoad = list(Path("./brewtoad_scrape").rglob("*.xml"))  # [0:120000]
+brewtoad = list(Path("./brewtoad_scrape").rglob("*.xml"))  # [0:120000]
 brewers_friend = list(
     Path("./brewersfriend_scrape/recipes").rglob("*.xml"))  # [0:100000]
 # beersmith = list(
 #     Path("./beersmith_scrape/recipes").rglob("*.xml"))
 
-# beerxml_list = brewtoad + brewers_friend  # + beersmith
-beerxml_list = brewers_friend
+beerxml_list = brewtoad + brewers_friend  # + beersmith
+#beerxml_list = brewers_friend
 random.shuffle(beerxml_list)
 
 
@@ -646,8 +656,8 @@ def import_recipe(beerxml_file):
         style = recipe.style.name
         fermentables = []
         addition_data = {}
-        fermentable_result = None
-        hop_result = None
+        fermentable_result = {}
+        hop_result = {}
 
         # Rewrite style names
         for rule in style_rewrites:
@@ -699,265 +709,266 @@ def import_recipe(beerxml_file):
                     recipe_hop.name = re.sub(re_rule, r'{}'.format(
                         rule['replace']), str(recipe_hop.name).strip())
                     break
+
+        # Analyze recipe after importing and rewriting
+        og_match = points(float(specs.get('og', {}).get('low', 1)))*.75 <= points(
+            recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.25
+        srm_match = float(specs.get('srm', {}).get('low', 0))*.75 <= recipe.color <= float(
+            specs.get('srm', {}).get('high', 999))*1.25
+        ibu_match = float(specs.get('ibu', {}).get('low', 0))*.75 <= recipe.ibu <= float(
+            specs.get('ibu', {}).get('high', 999))*1.25
+
+        # Fermentable Analysis: only include recipes with a to-style OG and color
+        if not (og_match and srm_match):
+            fermentable_result = {
+                'status': 'not_to_style',
+                'data': {
+                    'og_match': og_match,
+                    'srm_match': srm_match
+                }
+            }
+        else:
+            fermentables = []
+            for fermentable in recipe.fermentables:
+                # Don't worry about malts in our bypass list, pretend they don't exist and go to the next one
+                if fermentable.name in fermentable_bypass:
+                    break
+
+                matched_fermentable = all_grains.get_grain_by_name(
+                    fermentable.name)
+                if not matched_fermentable:
+                    # Skip fermentable analysis if we can't match all fermentables in the recipe
+                    fermentable_result = {
+                        'status': 'unmatched_fermentable',
+                        'data': {
+                            'name': fermentable.name,
+                            'type': 'fermentable',
+                            'color': fermentable.color,
+                            'recipe_style': style
+                        }
+                    }
+                    break
+
+                # Calculate total amount of grains ignoring the bypass list
+                total_amount = sum(
+                    fermentable.amount for fermentable in recipe.fermentables if fermentable.name not in fermentable_bypass)
+
+                fermentables.append({
+                    'name': fermentable.name,
+                    'category': matched_fermentable.category,
+                    'percent': fermentable.amount / total_amount * 100,
+                    'color': fermentable.color,
+                    'ppg': fermentable.ppg,
+                    'addition': fermentable.addition,
+                    'matched_fermentable': matched_fermentable
+                })
+
+            if not fermentable_result:
+                grain_bill = grain.GrainBill(
+                    [fermentable['matched_fermentable']
+                    for fermentable in fermentables],
+                    [fermentable['percent']
+                    for fermentable in fermentables]
+                )
+                fermentable_result = {
+                    'status': 'success',
+                    'data': {
+                        'fermentables': fermentables,
+                        'grain_bill': grain_bill,
+                        'sensory_data': grain_bill.get_sensory_data()
+                    }
+                }
+        # Hop Analysis: only include recipes with to-style IBUs
+        if not ibu_match:
+            hop_result = {
+                'status': 'not_to_style',
+                'data': None
+            }
+        else:
+            try:
+                dryhop = []
+                flameout = []
+                min_5 = []
+                min_10 = []
+                min_15 = []
+                min_30 = []
+                min_45 = []
+                min_60 = []
+
+                for h in recipe.hops:
+                    matching_hop = all_hops.get_hop_by_name(h.name)
+                    if matching_hop:
+                        # Use the actual recipe hop alpha, not the theoritical
+                        matching_hop.alpha = h.alpha
+
+                        # Fix recipes with first wort boil time set to 0 for some reason
+                        if h.use.lower() == 'first wort' and h.time < recipe.boil_time:
+                            h.time = recipe.boil_time
+
+                        if str(h.use).lower() == 'dry hop':
+                            dryhop.append(hop.HopAddition(
+                                matching_hop, h.time, str(h.use), h.amount * 1000))
+                        elif str(h.use).lower() in ['aroma', 'whirlpool']:
+                            # Treat aroma and whirlpool hops as flameout/whirlpool at 0 minutes
+                            flameout.append(hop.HopAddition(
+                                matching_hop, 0, 'whirlpool', h.amount * 1000))
+                        elif str(h.use).lower() in ['boil', 'first wort']:
+                            # Treat 0-2 minute boil additions as flameout
+                            if h.time < 2.5:
+                                flameout.append(hop.HopAddition(
+                                    matching_hop, 0, 'whirlpool', h.amount * 1000))
+                            # Round to closest boil addition for the rest, don't adjust the timing though
+                            elif h.time < 7.5:
+                                min_5.append(hop.HopAddition(
+                                    matching_hop, h.time, h.use, h.amount * 1000))
+                            elif h.time < 12.5:
+                                min_10.append(hop.HopAddition(
+                                    matching_hop, h.time, h.use, h.amount * 1000))
+                            elif h.time < 22.5:
+                                min_15.append(hop.HopAddition(
+                                    matching_hop, h.time, h.use, h.amount * 1000))
+                            elif h.time < 37.5:
+                                min_30.append(hop.HopAddition(
+                                    matching_hop, h.time, h.use, h.amount * 1000))
+                            elif h.time < 52.5:
+                                min_45.append(hop.HopAddition(
+                                    matching_hop, h.time, h.use, h.amount * 1000))
+                            else:
+                                min_60.append(hop.HopAddition(
+                                    matching_hop, h.time, h.use, h.amount * 1000))
+                    else:
+                        # Ignore recipes where we can't match all hops
+                        raise Exception('Unmatched hop: {}'.format(h.name))
+
+                    boil = min_60 + min_45 + min_30 + min_15 + min_10 + min_5
+                    recipe_hops = hop.HopBill(boil + flameout + dryhop)
+
+                    if boil:
+                        boil_bill = hop.HopBill(boil)
+
+                        # Exclude recipes with more than 12oz/5gal or 339g/19L in the boil
+                        if boil_bill.amount() / recipe.batch_size > 17.97:
+                            raise Exception('More than 12oz/5gal in boil.')
+
+                    else:
+                        # Ignore recipes with no boil hops
+                        raise Exception('No boil hops.')
+
+                    if min_60:
+                        bill = hop.HopBill(min_60)
+                        addition_data['60'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+                    if min_45:
+                        bill = hop.HopBill(min_45)
+                        addition_data['45'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+                    if min_30:
+                        bill = hop.HopBill(min_30)
+                        addition_data['45'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+                    if min_15:
+                        bill = hop.HopBill(min_15)
+                        addition_data['15'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+                    if min_10:
+                        bill = hop.HopBill(min_10)
+                        addition_data['10'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+                    if min_5:
+                        bill = hop.HopBill(min_5)
+                        addition_data['5'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+                    if flameout:
+                        bill = hop.HopBill(flameout)
+                        addition_data['flameout'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+                    if dryhop:
+                        bill = hop.HopBill(dryhop)
+                        addition_data['dryhop'] = {
+                            'ibu': bill.ibu(recipe.og, recipe.batch_size),
+                            'amount': bill.amount() / recipe.batch_size,
+                            'unique_hops': len(bill.unique_hops()),
+                            'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
+                        }
+
+                    # Exclude recipes with more than 1lb/5gal or 454g/19L in the whirlpool or dry hop
+                    non_boil_bill = hop.HopBill(flameout + dryhop)
+                    if non_boil_bill.amount() / recipe.batch_size > 23.96:
+                        raise Exception('More than 1lb/5gal in whirlpool/dryhop.')
+
+                    hop_result = {
+                        'status': 'success',
+                        'data': {
+                            'recipe': {
+                                'ibu': recipe_hops.ibu(recipe.og, recipe.batch_size),
+                                'amount': recipe_hops.amount() / recipe.batch_size,
+                                'unique_hops': len(recipe_hops.unique_hops()),
+                                'flavor': recipe_hops.get_sensory_data(recipe.og, recipe.batch_size)
+                            },
+                            'additions': addition_data
+                        }
+                    }
+            except Exception as e:
+                hop_result = {
+                    'status': 'error',
+                    'data': e
+                }
+
+        return {
+            'status': 'success',
+            'style': recipe.style.name,
+            'og': recipe.og,
+            'color': recipe.color,
+            'fermentable_data': fermentable_result,
+            'hop_data': hop_result
+        }
+    
     except Exception as e:
         return {
             'status': 'Unable to import recipe',
             'data': e
         }
 
-    # Analyze recipe after importing and rewriting
-    og_match = points(float(specs.get('og', {}).get('low', 1)))*.75 <= points(
-        recipe.og) <= points(float(specs.get('og', {}).get('high', 1.400)))*1.25
-    srm_match = float(specs.get('srm', {}).get('low', 0))*.75 <= recipe.color <= float(
-        specs.get('srm', {}).get('high', 999))*1.25
-    ibu_match = float(specs.get('ibu', {}).get('low', 0))*.75 <= recipe.ibu <= float(
-        specs.get('ibu', {}).get('high', 999))*1.25
-
-    # Fermentable Analysis: only include recipes with a to-style OG and color
-    if not (og_match and srm_match):
-        fermentable_result = {
-            'status': 'not_to_style',
-            'data': {
-                'og_match': og_match,
-                'srm_match': srm_match
-            }
-        }
-    else:
-        fermentables = []
-        for fermentable in recipe.fermentables:
-            # Don't worry about malts in our bypass list, pretend they don't exist and go to the next one
-            if fermentable.name in fermentable_bypass:
-                break
-
-            matched_fermentable = all_grains.get_grain_by_name(
-                fermentable.name)
-            if not matched_fermentable:
-                # Skip fermentable analysis if we can't match all fermentables in the recipe
-                fermentable_result = {
-                    'status': 'unmatched_fermentable',
-                    'data': {
-                        'name': fermentable.name,
-                        'type': 'fermentable',
-                        'color': fermentable.color,
-                        'recipe_style': style
-                    }
-                }
-                break
-
-             # Calculate total amount of grains ignoring the bypass list
-            total_amount = sum(
-                fermentable.amount for fermentable in recipe.fermentables if fermentable.name not in fermentable_bypass)
-
-            fermentables.append({
-                'name': fermentable.name,
-                'category': matched_fermentable.category,
-                'percent': fermentable.amount / total_amount * 100,
-                'color': fermentable.color,
-                'ppg': fermentable.ppg,
-                'addition': fermentable.addition,
-                'matched_fermentable': matched_fermentable
-            })
-
-        if not fermentable_result:
-            grain_bill = grain.GrainBill(
-                [fermentable['matched_fermentable']
-                 for fermentable in fermentables],
-                [fermentable['percent']
-                 for fermentable in fermentables]
-            )
-            fermentable_result = {
-                'status': 'success',
-                'data': {
-                    'fermentables': fermentables,
-                    'grain_bill': grain_bill,
-                    'sensory_data': grain_bill.get_sensory_data()
-                }
-            }
-    # Hop Analysis: only include recipes with to-style IBUs
-    if not ibu_match:
-        hop_result = {
-            'status': 'not_to_style',
-            'data': None
-        }
-    else:
-        try:
-            dryhop = []
-            flameout = []
-            min_5 = []
-            min_10 = []
-            min_15 = []
-            min_30 = []
-            min_45 = []
-            min_60 = []
-
-            for h in recipe.hops:
-                matching_hop = all_hops.get_hop_by_name(h.name)
-                if matching_hop:
-                    # Use the actual recipe hop alpha, not the theoritical
-                    matching_hop.alpha = h.alpha
-
-                    # Fix recipes with first wort boil time set to 0 for some reason
-                    if h.use.lower() == 'first wort' and h.time < recipe.boil_time:
-                        h.time = recipe.boil_time
-
-                    if h.use.lower() == 'dry hop':
-                        dryhop.append(hop.HopAddition(
-                            matching_hop, h.time, h.use, h.amount * 1000))
-                    elif h.use.lower() in ['aroma', 'whirlpool']:
-                        # Treat aroma and whirlpool hops as flameout/whirlpool at 0 minutes
-                        flameout.append(hop.HopAddition(
-                            matching_hop, 0, 'whirlpool', h.amount * 1000))
-                    elif h.use.lower() in ['boil', 'first wort']:
-                        # Treat 0-2 minute boil additions as flameout
-                        if h.time < 2.5:
-                            flameout.append(hop.HopAddition(
-                                matching_hop, 0, 'whirlpool', h.amount * 1000))
-                        # Round to closest boil addition for the rest, don't adjust the timing though
-                        elif h.time < 7.5:
-                            min_5.append(hop.HopAddition(
-                                matching_hop, h.time, h.use, h.amount * 1000))
-                        elif h.time < 12.5:
-                            min_10.append(hop.HopAddition(
-                                matching_hop, h.time, h.use, h.amount * 1000))
-                        elif h.time < 22.5:
-                            min_15.append(hop.HopAddition(
-                                matching_hop, h.time, h.use, h.amount * 1000))
-                        elif h.time < 37.5:
-                            min_30.append(hop.HopAddition(
-                                matching_hop, h.time, h.use, h.amount * 1000))
-                        elif h.time < 52.5:
-                            min_45.append(hop.HopAddition(
-                                matching_hop, h.time, h.use, h.amount * 1000))
-                        else:
-                            min_60.append(hop.HopAddition(
-                                matching_hop, h.time, h.use, h.amount * 1000))
-                else:
-                    # Ignore recipes where we can't match all hops
-                    raise Exception('Unmatched hop: {}'.format(h.name))
-
-                boil = min_60 + min_45 + min_30 + min_15 + min_10 + min_5
-                recipe_hops = hop.HopBill(boil + flameout + dryhop)
-
-                if boil:
-                    boil_bill = hop.HopBill(boil)
-
-                    # Exclude recipes with more than 8oz/5gal or 226g/19L in the boil
-                    if boil_bill.amount() / recipe.batch_size > 11.98:
-                        raise Exception('More than 8oz/5gal in boil.')
-
-                else:
-                    # Ignore recipes with no boil hops
-                    raise Exception('No boil hops.')
-
-                if min_60:
-                    bill = hop.HopBill(min_60)
-                    addition_data['60'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-                if min_45:
-                    bill = hop.HopBill(min_45)
-                    addition_data['45'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-                if min_30:
-                    bill = hop.HopBill(min_30)
-                    addition_data['45'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-                if min_15:
-                    bill = hop.HopBill(min_15)
-                    addition_data['15'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-                if min_10:
-                    bill = hop.HopBill(min_10)
-                    addition_data['10'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-                if min_5:
-                    bill = hop.HopBill(min_5)
-                    addition_data['5'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-                if flameout:
-                    bill = hop.HopBill(flameout)
-                    addition_data['flameout'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-                if dryhop:
-                    bill = hop.HopBill(dryhop)
-                    addition_data['dryhop'] = {
-                        'ibu': bill.ibu(recipe.og, recipe.batch_size),
-                        'amount': bill.amount() / recipe.batch_size,
-                        'unique_hops': len(bill.unique_hops()),
-                        'flavor': bill.get_sensory_data(recipe.og, recipe.batch_size)
-                    }
-
-                # Exclude recipes with more than 1lb/5gal or 454g/19L in the whirlpool or dry hop
-                # non_boil_amount = sum(
-                #     hop.amount for hop in dry_hops + whirl_hops)
-                # if non_boil_amount / recipe.batch_size > 0.02396:
-                #     raise Exception('More than 1lb/5gal in whirlpool/dryhop.')
-
-                hop_result = {
-                    'status': 'success',
-                    'data': {
-                        'recipe': {
-                            'ibu': recipe_hops.ibu(recipe.og, recipe.batch_size),
-                            'amount': recipe_hops.amount() / recipe.batch_size,
-                            'unique_hops': len(recipe_hops.unique_hops()),
-                            'flavor': recipe_hops.get_sensory_data(recipe.og, recipe.batch_size)
-                        },
-                        'additions': addition_data
-                    }
-                }
-        except Exception as e:
-            hop_result = {
-                'status': 'error',
-                'data': e
-            }
-
-    return {
-        'status': 'success',
-        'style': recipe.style.name,
-        'og': recipe.og,
-        'color': recipe.color,
-        'fermentable_data': fermentable_result,
-        'hop_data': hop_result
-    }
-
 
 # Parse the recipes (multi-process)
 executor = concurrent.futures.ProcessPoolExecutor()
-futures = executor.map(import_recipe, beerxml_list[0:1000])
+futures = executor.map(import_recipe, beerxml_list[0:150000])
 parse_results = list(futures)
 recipe_results = [result
                   for result in parse_results if result['status'] == 'success']
 
-
 style_results = []
 for style in styles:
+    fermentable_analysis = None
+    hop_analysis = None
     style_flavor = {}
     style_grain_usage = []
     style_sensory_data = []
@@ -966,26 +977,32 @@ for style in styles:
 
     results = [result for result in recipe_results if result['style'] == style]
 
+    if not results:
+        print('No recipes for {}'.format(style))
+        continue
+
     # Analyze hop data
     try:
         hop_results = [result['hop_data']['data']
-                   for result in results if result['hop_data']['status'] == 'success']
-
+                       for result in results if result.get('hop_data', {}).get('status') == 'success']
         # Get the flavor range and dump recipes that are outliers
         flavor_totals = reject_outliers(np.array([result['recipe']['flavor']['total']
-                                                for result in hop_results]))
-        flavor_min = np.amin(flavor_totals)
-        flavor_max = np.amax(flavor_totals)
+                                                  for result in hop_results]))
+        flavor_stats = get_stats(flavor_totals)
+        flavor_min = flavor_stats['min']
+        flavor_max = flavor_stats['max']
+
         hop_results = [result for result in hop_results if flavor_max >
-                result['recipe']['flavor']['total'] > flavor_min]
+                       result['recipe']['flavor']['total'] > flavor_min]
 
         if not hop_results:
-            raise Exception('No results')
-        
+            print('No hops for {}'.format(style))
+            continue
+
         # Build the overall flavor profile data for the style
         for keyword in hop_keywords:
             flavor_data = [result['recipe']['flavor']['descriptors'][keyword]
-                        for result in hop_results if result['recipe']['flavor']['descriptors'][keyword]]
+                           for result in hop_results if result['recipe']['flavor']['descriptors'][keyword]]
             nonzero = [value for value in flavor_data if value > 0]
 
             # Filter out hop flavor descriptors that are in less than 5% of recipes
@@ -1013,15 +1030,23 @@ for style in styles:
                 # Parse flavor results only for keywords that are in the overall style data as well
                 for keyword in style_flavor.keys():
                     keyword_results = [result['flavor']['descriptors']
-                                    [keyword] for result in addition_results]
+                                       [keyword] for result in addition_results]
                     addition_flavor[keyword] = get_stats(keyword_results)
                     addition_flavor[keyword]['recipe_count'] = sum(
                         1 for result in keyword_results if result > 0)
 
+                unique_hops_list = np.array([result['unique_hops']
+                                             for result in addition_results])
+
+                if unique_hops_list.any():
+                    unique_hops = int(round(np.mean(unique_hops_list)))
+                else:
+                    unique_hops = 0
+
                 addition_data[addition] = {
                     'ibu': get_stats([result['ibu'] for result in addition_results]),
                     'amount': get_stats([result['amount'] for result in addition_results]),
-                    'unique_hops': int(round(np.mean([result['unique_hops'] for result in addition_results]))),
+                    'unique_hops': unique_hops,
                     'flavor': {
                         'total': get_stats([result['flavor']['total'] for result in addition_results]),
                         'descriptors': addition_flavor
@@ -1029,16 +1054,21 @@ for style in styles:
                     'recipe_count': len(addition_results)
                 }
     except Exception as e:
-        print("Error analyzing hops for         {}: {}".format(style, e))
-        hop_analysis = None
+        print("Error analyzing hops for {}: {}".format(style, e))
+        continue
 
+    try:
+        unique_hops = int(
+            round(np.mean([result['recipe']['unique_hops'] for result in hop_results])))
+    except:
+        unique_hops = 1
 
     hop_analysis = {
         'recipe_count': len(hop_results),
         'recipe': {
             'ibu': style_ibu,
             'amount': style_amount,  # in g/L
-            'unique_hops': int(round(np.mean([result['recipe']['unique_hops'] for result in hop_results]))),
+            'unique_hops': unique_hops,
             'flavor': {
                 'total': get_stats([result['recipe']['flavor']['total'] for result in hop_results]),
                 'descriptors': style_flavor
@@ -1050,60 +1080,82 @@ for style in styles:
     try:
         fermentable_results = [result['fermentable_data']['data']
                                for result in results if result['fermentable_data']['status'] == 'success']
-                            
+
         # Get the average fermentable category usage for the style
         for category_name in fermentable_categories:
             category_usage_list = [[fermentable['percent']
-                                for fermentable in result['fermentables'] if fermentable['category'] == category_name] for result in fermentable_results]
-            category_usage = reject_outliers(np.array([sum(usage) for usage in category_usage_list]))
-            category_unique_fermentables = [len(usage) for usage in category_usage_list if len(usage) > 0]
-            try:
+                                    for fermentable in result['fermentables'] if fermentable['category'] == category_name] for result in fermentable_results]
+            category_usage = reject_outliers(
+                np.array([sum(usage) for usage in category_usage_list]))
+            
+            category_stats = get_stats(category_usage)
+
+            if category_usage.any():
+                category_unique_fermentables = np.array(
+                    [len(usage) for usage in category_usage_list if len(usage) > 0])
                 unique_fermentables = int(
                     round(np.mean(category_unique_fermentables)))
-            except:
-                unique_fermentables = 1
-                category_unique_fermentables = [1]
+                usage_min = int(round(max(0, category_stats['min'])))
+                usage_max = int(round(min(100, category_stats['max'])))
+                recipe_count = np.count_nonzero(category_usage)
+      
+            else:
+                unique_fermentables = 0
+                usage_min = 0
+                usage_max = 0
+                recipe_count = 0
+
 
             style_category_usage.append({
                 'name': category_name,
-                'stats': get_stats(category_usage),
+                'stats': category_stats,
                 'usage': {
-                    'min': np.amin(category_usage),
-                    'max': np.amax(category_usage)
+                    'min': usage_min,
+                    'max': usage_max
                 },
-                'unique_fermentables': int(round(np.mean(category_unique_fermentables))),
-                'category_object': category.Category(category_name, int(round(np.mean(category_unique_fermentables))), int(np.amin(category_usage)), int(np.amax(category_usage))),
-                'recipe_count': len(category_usage)
+                'unique_fermentables': unique_fermentables,
+                'category_object': category.Category(category_name, unique_fermentables, usage_min, usage_max),
+                'recipe_count': recipe_count
             })
- 
+    except Exception as e:
+        print('Error processing fermentable categories for {}: {}'.format(style, e))
+        continue
+    
+    try:
         # Get the average usage for each fermentable
         fermentable_list = []
-        recipe_fermentables = [recipe['fermentables'] for recipe in fermentable_results]
+        recipe_fermentables = [recipe['fermentables']
+                               for recipe in fermentable_results]
         for recipe in recipe_fermentables:
             for recipe_fermentable in recipe:
                 fermentable_list.append(recipe_fermentable)
-        
+
         # Get unique fermentable names
         names = [fermentable['name']
-                for fermentable in fermentable_list]
+                 for fermentable in fermentable_list]
         unique_names = list(set(names))
 
         # Iterate over each fermentable, getting its average usage and adding to the style database
         for fermentable_name in unique_names:
             # Check if the name exists in our grain db, only add to the database if we have it
-            matched_fermentable = all_grains.get_grain_by_name(fermentable_name)
+            matched_fermentable = all_grains.get_grain_by_name(
+                fermentable_name)
             if matched_fermentable:
                 # Get the fermentable usage
                 usage = [fermentable['percent'] for fermentable in fermentable_list
-                        if fermentable['name'] == fermentable_name]
+                         if fermentable['name'] == fermentable_name]
                 usage = reject_outliers(np.array(usage))
-
+                fermentable_usage_stats = get_stats(usage)
+                fermentable_usage_min = int(
+                    round(fermentable_usage_stats['min']))
+                fermentable_usage_max = int(
+                    round(fermentable_usage_stats['max']))
                 style_grain_usage.append({
                     'slug': matched_fermentable.slug,
                     'stats': get_stats(usage),
                     'usage': {
-                        'min': np.amin(usage),
-                        'max': np.amax(usage)
+                        'min': max(0, fermentable_usage_min),
+                        'max': min(100, fermentable_usage_max)
                     },
                     'fermentable_object': grain.Grain(
                         name=matched_fermentable.name,
@@ -1112,29 +1164,33 @@ for style in styles:
                         color=matched_fermentable.color,
                         category=matched_fermentable.category,
                         sensory_data=matched_fermentable.sensory_data,
-                        min_percent=int(round(np.amin(usage))),
-                        max_percent=int(round(np.amax(usage)))
+                        min_percent=max(0, fermentable_usage_min),
+                        max_percent=min(100, fermentable_usage_max)
                     ),
                     'recipe_count': len(usage)
                 })
-        
+    except Exception as e:
+        print('Error processing fermentables for {}: {}'.format(style, e))
+        continue
+    
+    try:
         # Get min/max style data for the given grain profile
         try:
             style_fermentable_list = grain.GrainList(
-                            [style_fermentable['fermentable_object'] for style_fermentable in style_grain_usage])
+                [style_fermentable['fermentable_object'] for style_fermentable in style_grain_usage])
             category_profile = category.CategoryProfile(
                 [style_category['category_object'] for style_category in style_category_usage])
             style_sensory_minmax = style_fermentable_list.get_sensory_profiles(
                 category_profile)
-        except Exception as err:
-            print('Failed to get recipe data for {}'.format(style))
-            print(err)
-        
+        except Exception as e:
+            print('Failed to get recipe data for {}'.format(style, e))
+            continue
+            
         # Iterate over each sensory keyword, get the average values for each keyword in the style
         for keyword in fermentable_keywords:
             # Get average sensory data for the given style data for all recipes
             sensory_values = [recipe['sensory_data'][keyword]
-                            for recipe in fermentable_results]
+                              for recipe in fermentable_results]
             sensory_values = reject_outliers(np.array(sensory_values))
 
             # Get the sensory data possible from the grain profile
@@ -1149,7 +1205,7 @@ for style in styles:
                     'min': 0,
                     'max': 0
                 }
-            
+
             stats = get_stats(sensory_values)
             style_sensory_data.append({
                 'name': keyword,
@@ -1169,26 +1225,21 @@ for style in styles:
             'recipe_count': len(fermentable_results),
             'grain_usage': style_grain_usage,
             'unique_fermentables': int(round(np.mean([len(recipe['fermentables']) for recipe in fermentable_results]))),
-            'category_usage': style_category_usage, 
+            'category_usage': style_category_usage,
             'sensory_data': style_sensory_data
         }
 
-
     except Exception as e:
-        print("Error analyzing fermentables for {}: {}".format(style, e))
-        fermentable_analysis = None
+        print("Error analyzing fermentable data for {}: {}".format(style, e))
+        continue
 
-
-    style_results.append({
-        'style': style,
-        'recipe_count': len(results),
-        'fermentables': fermentable_analysis,
-        'hops': hop_analysis
-    })
+    if fermentable_analysis and hop_analysis:
+        style_results.append({
+            'style': style,
+            'recipe_count': len(results),
+            'fermentables': fermentable_analysis,
+            'hops': hop_analysis
+        })
 
 with open('styles.json', 'w') as f:
     json.dump(style_results, f)
-
-# TODO: Work this into the hop analysis
-# if not recipe.hops:
-#     raise Exception()

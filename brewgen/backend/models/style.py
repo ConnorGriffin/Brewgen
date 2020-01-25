@@ -191,7 +191,7 @@ class StyleModel:
             style_category_list = []
             style_sensory_data = []
 
-            for grain_data in style['grain_usage']:
+            for grain_data in style['fermentables']['grain_usage']:
                 matching_grain = grain.GrainModel.get_grain_by_slug(
                     grain.GrainModel(), grain_data['slug'])
                 style_grain_list.append(grain.Grain(
@@ -205,7 +205,7 @@ class StyleModel:
                     sensory_data=matching_grain.sensory_data
                 ))
 
-            for category_data in style['category_usage']:
+            for category_data in style['fermentables']['category_usage']:
                 style_category_list.append(category.Category(
                     name=category_data['name'],
                     unique_fermentable_count=category_data['unique_fermentables'],
@@ -213,7 +213,7 @@ class StyleModel:
                     max_percent=category_data['usage']['max']
                 ))
 
-            for sensory_keyword in style['sensory_data']:
+            for sensory_keyword in style['fermentables']['sensory_data']:
                 style_sensory_data.append({
                     'name': sensory_keyword['name'],
                     'min': sensory_keyword['min'],
@@ -241,7 +241,7 @@ class StyleModel:
                 grain_list=grain.GrainList(style_grain_list),
                 category_list=style_category_list,
                 sensory_data=style_sensory_data,
-                unique_fermentable_count=style['unique_fermentables']
+                unique_fermentable_count=style['fermentables']['unique_fermentables']
             ))
 
     def __bjcp_lookup(self, name, return_category=False):

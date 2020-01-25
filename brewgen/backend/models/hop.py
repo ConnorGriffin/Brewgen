@@ -83,7 +83,7 @@ class HopAddition:
     def __init__(self, hop, time, usage, amount):
         self.hop = hop
         self.time = time
-        self.usage = usage.lower()
+        self.usage = str(usage).lower()
         self.amount = amount
 
     def __flavor_factor(self, og, batch_size):
