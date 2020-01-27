@@ -25,14 +25,14 @@ recipe_data = {
         'max': 70
     },
     'amount': {
-        'min': 1.23,
+        'min': 0,
         'max': 13.97
     },
     'flavor': {
         'min': 400,
         'max': 650
     },
-    'unique_hops': 3
+    'unique_hops': 1
 }
 addition_data = {
     '60': {
@@ -52,7 +52,7 @@ addition_data = {
     },
     '5': {
         'ibu': {
-            'min': 0,
+            'min': 5,
             'max': 20
         },
         'amount': {
@@ -128,23 +128,20 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
             return self.__solution_count
 
     hm = hop.HopModel()
-    scale = 100
-    ibu_scale = scale ** 2
+    scale = 10
+    ibu_scale = scale ** 2 * 100
 
-    bigness = 1.65 * 0.000125 ** (og - 1)
+    aa_factor = 100 * 1.15 * scale * 1.65 * 0.000125 ** (og - 1)
     aa_util = {
-        '60': int(round(bigness * ((1 - math.e ** (-.04*60)) / 4.15) * 1.15 * scale)),
-        '45': int(round(bigness * ((1 - math.e ** (-.04*45)) / 4.15) * 1.15 * scale)),
-        '30': int(round(bigness * ((1 - math.e ** (-.04*30)) / 4.15) * 1.15 * scale)),
-        '15': int(round(bigness * ((1 - math.e ** (-.04*15)) / 4.15) * 1.15 * scale)),
-        '10': int(round(bigness * ((1 - math.e ** (-.04*10)) / 4.15) * 1.15 * scale)),
-        '5': int(round(bigness * ((1 - math.e ** (-.04*5)) / 4.15) * 1.15 * scale)),
+        '60': int(round(aa_factor * (1 - math.e ** (-.04*60)) / 4.15)),
+        '45': int(round(aa_factor * (1 - math.e ** (-.04*45)) / 4.15)),
+        '30': int(round(aa_factor * (1 - math.e ** (-.04*30)) / 4.15)),
+        '15': int(round(aa_factor * (1 - math.e ** (-.04*15)) / 4.15)),
+        '10': int(round(aa_factor * (1 - math.e ** (-.04*10)) / 4.15)),
+        '5': int(round(aa_factor * (1 - math.e ** (-.04*5)) / 4.15)),
         'flameout': 0,
         'dryhop': 0
     }
-
-    hop_range = range(len(enabled_hops))
-    add_range = range(len(addition_data))
 
     # Built a dict of enabled hops and their data
     enabled_hop_vars = {}
@@ -157,13 +154,17 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
     # Create the model
     model = cp_model.CpModel()
 
-    # Create variablues for entire recipe
+    # Create variables for entire recipe
     total_ibu = model.NewIntVar(int(round(ibu_scale * recipe_data['ibu']['min'])), int(
         round(ibu_scale * recipe_data['ibu']['max'])), 'total_ibu')
     # total_flavor = model.NewIntVar(int(round(scale * recipe_data['flavor']['min'])), int(
     #     round(scale * recipe_data['flavor']['max'])), 'total_flavor')
     total_amount = model.NewIntVar(int(round(scale * recipe_data['amount']['min'])), int(
         round(scale * recipe_data['amount']['max'])), 'total_amount')
+    hop_used = [model.NewBoolVar('{}_used'.format(hop_name))
+                for hop_name in enabled_hops]
+    hop_amount = [model.NewIntVar(int(round(scale * recipe_data['amount']['min'])), int(
+        round(scale * recipe_data['amount']['max'])), '{}_amount'.format(hop_name)) for hop_name in enabled_hops]
 
     # Create variables for hop additions
     add_vars = {}
@@ -173,7 +174,8 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
             'ibu': model.NewIntVar(
                 int(round(ibu_scale * value['ibu']['min'])), int(round(ibu_scale * value['ibu']['max'])), 'addition_{}_ibu'.format(timing)),
             'amount': model.NewIntVar(
-                int(round(scale * value['amount']['min'])), int(round(scale * value['amount']['max'])), 'addition_{}_amount'.format(timing))
+                int(round(scale * value['amount']['min'])), int(round(scale * value['amount']['max'])), 'addition_{}_amount'.format(timing)),
+            'hop_used': [model.NewBoolVar('addition_{}_{}_used'.format(timing, hop_name)) for hop_name in enabled_hops]
         }
 
         # Variables for every hop per addition
@@ -186,15 +188,38 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
                 'amount': model.NewIntVar(0, int(round(scale * value['amount']['max'])), 'addition_{}_{}_amount'.format(timing, hop_name))
             }
 
+            # Set the bool var for whether the hop is used or not - force amount to zero if not used and vice versa
+            hop_index = enabled_hops.index(hop_name)
+            model.Add(enabled_hop_vars[hop_name][timing]['amount'] > 0).OnlyEnforceIf(
+                add_vars[timing]['hop_used'][hop_index])
+            model.Add(enabled_hop_vars[hop_name][timing]['amount'] == 0).OnlyEnforceIf(
+                add_vars[timing]['hop_used'][hop_index].Not())
+
             # Calculate hop IBUs: amount in g/L * aa_util * aa% as int
             model.Add(enabled_hop_vars[hop_name][timing]['ibu'] == enabled_hop_vars[hop_name]
                       [timing]['amount'] * aa_util[timing] * hop_data.alpha)
 
-        # Ensure hop addition totals equals addition totals (these List Comps though...)
+        # Ensure hop addition totals equals addition totals
         model.Add(add_vars[timing]['ibu'] == sum(addition[timing]['ibu'] for addition in [
             hop_vars for hop_vars in enabled_hop_vars.values()]))
         model.Add(add_vars[timing]['amount'] == sum(addition[timing]['amount'] for addition in [
             hop_vars for hop_vars in enabled_hop_vars.values()]))
+
+        # Keep addition unique hop count in check
+        model.Add(sum(add_vars[timing]['hop_used']) <= value['unique_hops'])
+
+    # Set hop_used boolean for each enabled hop
+    for hop_name in enabled_hops:
+        hop_index = enabled_hops.index(hop_name)
+        usage = [enabled_hop_vars[hop_name][timing]['amount']
+                 for timing in addition_data.keys()]
+        model.Add(hop_amount[hop_index] == sum(usage))
+        model.Add(hop_amount[hop_index] > 0).OnlyEnforceIf(hop_used[hop_index])
+        model.Add(hop_amount[hop_index] == 0).OnlyEnforceIf(
+            hop_used[hop_index].Not())
+
+    # Ensure recipe unique hops is within range
+    model.Add(sum(hop_used) <= recipe_data['unique_hops'])
 
     # Ensure addition totals add up to recipe totals
     model.Add(total_ibu == sum(addition['ibu']
@@ -205,7 +230,7 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
     # Solve
     solver = cp_model.CpSolver()
     solution_printer = VarArraySolutionPrinter(
-        [total_ibu, total_amount, enabled_hop_vars['warrior']['60']['amount'], enabled_hop_vars['warrior']['5']['amount'], enabled_hop_vars['amarillo']['60']['amount'], enabled_hop_vars['amarillo']['5']['amount']])
+        [total_ibu, total_amount, enabled_hop_vars['warrior']['60']['amount'], enabled_hop_vars['amarillo']['60']['amount'], enabled_hop_vars['warrior']['5']['amount'], enabled_hop_vars['amarillo']['5']['amount']])
     status = solver.SearchForAllSolutions(model, solution_printer)
 
     if status in [cp_model.FEASIBLE, cp_model.OPTIMAL]:
