@@ -11,6 +11,7 @@ import concurrent.futures
 sys.path.append('../')
 from brewgen.backend.models import grain, category, hop
 
+
 def points(og):
     return (og - 1) * 1000
 
@@ -29,16 +30,6 @@ def bjcp_name(name):
                         return subcat.get('stats', {})
 
 
-def reject_outliers(data, m=2.):
-    d = np.abs(data - np.median(data))
-    mdev = np.median(d)
-    s = d/mdev if mdev else 0.
-    output = data[s < m]
-    if len(output) == 0:
-        return np.array([0])
-    return output
-
-
 def get_stats(data):
     data = np.array(data)
     if not data.any():
@@ -53,11 +44,11 @@ def get_stats(data):
         std = np.std(data)
         mean = np.mean(data)
         return {
-            'min': round(max(0, mean - std * 2), 3),
-            'max': round(mean + std * 2, 3),
-            'mean': round(mean, 3),
-            'median': round(np.median(data), 3),
-            'std': round(std, 3)
+            'min': max(0, mean - std * 2),
+            'max': mean + std * 2,
+            'mean': mean,
+            'median': np.median(data),
+            'std': std
         }
 
 
@@ -766,9 +757,9 @@ def import_recipe(beerxml_file):
             if not fermentable_result:
                 grain_bill = grain.GrainBill(
                     [fermentable['matched_fermentable']
-                    for fermentable in fermentables],
+                     for fermentable in fermentables],
                     [fermentable['percent']
-                    for fermentable in fermentables]
+                     for fermentable in fermentables]
                 )
                 fermentable_result = {
                     'status': 'success',
@@ -922,7 +913,8 @@ def import_recipe(beerxml_file):
                     # Exclude recipes with more than 1lb/5gal or 454g/19L in the whirlpool or dry hop
                     non_boil_bill = hop.HopBill(flameout + dryhop)
                     if non_boil_bill.amount() / recipe.batch_size > 23.96:
-                        raise Exception('More than 1lb/5gal in whirlpool/dryhop.')
+                        raise Exception(
+                            'More than 1lb/5gal in whirlpool/dryhop.')
 
                     hop_result = {
                         'status': 'success',
@@ -950,7 +942,7 @@ def import_recipe(beerxml_file):
             'fermentable_data': fermentable_result,
             'hop_data': hop_result
         }
-    
+
     except Exception as e:
         return {
             'status': 'Unable to import recipe',
@@ -960,7 +952,7 @@ def import_recipe(beerxml_file):
 
 # Parse the recipes (multi-process)
 executor = concurrent.futures.ProcessPoolExecutor()
-futures = executor.map(import_recipe, beerxml_list[0:150000])
+futures = executor.map(import_recipe, beerxml_list)  # [0:10000])
 parse_results = list(futures)
 recipe_results = [result
                   for result in parse_results if result['status'] == 'success']
@@ -986,8 +978,8 @@ for style in styles:
         hop_results = [result['hop_data']['data']
                        for result in results if result.get('hop_data', {}).get('status') == 'success']
         # Get the flavor range and dump recipes that are outliers
-        flavor_totals = reject_outliers(np.array([result['recipe']['flavor']['total']
-                                                  for result in hop_results]))
+        flavor_totals = np.array([result['recipe']['flavor']['total']
+                                  for result in hop_results])
         flavor_stats = get_stats(flavor_totals)
         flavor_min = flavor_stats['min']
         flavor_max = flavor_stats['max']
@@ -1085,10 +1077,11 @@ for style in styles:
         for category_name in fermentable_categories:
             category_usage_list = [[fermentable['percent']
                                     for fermentable in result['fermentables'] if fermentable['category'] == category_name] for result in fermentable_results]
-            category_usage = reject_outliers(
-                np.array([sum(usage) for usage in category_usage_list]))
-            
+            category_usage = np.array(
+                [sum(usage) for usage in category_usage_list])
             category_stats = get_stats(category_usage)
+
+            print(category_stats)
 
             if category_usage.any():
                 category_unique_fermentables = np.array(
@@ -1098,13 +1091,12 @@ for style in styles:
                 usage_min = int(round(max(0, category_stats['min'])))
                 usage_max = int(round(min(100, category_stats['max'])))
                 recipe_count = np.count_nonzero(category_usage)
-      
+
             else:
                 unique_fermentables = 0
                 usage_min = 0
                 usage_max = 0
                 recipe_count = 0
-
 
             style_category_usage.append({
                 'name': category_name,
@@ -1120,7 +1112,7 @@ for style in styles:
     except Exception as e:
         print('Error processing fermentable categories for {}: {}'.format(style, e))
         continue
-    
+
     try:
         # Get the average usage for each fermentable
         fermentable_list = []
@@ -1144,7 +1136,6 @@ for style in styles:
                 # Get the fermentable usage
                 usage = [fermentable['percent'] for fermentable in fermentable_list
                          if fermentable['name'] == fermentable_name]
-                usage = reject_outliers(np.array(usage))
                 fermentable_usage_stats = get_stats(usage)
                 fermentable_usage_min = int(
                     round(fermentable_usage_stats['min']))
@@ -1172,7 +1163,7 @@ for style in styles:
     except Exception as e:
         print('Error processing fermentables for {}: {}'.format(style, e))
         continue
-    
+
     try:
         # Get min/max style data for the given grain profile
         try:
@@ -1183,15 +1174,14 @@ for style in styles:
             style_sensory_minmax = style_fermentable_list.get_sensory_profiles(
                 category_profile)
         except Exception as e:
-            print('Failed to get recipe data for {}'.format(style, e))
+            print('Failed to get recipe data for {}: {}'.format(style, e))
             continue
-            
+
         # Iterate over each sensory keyword, get the average values for each keyword in the style
         for keyword in fermentable_keywords:
             # Get average sensory data for the given style data for all recipes
-            sensory_values = [recipe['sensory_data'][keyword]
-                              for recipe in fermentable_results]
-            sensory_values = reject_outliers(np.array(sensory_values))
+            sensory_values = np.array([recipe['sensory_data'][keyword]
+                                       for recipe in fermentable_results])
 
             # Get the sensory data possible from the grain profile
             for sensory_minmax in style_sensory_minmax:
@@ -1233,7 +1223,7 @@ for style in styles:
         print("Error analyzing fermentable data for {}: {}".format(style, e))
         continue
 
-    if fermentable_analysis and hop_analysis:
+    if fermentable_analysis:  # and hop_analysis:
         style_results.append({
             'style': style,
             'recipe_count': len(results),
