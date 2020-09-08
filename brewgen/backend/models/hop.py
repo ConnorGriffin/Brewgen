@@ -139,7 +139,13 @@ class HopBill:
     def __init__(self, hop_additions):
         self.hop_additions = hop_additions
 
-    def get_sensory_data(self, og, batch_size):
+    def get_sensory_data(self, og, batch_size, per_liter=False):
+        """Returns all sensory keyword values for the given hop bill
+        Args:
+            og: Original Gravity in 1.xxx format 
+            batch_size: Batch size in liters 
+            per_liter: If True, returns sensory data per liter, not for entire recipe
+        """
         sensory_data = {}
         sensory_keywords = HopModel.get_sensory_keywords(HopModel())
         for keyword in sensory_keywords:
@@ -148,7 +154,10 @@ class HopBill:
         for hop in self.hop_additions:
             hop_sensory = hop.get_sensory_data(og, batch_size)
             for key, value in hop_sensory.items():
-                sensory_data[key] += value
+                if per_liter:
+                    sensory_data[key] += value / batch_size
+                else:
+                    sensory_data[key] += value
 
         return {
             'total': sum(value for key, value in sensory_data.items()),
