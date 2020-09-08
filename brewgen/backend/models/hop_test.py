@@ -2,20 +2,12 @@ import hop
 import math
 from ortools.sat.python import cp_model
 
-# hops = hop.HopModel()
-# amarillo = hops.get_hop_by_name('Amarillo')
-# hop_bill = hop.HopBill([hop.HopAddition(hops.get_hop_by_name(
-#     'Amarillo'), 5, 'boil', 76)
-# ])
-
-# print(hop_bill.get_sensory_data(1.052, 19))
-# print(hop_bill.ibu(1.052, 19))
-
 
 def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data, flavor_descriptors):
     """Generate hop bills
     Notes:
-    - Flavors and amounts scaled by 100 on input and output, should be scaled down in frontend or API
+        - Batch Size is in Liters
+        - Flavor and Amount values should be in g/L, translations to different amounts should occure in UI or API
     """
 
     class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -30,27 +22,43 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
         def on_solution_callback(self):
             self.__solution_count += 1
             ibu = 'IBU: {}'.format(
-                round(self.Value(total_ibu) / ibu_scale))
+                self.Value(total_ibu) / ibu_scale)
             amt = 'Amount: {} g'.format(
                 round(self.Value(total_amount) / scale * batch_size))
             amount_output = ['{}: {} g'.format(
                 v, round(self.Value(v) / scale * batch_size)) for v in self.__hop_amounts if self.Value(v) > 0]
             flavor_output = ['{}: {}'.format(
-                v, round(self.Value(v) / flavor_scale * batch_size)) for v in self.__hop_flavors if self.Value(v) > 0]
+                v, self.Value(v) / flavor_scale) for v in self.__hop_flavors if self.Value(v) > 0]
             print('{}, {}, Flavor: {} \n  {}\n  {}'.format(
-                ibu, amt, round(self.Value(total_flavor) / flavor_scale * batch_size), '\n  '.join(amount_output), '\n  '.join(flavor_output)))
+                ibu, amt, self.Value(total_flavor) / flavor_scale, '\n  '.join(amount_output), '\n  '.join(flavor_output)))
 
         def solution_count(self):
             return self.__solution_count
 
     hm = hop.HopModel()
     sensory_keys = hm.get_sensory_keywords()
-    scale = 5
-    ibu_scale = scale ** 2 * 100
-    # TODO: Streamline scaling and handle decimal batch sizes (for gallon/liter conversion)
-    flavor_scale = 10000 * 100 * scale
+    """ Scale Explainer: 
+    - scale:        the base scale, applied to amount (in g/L), hop total oil, and hop alpha acid percent
+    - ibu_scale:    used to determine min/max ibu values in cp_model, and to de-scale the output values
+    - flavor_scale: used to determine min/max flavor values in cp_model, and to de-scale the output values
 
-    aa_factor = 100 * 1.15 * scale * 1.65 * 0.000125 ** (og - 1)
+    Formulas: 
+    - ibu_scale: scale^2 * 100
+        - aa_factor: *10 (1000 * 1.15 would normally be 100 * 1.15)
+        - hop_object.alpha: *scale
+        - amount: *scale
+        - NOTE: an additional *10 fits somewhere in there, I'm not sure where 
+    - flavor_scale: scale^2 * 1000000
+        - batch_factor: *10000
+        - hop oil: *100, *scale
+        - amount: *scale
+
+    """
+    scale = 20
+    ibu_scale = scale ** 2 * 100
+    flavor_scale = scale ** 2 * 1000000
+
+    aa_factor = 1000 * 1.15 * 1.65 * 0.000125 ** (og - 1)
     aa_util = {
         '60': int(round(aa_factor * (1 - math.e ** (-.04*60)) / 4.15)),
         '45': int(round(aa_factor * (1 - math.e ** (-.04*45)) / 4.15)),
@@ -62,7 +70,6 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
         'dryhop': 0
     }
 
-    # TODO: Rework the flavor formula, it's an arbitrary mess. It's based on the inverse IBU formula, but has some arbitrary stuff added in,
     # Flavor Formula: bigness_factor * multiplier ** 2 / batch_divider
     batch_factor = (1.65 * .000125 ** (og - 1)) / \
         (batch_size / 3.78541) * 3.5274 * 10000
@@ -98,12 +105,13 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
     for hop_name in enabled_hops:
         enabled_hop_vars[hop_name] = {}
         hop_object = hm.get_hop_by_name(hop_name)
-        hop_object.alpha = int(round(hop_object.alpha * 10))
+        hop_object.alpha = int(round(hop_object.alpha * scale))
         enabled_hop_vars[hop_name]['data'] = hop_object
         enabled_hop_vars[hop_name]['aroma'] = {}
         for key in sensory_keys:
             enabled_hop_vars[hop_name]['aroma'][key] = int(round(
-                hop_object.aroma.get(key, 0) * hop_object.total_oil * 100
+                hop_object.aroma.get(key, 0) *
+                hop_object.total_oil * 100 * scale
             ))
 
     # Create the model
@@ -112,9 +120,8 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
     # Create variables for entire recipe
     total_ibu = model.NewIntVar(int(round(ibu_scale * recipe_data['ibu']['min'])), int(
         round(ibu_scale * recipe_data['ibu']['max'])), 'total_ibu')
-    total_flavor = model.NewIntVar(int(round(flavor_scale * recipe_data['flavor']['min'] / batch_size)), int(
-        round(flavor_scale * recipe_data['flavor']['max'] / batch_size)), 'total_flavor')
-    #total_flavor = model.NewIntVar(0, 0, 'total_flavor')
+    total_flavor = model.NewIntVar(int(round(flavor_scale * recipe_data['flavor']['min'])), int(
+        round(flavor_scale * recipe_data['flavor']['max'])), 'total_flavor')
     total_amount = model.NewIntVar(int(round(scale * recipe_data['amount']['min'])), int(
         round(scale * recipe_data['amount']['max'])), 'total')
     hop_used = [model.NewBoolVar('{}_used'.format(hop_name))
@@ -131,9 +138,8 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
                 int(round(ibu_scale * value['ibu']['min'])), int(round(ibu_scale * value['ibu']['max'])), 'add_{}_ibu'.format(timing)),
             'amount': model.NewIntVar(
                 int(round(scale * value['amount']['min'])), int(round(scale * value['amount']['max'])), 'add_{}'.format(timing)),
-            # NOTE: Flavor is being calculated on a per-liter basis, then the output is converted to batch. Need to fix this mess.
-            'flavor': model.NewIntVar(int(round(flavor_scale * recipe_data['flavor']['min'] / batch_size)), int(
-                round(flavor_scale * recipe_data['flavor']['max'] / batch_size)), 'add_{}_flavor'.format(timing)),
+            'flavor': model.NewIntVar(int(round(flavor_scale * value['flavor']['min'])), int(
+                round(flavor_scale * value['flavor']['max'])), 'add_{}_flavor'.format(timing)),
             'hop_used': [model.NewBoolVar('add_{}_{}_used'.format(timing, hop_name)) for hop_name in enabled_hops]
         }
 
@@ -146,8 +152,8 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
             enabled_hop_vars[hop_name][timing] = {
                 'ibu': model.NewIntVar(0, int(round(ibu_scale * value['ibu']['max'])), 'add_{}_{}_ibu'.format(timing, hop_name)),
                 'amount': model.NewIntVar(0, int(round(scale * value['amount']['max'])), 'add_{}_{}'.format(timing, hop_name)),
-                'flavor': model.NewIntVar(0, int(round(flavor_scale * value['flavor']['max'] / batch_size)), 'add_{}_{}_flavor'.format(timing, hop_name)),
-                'sensory_data': [model.NewIntVar(0, int(round(flavor_scale * value['flavor']['max'] / batch_size)), 'add_{}_{}_sensory_{}'.format(timing, hop_name, sensory_key)) for sensory_key in sensory_keys]
+                'flavor': model.NewIntVar(0, int(round(flavor_scale * value['flavor']['max'])), 'add_{}_{}_flavor'.format(timing, hop_name)),
+                'sensory_data': [model.NewIntVar(0, int(round(flavor_scale * value['flavor']['max'])), 'add_{}_{}_sensory_{}'.format(timing, hop_name, sensory_key)) for sensory_key in sensory_keys]
             }
 
             # Set the flavor values for each sensory key
@@ -232,7 +238,7 @@ def calculate_hop_bill(og, batch_size, enabled_hops, recipe_data, addition_data,
 enabled_hops = ['amarillo', 'warrior']
 recipe_data = {
     'ibu': {
-        'min': 50,
+        'min': 55,
         'max': 70
     },
     'amount': {
@@ -241,38 +247,38 @@ recipe_data = {
     },
     'flavor': {
         'min': 0,
-        'max': 650
+        'max': 500
     },
     'unique_hops': 1
 }
 addition_data = {
     '60': {
         'ibu': {
-            'min': 30,
-            'max': 50
+            'min': 0,
+            'max': 70
         },
         'amount': {
-            'min': 0,
-            'max': 2.93
+            'min': 2.4,
+            'max': 2.5
         },
         'flavor': {
             'min': 0,
-            'max': 20
+            'max': 50
         },
         'unique_hops': 1
     },
     '5': {
         'ibu': {
-            'min': 5,
-            'max': 20
+            'min': 0,
+            'max': 70
         },
         'amount': {
-            'min': 0,
-            'max': 4.1
+            'min': .894,
+            'max': .895
         },
         'flavor': {
             'min': 0,
-            'max': 400
+            'max': 50
         },
         'unique_hops': 2
     }
@@ -317,3 +323,11 @@ flavor_descriptors = {
 result = calculate_hop_bill(1.052, 19, enabled_hops, recipe_data,
                             addition_data, flavor_descriptors)
 print(result)
+
+hops = hop.HopModel()
+amarillo = hops.get_hop_by_name('Amarillo')
+hop_bill = hop.HopBill([hop.HopAddition(
+    amarillo, 60, 'boil', 48), hop.HopAddition(amarillo, 5, 'boil', 17)])
+print('Actual Flavor: ', hop_bill.get_sensory_data(
+    1.052, 19, per_liter=True)['total'])
+print('Actual IBU:    ', hop_bill.ibu(1.052, 19))
