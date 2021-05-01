@@ -268,6 +268,8 @@ class GrainList(GrainModel):
             model.Add(category_usage[i] >= category['min_percent'])
 
             # Keep the number of grains in the category at or below the max category fermentable count
+            # TODO: This is broken in ortools > 8.2.8710. Evaluating a LinearExpr instance as a Boolean is not implemented. 
+            # I may have to set values to 1 if percent > 0, 0 otherwise, then sum that way. 
             model.Add(category_fermentable_count[i] == sum(
                 grain_used[k] for k in grain_range if grain_map[k]['category'] == category['name'] and grain_used[k]))
             model.Add(
