@@ -7,6 +7,7 @@ import csv
 import json
 import random
 import concurrent.futures
+from slugify import slugify
 
 sys.path.append('../')
 from brewgen.backend.models import grain, category, hop
@@ -629,24 +630,15 @@ for lov in [10, 20, 30, 40, 60, 80, 90, 120]:
     })
 
 # Get all recipe paths
-brewtoad = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:5000]
-brewers_friend = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))[0:5000]
-# beersmith = list(
-#     Path("./beersmith_scrape/recipes").rglob("*.xml"))
-
-beerxml_list =  brewers_friend + brewtoad # + beersmith
+brewtoad = list(Path("./brewtoad_scrape").rglob("*.xml"))[0:50000]
+brewers_friend = list(Path("./brewersfriend_scrape/recipes").rglob("*.xml"))[0:50000]
+beerxml_list = brewers_friend + brewtoad
 random.shuffle(beerxml_list)
 
-
-def import_recipe(beerxml_file):
+def get_recipe_and_style(beerxml_file):
     try:
         recipe = parser.parse('./{}'.format(str(beerxml_file)))[0]
         style = recipe.style.name
-        fermentables = []
-        addition_data = {}
-        fermentable_result = {}
-        hop_result = {}
-
         # Rewrite style names
         for rule in style_rewrites:
             match = re.match(rule['old'], style, flags=re.IGNORECASE)
@@ -654,6 +646,17 @@ def import_recipe(beerxml_file):
                 style = rule['new']
                 recipe.style.name = rule['new']
                 break
+        return (style, recipe)
+    except Exception as e:
+        return (None, None)
+
+def analyze_recipe(recipe):
+    try:
+        style = recipe.style.name
+        fermentables = []
+        addition_data = {}
+        fermentable_result = {}
+        hop_result = {}
 
         specs = bjcp_name(style)
         if not specs:
@@ -947,17 +950,22 @@ def import_recipe(beerxml_file):
 
 
 if __name__ == '__main__':
-    print('Executing analysis')
+    print('Importing all recipes to get style data.')
     # Parse the recipes (multi-process)
     executor = concurrent.futures.ProcessPoolExecutor()
-    # futures = executor.map(import_recipe, beerxml_list)  # [0:10000])
-    futures = executor.map(import_recipe, beerxml_list)
-    parse_results = list(futures)
-    recipe_results = [result
-                      for result in parse_results if result['status'] == 'success']
-
-    style_results = []
+    futures = executor.map(get_recipe_and_style, beerxml_list)
+    recipe_with_style_list = list(futures)
     for style in styles:
+        print('Parsing recipes for style: {}'.format(style))
+        recipe_list = [recipe for recipe_style, recipe in recipe_with_style_list if recipe and recipe_style == style]
+
+        # futures = executor.map(import_recipe, beerxml_list)  # [0:10000])
+        futures = executor.map(analyze_recipe, recipe_list)
+        parse_results = list(futures)
+        recipe_results = [result
+                        for result in parse_results if result['status'] == 'success']
+                        
+        style_results = []
         fermentable_analysis = None
         hop_analysis = None
         style_flavor = {}
@@ -966,26 +974,23 @@ if __name__ == '__main__':
         addition_data = {}
         style_category_usage = []
 
-        results = [
-            result for result in recipe_results if result['style'] == style]
-
-        if not results:
+        if not recipe_results:
             print('No recipes for {}'.format(style))
             continue
 
         # Analyze hop data
         try:
             hop_results = [result['hop_data']['data']
-                           for result in results if result.get('hop_data', {}).get('status') == 'success']
+                        for result in recipe_results if result.get('hop_data', {}).get('status') == 'success']
             # Get the flavor range and dump recipes that are outliers
             flavor_totals = np.array([result['recipe']['flavor']['total']
-                                      for result in hop_results])
+                                    for result in hop_results])
             flavor_stats = get_stats(flavor_totals)
             flavor_min = flavor_stats['min']
             flavor_max = flavor_stats['max']
 
             hop_results = [result for result in hop_results if flavor_max >
-                           result['recipe']['flavor']['total'] > flavor_min]
+                        result['recipe']['flavor']['total'] > flavor_min]
 
             if not hop_results:
                 print('No hops for {}'.format(style))
@@ -994,11 +999,11 @@ if __name__ == '__main__':
             # Build the overall flavor profile data for the style
             for keyword in hop_keywords:
                 flavor_data = [result['recipe']['flavor']['descriptors'][keyword]
-                               for result in hop_results if result['recipe']['flavor']['descriptors'][keyword]]
+                            for result in hop_results if result['recipe']['flavor']['descriptors'][keyword]]
                 nonzero = [value for value in flavor_data if value > 0]
 
                 # Filter out hop flavor descriptors that are in less than 5% of recipes
-                if len(nonzero) >= len(results) * .05:
+                if len(nonzero) >= len(recipe_results) * .05:
                     f_std = np.std(flavor_data)
                     f_mean = np.mean(flavor_data)
 
@@ -1022,13 +1027,13 @@ if __name__ == '__main__':
                     # Parse flavor results only for keywords that are in the overall style data as well
                     for keyword in style_flavor.keys():
                         keyword_results = [result['flavor']['descriptors']
-                                           [keyword] for result in addition_results]
+                                        [keyword] for result in addition_results]
                         addition_flavor[keyword] = get_stats(keyword_results)
                         addition_flavor[keyword]['recipe_count'] = sum(
                             1 for result in keyword_results if result > 0)
 
                     unique_hops_list = np.array([result['unique_hops']
-                                                 for result in addition_results])
+                                                for result in addition_results])
 
                     if unique_hops_list.any():
                         unique_hops = int(round(np.mean(unique_hops_list)))
@@ -1071,7 +1076,7 @@ if __name__ == '__main__':
 
         try:
             fermentable_results = [result['fermentable_data']['data']
-                                   for result in results if result['fermentable_data']['status'] == 'success']
+                                for result in recipe_results if result['fermentable_data']['status'] == 'success']
 
             # Get the average fermentable category usage for the style
             for category_name in fermentable_categories:
@@ -1115,14 +1120,14 @@ if __name__ == '__main__':
             # Get the average usage for each fermentable
             fermentable_list = []
             recipe_fermentables = [recipe['fermentables']
-                                   for recipe in fermentable_results]
+                                for recipe in fermentable_results]
             for recipe in recipe_fermentables:
                 for recipe_fermentable in recipe:
                     fermentable_list.append(recipe_fermentable)
 
             # Get unique fermentable names
             names = [fermentable['name']
-                     for fermentable in fermentable_list]
+                    for fermentable in fermentable_list]
             unique_names = list(set(names))
 
             # Iterate over each fermentable, getting its average usage and adding to the style database
@@ -1133,7 +1138,7 @@ if __name__ == '__main__':
                 if matched_fermentable:
                     # Get the fermentable usage
                     usage = [fermentable['percent'] for fermentable in fermentable_list
-                             if fermentable['name'] == fermentable_name]
+                            if fermentable['name'] == fermentable_name]
                     fermentable_usage_stats = get_stats(usage)
                     fermentable_usage_min = int(
                         round(fermentable_usage_stats['min']))
@@ -1179,7 +1184,7 @@ if __name__ == '__main__':
             for keyword in fermentable_keywords:
                 # Get average sensory data for the given style data for all recipes
                 sensory_values = np.array([recipe['sensory_data'][keyword]
-                                           for recipe in fermentable_results])
+                                        for recipe in fermentable_results])
 
                 # Get the sensory data possible from the grain profile
                 for sensory_minmax in style_sensory_minmax:
@@ -1224,10 +1229,19 @@ if __name__ == '__main__':
         if fermentable_analysis:  # and hop_analysis:
             style_results.append({
                 'style': style,
-                'recipe_count': len(results),
+                'recipe_count': len(recipe_results),
                 'fermentables': fermentable_analysis,
                 'hops': hop_analysis
             })
 
-    with open('styles.json', 'w') as f:
-        json.dump(style_results, f)
+
+        with open('style_data/{}.json'.format(slugify(style)), 'w') as f:
+            json.dump(style_results, f)
+
+        # TODO: Build unmatched.csv export again
+        # with open('unmatched.csv', 'w') as f:
+        #     writer = csv.DictWriter(
+        #         f, fieldnames=['name', 'type', 'color', 'recipe_style'])
+        #     writer.writeheader()
+        #     writer.writerows([result['data']
+        #                     for result in parse_results if result['status'] == 'unmatched_fermentable'])
