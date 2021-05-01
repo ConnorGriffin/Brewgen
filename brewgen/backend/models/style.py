@@ -178,8 +178,7 @@ class StyleModel:
         script_directory = path_list[0:len(path_list)-2]
         style_usage_path = "/".join(script_directory) + "/data/styles.json"
         bjcp_path = "/".join(script_directory) + "/data/bjcp-2015.json"
-        print(bjcp_path)
-
+        
         with open(bjcp_path, 'r', encoding='utf-8') as f:
             self.bjcp_data = json.load(f)
 

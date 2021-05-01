@@ -190,7 +190,9 @@ class GrainList(GrainModel):
             grain_object = {
                 'category': grain['category'],
                 'min_percent': grain['min_percent'],
-                'max_percent': grain['max_percent']
+                'max_percent': grain['max_percent'],
+                'color': int(grain['color'] * 10), 
+                'ppg': int(grain['ppg'] * 10)
             }
 
             # Build a list of sensory data, add every possible keyword, set to zero if not mapped already
@@ -224,7 +226,7 @@ class GrainList(GrainModel):
             'grain{}_used'.format(i)) for i in grain_map]
 
         # Define constraints
-        # Grain usage total must be 100% - not sure why both of these are needed but it doens't work if they're not
+        # Grain usage total must be 100%
         model.Add(sum(grain_vars) == 100)
         model.Add(sum(category_usage) == 100)
 
