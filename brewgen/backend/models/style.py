@@ -8,7 +8,7 @@ from . import grain, category
 class Style:
     """Defines a style and all of its properties."""
 
-    def __init__(self, name, bjcp_id, bjcp_category, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list, sensory_data, unique_fermentable_count):
+    def __init__(self, name, bjcp_id, bjcp_category, impression, aroma, appearance, flavor, mouthfeel, comments, history, ingredients, comparison, examples, tags, stats, grain_list, category_list, sensory_data, unique_fermentable_count, unique_hop_count):
         self.name = name
         self.slug = slugify(name, replacements=[["'", ''], ['®', '']])
         self.id = bjcp_id
@@ -29,6 +29,7 @@ class Style:
         self.category_list = category_list
         self.sensory_data = sensory_data
         self.unique_fermentable_count = unique_fermentable_count
+        self.unique_hop_count = unique_hop_count
         self.exceptions = self.stats.get('exceptions', None)
 
     def __contains_word(self, string, word):
@@ -39,6 +40,7 @@ class Style:
         return {
             'name': self.name,
             'slug': self.slug,
+            # NOTE: This is busted: TypeError: 'GrainList' object is not iterable
             'grain_list': [grain_object.get_grain_data() for grain_object in self.grain_list],
             'category_list': [category_object.get_category_data() for category_object in self.category_list],
             'sensory_data': self.sensory_data
@@ -176,11 +178,12 @@ class StyleModel:
         script_directory = path_list[0:len(path_list)-2]
         style_usage_path = "/".join(script_directory) + "/data/styles.json"
         bjcp_path = "/".join(script_directory) + "/data/bjcp-2015.json"
+        print(bjcp_path)
 
-        with open(bjcp_path, 'r') as f:
+        with open(bjcp_path, 'r', encoding='utf-8') as f:
             self.bjcp_data = json.load(f)
 
-        with open(style_usage_path, 'r') as f:
+        with open(style_usage_path, 'r', encoding='utf-8') as f:
             style_data = json.load(f)
 
         for style in style_data:
@@ -241,7 +244,8 @@ class StyleModel:
                 grain_list=grain.GrainList(style_grain_list),
                 category_list=style_category_list,
                 sensory_data=style_sensory_data,
-                unique_fermentable_count=style['fermentables']['unique_fermentables']
+                unique_fermentable_count=style['fermentables']['unique_fermentables'],
+                unique_hop_count=style['hops']['recipe']['unique_hops']
             ))
 
     def __bjcp_lookup(self, name, return_category=False):

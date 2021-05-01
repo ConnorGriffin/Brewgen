@@ -126,3 +126,6 @@ dmypy.json
 
 # Visual Studio Code
 .vscode/
+
+# Project files
+recipe_analyzer/test_recipes/

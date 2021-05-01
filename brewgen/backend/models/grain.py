@@ -53,7 +53,7 @@ class GrainModel:
         path_list = os.path.abspath(__file__).split(os.sep)
         script_directory = path_list[0:len(path_list)-2]
         path = "/".join(script_directory) + "/data/grains.json"
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             grain_data = json.load(f)
         for grain in grain_data:
             self.grain_list.append(Grain(

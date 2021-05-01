@@ -28,7 +28,7 @@ class HopModel:
         script_directory = path_list[0:len(path_list)-2]
         hop_path = "/".join(script_directory) + "/data/hops.json"
 
-        with open(hop_path, 'r') as f:
+        with open(hop_path, 'r', encoding='utf-8') as f:
             hop_data = json.load(f)
 
         for hop in hop_data:

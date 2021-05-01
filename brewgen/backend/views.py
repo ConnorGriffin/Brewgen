@@ -115,6 +115,9 @@ def get_style_data(style_slug):
         'category_usage': style_object.get_category_usage(),
         'sensory_data': style_object.sensory_data,
         'unique_fermentable_count': style_object.unique_fermentable_count,
+        'hops': {
+            'unique_hop_count': style_object.unique_hop_count
+        },
         'bjcp_sensory': bjcp_sensory_response
     }), 200
 
@@ -123,7 +126,7 @@ def get_style_data(style_slug):
 def get_style_grain_data(style_slug):
     """Grain data for a single style"""
     style_object = all_styles.get_style_by_slug(style_slug)
-    return jsonify(style_object.grain_list.get_grain_list(), 200)
+    return jsonify(style_object.grain_list.get_grain_list()), 200
 
 
 @app.route('/api/v1/styles/<style_slug>/bjcp-sensory', methods=['GET'])
