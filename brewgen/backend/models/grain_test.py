@@ -1,12 +1,12 @@
-import beer
-import category
-import equipment
-import grain
-import style
+from pathlib import Path
+import sys
+
+sys.path.append('../../../')
+from brewgen.backend.models import beer, category, equipment, grain, style
 
 ipa = style.StyleModel().get_style_by_slug('american-ipa')
 grain_list = ipa.grain_list
-category_model = category.CategoryModel()
+category_profile = category.CategoryProfile(ipa.category_list)
 equipment_profile = equipment.EquipmentProfile(
     mash_efficiency=73, target_volume_gallons=5.75)
 beer_profile = beer.BeerProfile(0, 999, 1.060)
@@ -18,14 +18,15 @@ sensory_model = []
 grain_bills = grain_list.get_grain_bills(
     beer_profile=beer_profile,
     equipment_profile=equipment_profile,
-    category_model=category_model,
+    category_model=category_profile,
     sensory_model=sensory_model,
     max_unique_grains=4
 )
-print(len(grain_bills))
-sensory_data = grain_list.get_sensory_profiles(
-    category_model=category_model, sensory_model=sensory_model)
-print(sensory_data)
+print(grain_bills)
+#print(len(grain_bills))
+#sensory_data = grain_list.get_sensory_profiles(
+#    category_model=category_profile, sensory_model=sensory_model)
+#print(sensory_data)
 #print(get_grain_bills('sensory_data', sensory_model=model))
 # print(get_grain_bills('sensory_data'))
 #grain_bills = get_grain_bills('grain_bill', sensory_model=model)
