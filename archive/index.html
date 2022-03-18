@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- development version, includes helpful console warnings -->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.js"></script>
+    <!-- production version, optimized for size and speed -->
+    <!--  <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+    <title>Brewgen - Beer Recipe Generator</title>
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>Brewgen - Beer Recipe Generator</h1>
+            <div class="row">
+                <div class="col">
+                    <h2>Grains</h2>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm" v-for="category in categories">
+                    <div class="row">
+                        <div class="col">
+                            <h3>{{ category | capitalize }}</h3>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-check" v-for="grain in filterGrainsByCategory(category)">
+                                <input class="form-check-input" type="checkbox" value="" id="{{ grain.slug }}" checked>
+                                <label class="form-check-label" for="{{ grain.slug }}">
+                                    {{ grain.name }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <h2>Sensory Data</h2>
+                </div>
+            </div>
+            <div class="row">
+                <div class="card m-1" style="width: 30%;" v-for="sensory in sensory_data">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ sensory.name | deslug | titleCase }}</h5>
+                        <p class="card-text">Minimum: {{ sensory.min }}<br>Maximum: {{ sensory.max }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    categories: null,
+                    grains: null,
+                    sensory_data: null
+                }
+            },
+            mounted() {
+                axios
+                    .get('/api/v1/grains/categories')
+                    .then(response => (this.categories = response.data))
+                axios
+                    .get('/api/v1/grains')
+                    .then(response => (this.grains = response.data))
+                axios
+                    .post('/api/v1/grains/sensory-profiles', {
+                        "grain_list": [
+                            "briess-pilsen-malt",
+                            "briess-brewers-malt",
+                            "briess-pale-ale-malt",
+                            "briess-caramel-malt-10l",
+                            "briess-caramel-malt-20l",
+                            "briess-caramel-malt-30l",
+                            "briess-caramel-malt-40l",
+                            "briess-caramel-malt-60l",
+                            "briess-caramel-malt-80l",
+                            "briess-caramel-malt-90l",
+                            "briess-caramel-malt-120l",
+                            "briess-caramel-vienne-malt-20l",
+                            "briess-caramel-munich-malt-60l",
+                            "briess-caracrystal-wheat-malt",
+                            "briess-caramel-rye-malt",
+                            "briess-victory-malt",
+                            "briess-chocolate-malt",
+                            "briess-black-malt",
+                            "briess-roasted-barley"
+                        ],
+                        "category_model": [
+                            {
+                                "name": "base",
+                                "min_percent": 60,
+                                "max_percent": 100
+                            },
+                            {
+                                "name": "crystal",
+                                "min_percent": 0,
+                                "max_percent": 25
+                            },
+                            {
+                                "name": "roasted",
+                                "min_percent": 0,
+                                "max_percent": 15
+                            },
+                            {
+                                "name": "specialty",
+                                "min_percent": 0,
+                                "max_percent": 15
+                            }
+                        ],
+                        "sensory_model": null,
+                        "max_unique_grains": 4
+                    })
+                    .then(response => (this.sensory_data = response.data))
+            },
+            filters: {
+                capitalize: function (value) {
+                    if (!value) return ''
+                    value = value.toString()
+                    return value.charAt(0).toUpperCase() + value.slice(1)
+                },
+                titleCase: function (value) {
+                    value = value.toLowerCase().split(' ')
+                    for (var i = 0; i < value.length; i++) {
+                        value[i] = value[i].charAt(0).toUpperCase() + value[i].slice(1);
+                    }
+                    return value.join(' ');
+                },
+                deslug: function (value) {
+                    if (!value) return ''
+                    value = value.toString()
+                    value = value.replace('_', ' ')
+                    return value.charAt(0).toUpperCase() + value.slice(1)
+                }
+            },
+            methods: {
+                filterGrainsByCategory(category) {
+                    return this.grains.filter(grain => grain.category === category)
+                }
+            }
+        })
+    </script>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

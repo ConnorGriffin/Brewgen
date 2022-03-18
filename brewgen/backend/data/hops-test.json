@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Amarillo",
+    "alpha": 9.5,
+    "beta": 6.5,
+    "cohumulone": 22.5,
+    "total_oil": 1.7,
+    "aroma": {
+      "Test": 1
+    }
+  },
+  {
+    "name": "Warrior",
+    "alpha": 9.5,
+    "beta": 6.5,
+    "cohumulone": 22.5,
+    "total_oil": 1.7,
+    "aroma": {
+      "Test": 1
+    }
+  }
+]

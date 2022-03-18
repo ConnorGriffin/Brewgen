@@ -1,0 +1,1229 @@
+[{
+    "name": "Ahtanum",
+    "alpha": 6.0,
+    "beta": 5.75,
+    "cohumulone": 32.5,
+    "total_oil": 1.0,
+    "aroma": {
+        "Citrus": 1,
+        "Grapefruit": 1,
+        "Geranium": 1
+    }
+}, {
+    "name": "Amarillo",
+    "alpha": 9.5,
+    "beta": 6.5,
+    "cohumulone": 22.5,
+    "total_oil": 1.7,
+    "aroma": {
+        "Grapefruit": 1,
+        "Orange": 1,
+        "Lemon": 1,
+        "Melon": 1,
+        "Apricot": 1,
+        "Peach": 1
+    }
+}, {
+    "name": "Brewer's Gold (US)",
+    "alpha": 9.0,
+    "beta": 4.0,
+    "cohumulone": 44.0,
+    "total_oil": 2.2,
+    "aroma": {}
+}, {
+    "name": "Cascade",
+    "alpha": 5.75,
+    "beta": 5.75,
+    "cohumulone": 36.5,
+    "total_oil": 1.15,
+    "aroma": {
+        "Medium Intense": 1,
+        "Floral": 1,
+        "Citrus": 1,
+        "Grapefruit": 1
+    }
+}, {
+    "name": "Centennial",
+    "alpha": 10.5,
+    "beta": 4.0,
+    "cohumulone": 29.0,
+    "total_oil": 2.0,
+    "aroma": {
+        "Medium Intense": 1,
+        "Floral": 1,
+        "Citrus": 1,
+        "Grapefruit": 1
+    }
+}, {
+    "name": "Chinook",
+    "alpha": 13.0,
+    "beta": 3.5,
+    "cohumulone": 31.5,
+    "total_oil": 2.0,
+    "aroma": {
+        "Grapefruit": 1,
+        "Spicy": 1,
+        "Piney": 1
+    }
+}, {
+    "name": "Citra",
+    "alpha": 12.0,
+    "beta": 4.0,
+    "cohumulone": 23.0,
+    "total_oil": 2.5,
+    "aroma": {
+        "Grapefruit": 1,
+        "Melon": 1,
+        "Lime": 1,
+        "Gooseberry": 1,
+        "Passion Fruit": 1,
+        "Lychee": 1
+    }
+}, {
+    "name": "Cluster",
+    "alpha": 7.0,
+    "beta": 5.0,
+    "cohumulone": 39.0,
+    "total_oil": 0.6,
+    "aroma": {
+        "Floral": 1,
+        "Earthy": 1,
+        "Fruity": 1
+    }
+}, {
+    "name": "Columbus",
+    "alpha": 15.0,
+    "beta": 4.5,
+    "cohumulone": 32.5,
+    "total_oil": 1.75,
+    "aroma": {
+        "Black Pepper": 1,
+        "Licorice": 1,
+        "Curry": 1,
+        "Citrus": 1
+    }
+}, {
+    "name": "Crystal",
+    "alpha": 4.5,
+    "beta": 5.6,
+    "cohumulone": 23.0,
+    "total_oil": 1.45,
+    "aroma": {
+        "Woody": 1,
+        "Green": 1
+    }
+}, {
+    "name": "Fuggle (US)",
+    "alpha": 4.75,
+    "beta": 1.75,
+    "cohumulone": 28.5,
+    "total_oil": 0.95,
+    "aroma": {
+        "Mild": 1,
+        "Woody": 1,
+        "Grassy": 1,
+        "Mint": 1
+    }
+}, {
+    "name": "Galena",
+    "alpha": 13.0,
+    "beta": 8.0,
+    "cohumulone": 39.5,
+    "total_oil": 1.05,
+    "aroma": {
+        "Fruity": 1,
+        "Pear": 1,
+        "Pineapple": 1,
+        "Blackcurrant": 1,
+        "Grapefruit": 1,
+        "Lime": 1,
+        "Gooseberry": 1,
+        "Spicy": 1,
+        "Woody": 1
+    }
+}, {
+    "name": "Glacier",
+    "alpha": 5.63,
+    "beta": 7.6,
+    "cohumulone": 12.0,
+    "total_oil": 1.15,
+    "aroma": {
+        "Plum": 1,
+        "Blackberry": 1,
+        "Woody": 1
+    }
+}, {
+    "name": "Golding (US)",
+    "alpha": 5.0,
+    "beta": 2.5,
+    "cohumulone": 22.5,
+    "total_oil": 0.7,
+    "aroma": {
+        "Floral": 1
+    }
+}, {
+    "name": "Hallertau (US)",
+    "alpha": 4.5,
+    "beta": 4.5,
+    "cohumulone": 21.5,
+    "total_oil": 1.05,
+    "aroma": {
+        "Noble": 1,
+        "Earthy": 1,
+        "Herbal": 1
+    }
+}, {
+    "name": "Horizon",
+    "alpha": 12.0,
+    "beta": 7.5,
+    "cohumulone": 17.5,
+    "total_oil": 1.75,
+    "aroma": {
+        "Floral": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Liberty",
+    "alpha": 4.0,
+    "beta": 3.5,
+    "cohumulone": 27.0,
+    "total_oil": 1.2,
+    "aroma": {
+        "Noble": 1,
+        "Floral": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Magnum (US)",
+    "alpha": 12.0,
+    "beta": 5.75,
+    "cohumulone": 27.0,
+    "total_oil": 2.45,
+    "aroma": {}
+}, {
+    "name": "Millennium",
+    "alpha": 15.5,
+    "beta": 4.8,
+    "cohumulone": 30.0,
+    "total_oil": 2.0,
+    "aroma": {
+        "Resin": 1,
+        "Floral": 1,
+        "Toffee": 1,
+        "Pear": 1
+    }
+}, {
+    "name": "Mt. Hood",
+    "alpha": 6.0,
+    "beta": 6.25,
+    "cohumulone": 24.5,
+    "total_oil": 1.15,
+    "aroma": {
+        "Herbal": 1,
+        "Pungent": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Mt. Rainier",
+    "alpha": 6.55,
+    "beta": 6.0,
+    "cohumulone": 22.5,
+    "total_oil": 0.35,
+    "aroma": {}
+}, {
+    "name": "Newport",
+    "alpha": 15.25,
+    "beta": 8.15,
+    "cohumulone": 37.0,
+    "total_oil": 2.5,
+    "aroma": {
+        "Earthy": 1,
+        "Citrus": 1,
+        "Wine": 1,
+        "Balsamic": 1
+    }
+}, {
+    "name": "Northern Brewer (US)",
+    "alpha": 9.0,
+    "beta": 4.0,
+    "cohumulone": 25.0,
+    "total_oil": 1.75,
+    "aroma": {
+        "Evergreen": 1,
+        "Woody": 1,
+        "Mint": 1
+    }
+}, {
+    "name": "Nugget",
+    "alpha": 13.25,
+    "beta": 5.0,
+    "cohumulone": 27.0,
+    "total_oil": 2.0,
+    "aroma": {
+        "Mild": 1,
+        "Pleasant": 1,
+        "Herbal": 1
+    }
+}, {
+    "name": "Palisade",
+    "alpha": 7.5,
+    "beta": 7.0,
+    "cohumulone": 26.5,
+    "total_oil": 1.5,
+    "aroma": {
+        "Apricot": 1,
+        "Grassy": 1,
+        "Floral": 1
+    }
+}, {
+    "name": "Perle (US)",
+    "alpha": 8.25,
+    "beta": 4.5,
+    "cohumulone": 29.5,
+    "total_oil": 0.8,
+    "aroma": {
+        "Floral": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Saaz (US)",
+    "alpha": 3.75,
+    "beta": 3.75,
+    "cohumulone": 26.0,
+    "total_oil": 0.75,
+    "aroma": {
+        "Earthy": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Santiam",
+    "alpha": 6.0,
+    "beta": 7.25,
+    "cohumulone": 22.0,
+    "total_oil": 1.5,
+    "aroma": {
+        "Black Pepper": 1,
+        "Floral": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Simcoe",
+    "alpha": 13.0,
+    "beta": 4.5,
+    "cohumulone": 17.5,
+    "total_oil": 2.25,
+    "aroma": {
+        "Passion Fruit": 1,
+        "Piney": 1,
+        "Berries": 1,
+        "Earthy": 1
+    }
+}, {
+    "name": "Sorachi Ace",
+    "alpha": 13.0,
+    "beta": 6.5,
+    "cohumulone": 23.0,
+    "total_oil": 2.4,
+    "aroma": {
+        "Lemon": 1,
+        "Lime": 1,
+        "Dill": 1
+    }
+}, {
+    "name": "Sterling",
+    "alpha": 7.5,
+    "beta": 5.0,
+    "cohumulone": 25.0,
+    "total_oil": 1.6,
+    "aroma": {
+        "Noble": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Summit",
+    "alpha": 17.5,
+    "beta": 4.65,
+    "cohumulone": 29.5,
+    "total_oil": 2.0,
+    "aroma": {
+        "Pepper": 1,
+        "Incense": 1,
+        "anise": 1,
+        "Orange": 1,
+        "Pink Grapefruit": 1,
+        "Tangerine": 1
+    }
+}, {
+    "name": "Tettnang (US)",
+    "alpha": 4.5,
+    "beta": 3.75,
+    "cohumulone": 22.5,
+    "total_oil": 0.6,
+    "aroma": {
+        "Noble": 1
+    }
+}, {
+    "name": "Vanguard",
+    "alpha": 5.5,
+    "beta": 6.0,
+    "cohumulone": 15.0,
+    "total_oil": 1.0,
+    "aroma": {
+        "Woody": 1,
+        "Cedar": 1
+    }
+}, {
+    "name": "Warrior",
+    "alpha": 16.0,
+    "beta": 5.0,
+    "cohumulone": 25.0,
+    "total_oil": 1.5,
+    "aroma": {
+        "Mild": 1,
+        "Resin": 1,
+        "Piney": 1
+    }
+}, {
+    "name": "Willamette",
+    "alpha": 5.0,
+    "beta": 3.75,
+    "cohumulone": 32.5,
+    "total_oil": 1.25,
+    "aroma": {
+        "Floral": 1,
+        "Incense": 1,
+        "Elderberry": 1
+    }
+}, {
+    "name": "Pride of Ringwood (AU)",
+    "alpha": 9.0,
+    "beta": 5.0,
+    "cohumulone": 35.5,
+    "total_oil": 1.45,
+    "aroma": {
+        "Pleasant": 1,
+        "Cedar": 1,
+        "Oak": 1,
+        "Herbal": 1
+    }
+}, {
+    "name": "Saaz (CZ)",
+    "alpha": 3.5,
+    "beta": 7.5,
+    "cohumulone": 25.5,
+    "total_oil": 0.7,
+    "aroma": {
+        "Mild": 1,
+        "Earthy": 1,
+        "Herbal": 1,
+        "Floral": 1
+    }
+}, {
+    "name": "Strisselspalt (FR)",
+    "alpha": 4.0,
+    "beta": 4.25,
+    "cohumulone": 22.5,
+    "total_oil": 0.75,
+    "aroma": {
+        "Spicy": 1,
+        "Citrusy": 1,
+        "Floral": 1,
+        "Fruity": 1,
+        "Herbal": 1
+    }
+}, {
+    "name": "Brewer's Gold (DE)",
+    "alpha": 7.0,
+    "beta": 3.0,
+    "cohumulone": 44.0,
+    "total_oil": 2.0,
+    "aroma": {}
+}, {
+    "name": "Hallertau Mittelfr\u00fch (DE)",
+    "alpha": 4.25,
+    "beta": 4.0,
+    "cohumulone": 23.0,
+    "total_oil": 1.0,
+    "aroma": {
+        "Mild": 1,
+        "Spicy": 1,
+        "Floral": 1,
+        "Citrus": 1
+    }
+}, {
+    "name": "Herkules (DE)",
+    "alpha": 14.5,
+    "beta": 4.75,
+    "cohumulone": 35.0,
+    "total_oil": 2.0,
+    "aroma": {
+        "Citrus": 1,
+        "Melon": 1
+    }
+}, {
+    "name": "Hersbrucker (DE)",
+    "alpha": 3.5,
+    "beta": 4.25,
+    "cohumulone": 21.5,
+    "total_oil": 1.0,
+    "aroma": {
+        "Hay": 1,
+        "Tobacco": 1,
+        "Orange": 1
+    }
+}, {
+    "name": "Magnum (DE)",
+    "alpha": 13.5,
+    "beta": 6.0,
+    "cohumulone": 25.0,
+    "total_oil": 2.1,
+    "aroma": {
+        "Apple": 1,
+        "Pepper": 1
+    }
+}, {
+    "name": "Merkur (DE)",
+    "alpha": 13.5,
+    "beta": 5.25,
+    "cohumulone": 18.0,
+    "total_oil": 2.5,
+    "aroma": {
+        "Sugar": 1,
+        "Pineapple": 1,
+        "Mint": 1
+    }
+}, {
+    "name": "Northern Brewer (DE)",
+    "alpha": 8.5,
+    "beta": 4.25,
+    "cohumulone": 30.0,
+    "total_oil": 1.85,
+    "aroma": {
+        "Mint": 1,
+        "Piney": 1,
+        "Grassy": 1
+    }
+}, {
+    "name": "Opal (DE)",
+    "alpha": 6.5,
+    "beta": 4.5,
+    "cohumulone": 15.0,
+    "total_oil": 1.05,
+    "aroma": {
+        "Spicy": 1,
+        "Pepper": 1,
+        "Citrus": 1,
+        "Fruity": 1,
+        "Floral": 1,
+        "Herbal": 1
+    }
+}, {
+    "name": "Perle (DE)",
+    "alpha": 8.0,
+    "beta": 3.75,
+    "cohumulone": 32.0,
+    "total_oil": 1.05,
+    "aroma": {
+        "Herbal": 1,
+        "Spicy": 1,
+        "Floral": 1,
+        "Fruit": 1,
+        "Mint": 1
+    }
+}, {
+    "name": "Saphir (DE)",
+    "alpha": 3.25,
+    "beta": 5.5,
+    "cohumulone": 14.5,
+    "total_oil": 1.1,
+    "aroma": {
+        "Spicy": 1,
+        "Fruity": 1,
+        "Floral": 1,
+        "Tangerine": 1
+    }
+}, {
+    "name": "Spalter Select (DE)",
+    "alpha": 4.75,
+    "beta": 4.25,
+    "cohumulone": 24.0,
+    "total_oil": 0.75,
+    "aroma": {
+        "Spicy": 1,
+        "Grassy": 1
+    }
+}, {
+    "name": "Smaragd (DE)",
+    "alpha": 5.0,
+    "beta": 4.5,
+    "cohumulone": 15.5,
+    "total_oil": 1.2,
+    "aroma": {
+        "Floral": 1,
+        "Spicy": 1,
+        "Fruity": 1
+    }
+}, {
+    "name": "Spalt (DE)",
+    "alpha": 4.0,
+    "beta": 4.0,
+    "cohumulone": 25.5,
+    "total_oil": 0.7,
+    "aroma": {
+        "Noble": 1,
+        "Earthy": 1,
+        "Spicy": 1,
+        "Herbal": 1,
+        "Floral": 1
+    }
+}, {
+    "name": "Taurus (DE)",
+    "alpha": 14.5,
+    "beta": 5.0,
+    "cohumulone": 22.5,
+    "total_oil": 1.15,
+    "aroma": {
+        "Earthy": 1,
+        "Chocolate": 1,
+        "Banana": 1
+    }
+}, {
+    "name": "Tettnang (DE)",
+    "alpha": 4.5,
+    "beta": 4.0,
+    "cohumulone": 25.5,
+    "total_oil": 0.7,
+    "aroma": {}
+}, {
+    "name": "Tradition (DE)",
+    "alpha": 6.0,
+    "beta": 4.5,
+    "cohumulone": 27.5,
+    "total_oil": 1.2,
+    "aroma": {
+        "Intense": 1,
+        "Floral": 1,
+        "Herbal": 1,
+        "Grassy": 1,
+        "Fruity": 1
+    }
+}, {
+    "name": "Cascade (NZ)",
+    "alpha": 7.0,
+    "beta": 5.25,
+    "cohumulone": 37.0,
+    "total_oil": 1.1,
+    "aroma": {}
+}, {
+    "name": "Wakatu (NZ)",
+    "alpha": 7.5,
+    "beta": 8.5,
+    "cohumulone": 29.0,
+    "total_oil": 1.0,
+    "aroma": {
+        "Floral": 1,
+        "Lime": 1
+    }
+}, {
+    "name": "Motueka (NZ)",
+    "alpha": 7.0,
+    "beta": 5.25,
+    "cohumulone": 29.0,
+    "total_oil": 0.8,
+    "aroma": {
+        "Citrus": 1,
+        "Lime": 1,
+        "Lemon": 1,
+        "Tropical": 1,
+        "Fruity": 1
+    }
+}, {
+    "name": "Nelson Sauvin (NZ)",
+    "alpha": 12.5,
+    "beta": 7.0,
+    "cohumulone": 24.0,
+    "total_oil": 1.1,
+    "aroma": {
+        "White Wine": 1,
+        "Gooseberry": 1,
+        "Grape": 1
+    }
+}, {
+    "name": "Pacifica (NZ)",
+    "alpha": 5.5,
+    "beta": 6.0,
+    "cohumulone": 25.0,
+    "total_oil": 1.0,
+    "aroma": {
+        "Citrus": 1,
+        "Floral": 1
+    }
+}, {
+    "name": "Pacific Gem (NZ)",
+    "alpha": 14.0,
+    "beta": 8.0,
+    "cohumulone": 38.5,
+    "total_oil": 1.2,
+    "aroma": {
+        "Spicy": 1,
+        "Black Pepper": 1,
+        "Berries": 1,
+        "Fruity": 1,
+        "Blackberry": 1,
+        "Floral": 1,
+        "Oak": 1
+    }
+}, {
+    "name": "Riwaka (NZ)",
+    "alpha": 5.5,
+    "beta": 4.5,
+    "cohumulone": 36.0,
+    "total_oil": 1.5,
+    "aroma": {
+        "Passion Fruit": 1,
+        "Grapefruit": 1,
+        "Citrus": 1
+    }
+}, {
+    "name": "Aurora (SI)",
+    "alpha": 8.25,
+    "beta": 3.55,
+    "cohumulone": 24.0,
+    "total_oil": 1.25,
+    "aroma": {
+        "Noble": 1
+    }
+}, {
+    "name": "Bobek (SI)",
+    "alpha": 5.25,
+    "beta": 5.05,
+    "cohumulone": 29.0,
+    "total_oil": 2.35,
+    "aroma": {
+        "Intense": 1,
+        "Pleasant": 1,
+        "Floral": 1,
+        "Piney": 1
+    }
+}, {
+    "name": "Celeia (SI)",
+    "alpha": 4.5,
+    "beta": 2.65,
+    "cohumulone": 27.5,
+    "total_oil": 2.1,
+    "aroma": {
+        "Noble": 1
+    }
+}, {
+    "name": "Golding (SI)",
+    "alpha": 4.65,
+    "beta": 2.95,
+    "cohumulone": 30.0,
+    "total_oil": 1.0,
+    "aroma": {}
+}, {
+    "name": "Admiral (UK)",
+    "alpha": 14.85,
+    "beta": 5.4,
+    "cohumulone": 41.0,
+    "total_oil": 1.35,
+    "aroma": {
+        "Pleasant": 1,
+        "Resin": 1,
+        "Citrus": 1,
+        "Orange": 1,
+        "Herbal": 1
+    }
+}, {
+    "name": "Bramling Cross (UK)",
+    "alpha": 6.0,
+    "beta": 2.75,
+    "cohumulone": 34.0,
+    "total_oil": 0.85,
+    "aroma": {
+        "Spicy": 1,
+        "Blackcurrant": 1,
+        "Loganberry": 1,
+        "Lemon": 1
+    }
+}, {
+    "name": "Challenger (UK)",
+    "alpha": 7.0,
+    "beta": 3.7,
+    "cohumulone": 22.5,
+    "total_oil": 1.25,
+    "aroma": {
+        "Cedar": 1,
+        "Green Tea": 1,
+        "Fruity": 1
+    }
+}, {
+    "name": "East Kent Golding (UK)",
+    "alpha": 5.5,
+    "beta": 2.4,
+    "cohumulone": 30.0,
+    "total_oil": 0.9,
+    "aroma": {
+        "Floral": 1,
+        "Lavender": 1,
+        "Spicy": 1,
+        "Honey": 1,
+        "Earthy": 1,
+        "Lemon": 1,
+        "Thyme": 1
+    }
+}, {
+    "name": "First Gold (UK)",
+    "alpha": 7.5,
+    "beta": 3.5,
+    "cohumulone": 33.5,
+    "total_oil": 1.1,
+    "aroma": {
+        "Smooth": 1,
+        "Tangerine": 1,
+        "Orange Marmalade": 1,
+        "Apricot": 1,
+        "Geranium": 1,
+        "Magnolia": 1
+    }
+}, {
+    "name": "Fuggle (UK)",
+    "alpha": 4.5,
+    "beta": 2.65,
+    "cohumulone": 31.5,
+    "total_oil": 1.05,
+    "aroma": {
+        "Pleasant": 1,
+        "Mint": 1,
+        "Grassy": 1,
+        "Floral": 1
+    }
+}, {
+    "name": "Northdown (UK)",
+    "alpha": 8.0,
+    "beta": 5.3,
+    "cohumulone": 26.5,
+    "total_oil": 1.7,
+    "aroma": {
+        "Pleasant": 1,
+        "Spicy": 1,
+        "Cedar": 1,
+        "Piney": 1,
+        "Floral": 1,
+        "Berries": 1
+    }
+}, {
+    "name": "Phoenix (UK)",
+    "alpha": 10.0,
+    "beta": 4.85,
+    "cohumulone": 30.0,
+    "total_oil": 1.85,
+    "aroma": {
+        "Chocolate": 1,
+        "Piney": 1,
+        "Molasses": 1,
+        "Floral": 1
+    }
+}, {
+    "name": "Pilgrim (UK)",
+    "alpha": 11.0,
+    "beta": 4.65,
+    "cohumulone": 37.0,
+    "total_oil": 1.8,
+    "aroma": {
+        "Fruity": 1,
+        "Spicy": 1,
+        "Lemon": 1,
+        "Grapefruit": 1,
+        "Pear": 1,
+        "Berries": 1
+    }
+}, {
+    "name": "Pioneer (UK)",
+    "alpha": 9.0,
+    "beta": 3.75,
+    "cohumulone": 37.0,
+    "total_oil": 1.3,
+    "aroma": {
+        "Citrus": 1,
+        "Lemon": 1,
+        "Grapefruit": 1,
+        "Herbal": 1,
+        "Cedar": 1
+    }
+}, {
+    "name": "Progress (UK)",
+    "alpha": 5.5,
+    "beta": 2.4,
+    "cohumulone": 27.5,
+    "total_oil": 0.9,
+    "aroma": {
+        "Grassy": 1,
+        "Mint": 1,
+        "Sweet": 1,
+        "Honey": 1,
+        "Blackcurrant": 1
+    }
+}, {
+    "name": "Target (UK)",
+    "alpha": 10.5,
+    "beta": 5.1,
+    "cohumulone": 33.0,
+    "total_oil": 2.1,
+    "aroma": {
+        "Green Sage": 1,
+        "Spicy": 1,
+        "Peppery": 1,
+        "Citrus": 1,
+        "Marmalade": 1
+    }
+}, {
+    "name": "Whitbread Golding Variety (UK)",
+    "alpha": 6.5,
+    "beta": 2.35,
+    "cohumulone": 29.5,
+    "total_oil": 1.0,
+    "aroma": {}
+}, {
+    "name": "Lublin (PL)",
+    "alpha": 4.0,
+    "beta": 3.25,
+    "cohumulone": 26.5,
+    "total_oil": 0.85,
+    "aroma": {}
+}, {
+    "name": "Bullion",
+    "alpha": 10.45,
+    "beta": 5.5,
+    "cohumulone": 37.5,
+    "total_oil": 1.9,
+    "aroma": {
+        "Strong": 1,
+        "Blackcurrant": 1
+    }
+}, {
+    "name": "Ekuanot",
+    "alpha": 14.25,
+    "beta": 4.5,
+    "cohumulone": 33.5,
+    "total_oil": 3.25,
+    "aroma": {}
+}, {
+    "name": "Galaxy (AU)",
+    "alpha": 13.8,
+    "beta": 5.95,
+    "cohumulone": 37.0,
+    "total_oil": 4.0,
+    "aroma": {
+        "Passion Fruit": 1,
+        "Citrus": 1
+    }
+}, {
+    "name": "Apollo",
+    "alpha": 17.0,
+    "beta": 6.75,
+    "cohumulone": 26.0,
+    "total_oil": 2.0,
+    "aroma": {
+        "Citrus": 1,
+        "Grapefruit": 1,
+        "Orange": 1,
+        "Piney": 1
+    }
+}, {
+    "name": "Bravo",
+    "alpha": 16.5,
+    "beta": 4.5,
+    "cohumulone": 31.5,
+    "total_oil": 2.9,
+    "aroma": {
+        "Orange": 1,
+        "Vanilla": 1,
+        "Floral": 1
+    }
+}, {
+    "name": "Mosaic",
+    "alpha": 12.25,
+    "beta": 3.75,
+    "cohumulone": 23.0,
+    "total_oil": 1.9,
+    "aroma": {
+        "Blueberry": 1,
+        "Tangerine": 1,
+        "Papaya": 1,
+        "Rose": 1,
+        "Blossoms": 1,
+        "Bubble Gum": 1
+    }
+}, {
+    "name": "Ultra",
+    "alpha": 9.55,
+    "beta": 3.9,
+    "cohumulone": 30.5,
+    "total_oil": 1.25,
+    "aroma": {
+        "Mild": 1,
+        "Spicy": 1,
+        "Bouquet": 1
+    }
+}, {
+    "name": "Super Galena",
+    "alpha": 14.5,
+    "beta": 9.0,
+    "cohumulone": 32.0,
+    "total_oil": 2.0,
+    "aroma": {
+        "Fruity": 1,
+        "Pear": 1,
+        "Pineapple": 1,
+        "Blackcurrant": 1,
+        "Grapefruit": 1,
+        "Lime": 1,
+        "Gooseberry": 1,
+        "Spicy Woody": 1
+    }
+}, {
+    "name": "Chelan",
+    "alpha": 13.25,
+    "beta": 9.15,
+    "cohumulone": 34.0,
+    "total_oil": 1.7,
+    "aroma": {
+        "Mild": 1,
+        "Floral": 1,
+        "Citrus": 1
+    }
+}, {
+    "name": "Delta",
+    "alpha": 6.25,
+    "beta": 6.25,
+    "cohumulone": 23.0,
+    "total_oil": 0.8,
+    "aroma": {
+        "Mild": 1,
+        "Pleasant": 1,
+        "Spicy": 1,
+        "Citrus": 1
+    }
+}, {
+    "name": "El Dorado",
+    "alpha": 15.0,
+    "beta": 7.5,
+    "cohumulone": 30.5,
+    "total_oil": 2.65,
+    "aroma": {
+        "Pear": 1,
+        "Watermelon": 1,
+        "Stone Fruit": 1
+    }
+}, {
+    "name": "HBC 291",
+    "alpha": 11.0,
+    "beta": 5.0,
+    "cohumulone": 22.0,
+    "total_oil": 0.0,
+    "aroma": {}
+}, {
+    "name": "Azacca",
+    "alpha": 15.0,
+    "beta": 4.75,
+    "cohumulone": 41.5,
+    "total_oil": 2.05,
+    "aroma": {
+        "Tropical": 1,
+        "Fruity": 1,
+        "Citrus": 1
+    }
+}, {
+    "name": "Ella (AU)",
+    "alpha": 14.8,
+    "beta": 6.3,
+    "cohumulone": 36.0,
+    "total_oil": 2.9,
+    "aroma": {
+        "Grapefruit": 1,
+        "Tropical": 1
+    }
+}, {
+    "name": "Pacific Jade",
+    "alpha": 13.0,
+    "beta": 7.5,
+    "cohumulone": 24.0,
+    "total_oil": 1.4,
+    "aroma": {
+        "Citrus": 1,
+        "Spicy": 1,
+        "Herbal": 1,
+        "Black Pepper": 1
+    }
+}, {
+    "name": "Cashmere",
+    "alpha": 8.4,
+    "beta": 6.75,
+    "cohumulone": 23.0,
+    "total_oil": 1.3,
+    "aroma": {
+        "Intense": 1,
+        "Fruity": 1,
+        "Lemon": 1,
+        "Lime": 1,
+        "Peach": 1,
+        "Melon": 1,
+        "Coconut": 1,
+        "Lemongrass": 1,
+        "Candy": 1,
+        "Herbal": 1
+    }
+}, {
+    "name": "Sladek (CZ)",
+    "alpha": 7.0,
+    "beta": 9.5,
+    "cohumulone": 25.0,
+    "total_oil": 0.9,
+    "aroma": {}
+}, {
+    "name": "Topaz (AU)",
+    "alpha": 15.7,
+    "beta": 7.15,
+    "cohumulone": 49.5,
+    "total_oil": 1.95,
+    "aroma": {}
+}, {
+    "name": "Mapuche (AR)",
+    "alpha": 6.5,
+    "beta": 5.6,
+    "cohumulone": 45.0,
+    "total_oil": 0.9,
+    "aroma": {}
+}, {
+    "name": "Waimea (NZ)",
+    "alpha": 17.5,
+    "beta": 8.0,
+    "cohumulone": 23.0,
+    "total_oil": 2.1,
+    "aroma": {
+        "Piney": 1,
+        "Citrus": 1,
+        "Tangelo": 1
+    }
+}, {
+    "name": "Enigma (AU)",
+    "alpha": 15.0,
+    "beta": 5.6,
+    "cohumulone": 39.0,
+    "total_oil": 2.7,
+    "aroma": {}
+}, {
+    "name": "Rakau (NZ)",
+    "alpha": 10.5,
+    "beta": 5.5,
+    "cohumulone": 24.0,
+    "total_oil": 2.2,
+    "aroma": {
+        "Stone Fruit": 1,
+        "Fig": 1,
+        "Fruity": 1,
+        "Apricot": 1,
+        "Piney": 1
+    }
+}, {
+    "name": "Vic Secret (AU)",
+    "alpha": 15.5,
+    "beta": 6.95,
+    "cohumulone": 53.5,
+    "total_oil": 2.5,
+    "aroma": {}
+}, {
+    "name": "Melba (AU)",
+    "alpha": 8.5,
+    "beta": 3.75,
+    "cohumulone": 30.0,
+    "total_oil": 3.0,
+    "aroma": {}
+}, {
+    "name": "Lemondrop",
+    "alpha": 6.0,
+    "beta": 5.0,
+    "cohumulone": 31.0,
+    "total_oil": 1.75,
+    "aroma": {}
+}, {
+    "name": "Mandarina Bavaria (DE)",
+    "alpha": 8.5,
+    "beta": 5.75,
+    "cohumulone": 33.0,
+    "total_oil": 2.2,
+    "aroma": {
+        "Fruity": 1,
+        "Citrus": 1,
+        "Tangerine": 1
+    }
+}, {
+    "name": "Eureka",
+    "alpha": 18.5,
+    "beta": 5.5,
+    "cohumulone": 27.0,
+    "total_oil": 3.1,
+    "aroma": {}
+}, {
+    "name": "Calypso",
+    "alpha": 13.0,
+    "beta": 5.5,
+    "cohumulone": 41.0,
+    "total_oil": 2.05,
+    "aroma": {
+        "Pleasant": 1,
+        "Fruity": 1,
+        "Pear": 1,
+        "Apple": 1
+    }
+}, {
+    "name": "Premiant (CZ)",
+    "alpha": 8.5,
+    "beta": 4.5,
+    "cohumulone": 20.5,
+    "total_oil": 1.5,
+    "aroma": {
+        "Pleasant": 1,
+        "Mild": 1
+    }
+}, {
+    "name": "Gimmli (DE)",
+    "alpha": 3.5,
+    "beta": 3.75,
+    "cohumulone": 27.0,
+    "total_oil": 0.0,
+    "aroma": {}
+}, {
+    "name": "Green Bullet (NZ)",
+    "alpha": 12.5,
+    "beta": 6.75,
+    "cohumulone": 38.5,
+    "total_oil": 1.1,
+    "aroma": {
+        "Spicy": 1,
+        "Fruity": 1,
+        "Floral": 1,
+        "Piney": 1
+    }
+}, {
+    "name": "Jarrylo",
+    "alpha": 16.0,
+    "beta": 6.75,
+    "cohumulone": 35.5,
+    "total_oil": 3.95,
+    "aroma": {
+        "White Wine": 1,
+        "Strong Lemon Lime": 1,
+        "Orange": 1,
+        "Pear": 1,
+        "Spicy": 1
+    }
+}, {
+    "name": "Dr. Rudi (NZ)",
+    "alpha": 11.0,
+    "beta": 7.75,
+    "cohumulone": 34.5,
+    "total_oil": 1.3,
+    "aroma": {}
+}]
