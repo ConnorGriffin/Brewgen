@@ -10,7 +10,7 @@ I analyzed a large number of public recipes, combined that data with the BJCP 20
 
 ## Example
 Generating an American Pale Ale recipe that's high Malty/Honey, and very low Toast flavor.
-![American Pale Ale Demo](docs\images\pale-ale-demo.gif)
+![American Pale Ale Demo](docs/images/pale-ale-demo.gif)
 
 ## Project Status
 
