@@ -7,7 +7,7 @@
         href="http://localhost:8080"
       >Brewgen</b-navbar-item>
     </template>
-    <template slot="start">
+    <!-- <template slot="start">
       <b-navbar-item href="#">Home</b-navbar-item>
       <b-navbar-item href="#">Documentation</b-navbar-item>
       <b-navbar-dropdown label="Info">
@@ -25,7 +25,7 @@
           <a class="button is-light">Log in</a>
         </div>
       </b-navbar-item>
-    </template>
+    </template> -->
   </b-navbar>
 </template>
 
