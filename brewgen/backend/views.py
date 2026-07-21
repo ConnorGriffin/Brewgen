@@ -50,7 +50,7 @@ def _build_fermentable_solver(data):
     return FermentableSolver(
         grains,
         categories,
-        max_unique_grains=data.get('max_unique_fermentables'),
+        max_unique_grains=data.get('max_unique_fermentables', 4),
         sensory_keywords=all_grains.get_sensory_keywords(),
         sensory_bounds=data.get('sensory_model'),
         config=SOLVER_CONFIG,
