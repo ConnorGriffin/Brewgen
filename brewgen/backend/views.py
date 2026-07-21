@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, request, render_template
 from .models import grain, beer, category, equipment, style
+from .solver import color as grain_color
+from .solver.fermentables import FermentableSolver, SolverConfig
 from flask_cors import CORS
 from difflib import SequenceMatcher
-from ortools.sat.python import cp_model
 
 app = Flask(__name__,
             static_folder='../dist/static',
@@ -13,6 +14,47 @@ CORS(app)
 all_grains = grain.GrainList()
 category_model = category.CategoryModel()
 all_styles = style.StyleModel()
+
+# Solver deadlines and diversity limits are server configuration, never set by
+# the caller, so a slow or malicious request cannot ask for unbounded compute.
+SOLVER_CONFIG = SolverConfig()
+
+
+def _build_fermentable_solver(data):
+    """Adapt a request body into a FermentableSolver.
+
+    Reads the shared ``fermentable_list``/``category_model`` shape used by the
+    validity, sensory-range, and recipe endpoints.
+    """
+    grains = []
+    for item in data.get('fermentable_list', []):
+        matched = all_grains.get_grain_by_slug(item['slug'])
+        grains.append(grain.Grain(
+            name=matched.name,
+            brand=matched.brand,
+            potential=matched.potential,
+            color=matched.color,
+            category=matched.category,
+            sensory_data=matched.sensory_data,
+            min_percent=item['min_percent'],
+            max_percent=item['max_percent'],
+        ).get_grain_data())
+
+    categories = [{
+        'name': cat['name'],
+        'unique_fermentable_count': cat.get('unique_fermentable_count'),
+        'min_percent': cat['min_percent'],
+        'max_percent': cat['max_percent'],
+    } for cat in data.get('category_model', [])]
+
+    return FermentableSolver(
+        grains,
+        categories,
+        max_unique_grains=data.get('max_unique_fermentables'),
+        sensory_keywords=all_grains.get_sensory_keywords(),
+        sensory_bounds=data.get('sensory_model'),
+        config=SOLVER_CONFIG,
+    )
 
 
 @app.route('/', defaults={'path': ''})
@@ -203,128 +245,83 @@ def get_fermentable_list_sensory_values():
     """
     data = request.json
 
-    # Create a grain object from the list of slugs
-    fermentable_list = []
-    for fermentable in data.get('fermentable_list', []):
-        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])
-        fermentable_obj.set_usage(
-            fermentable['min_percent'], fermentable['max_percent'])
-        fermentable_list.append(fermentable_obj)
-    fermentable_list_obj = grain.GrainList(fermentable_list)
-
-    # Create a category profile from the category data provided
-    categories = []
-    for category_data in data.get('category_model', []):
-        categories.append(category.Category(
-            category_data['name'], category_data['unique_fermentable_count'], category_data['min_percent'], category_data['max_percent']))
-    category_profile = category.CategoryProfile(categories)
-
-    # Get the profile list and return to the client
-    profiles = fermentable_list_obj.get_sensory_profiles(
-        category_model=category_profile,
-        sensory_model=data.get('sensory_model'),
-        max_unique_grains=data.get('max_unique_fermentables')
-    )
+    # Achievable min/max of each descriptor under the same cardinality limits
+    # as generation. Cardinality-preserving MILP, no color constraints.
+    profiles = _build_fermentable_solver(data).sensory_ranges()
 
     return jsonify(profiles), 200
 
 
 @app.route('/api/v1/grains/recipes', methods=['POST'])
 def get_fermentable_list_recipes():
-    """Return all (or up to limit) possible recipies for the given parameters. Optionally return color distribution only.
-    Parameters:
-        coloronly=true: Return only color distribution data
-        chartrange=x1,x2: Returns color data that contains at least x1 through x2, even if values are 0
+    """Generate up to five unranked, meaningfully different grain bills.
+
+    Every returned bill is a whole-percentage bill summing to 100 that lands
+    inside the requested SRM range; the bills carry no ranking. The response
+    exposes an explicit completion status (complete, partial, infeasible, or
+    deadline_exceeded) so bounded failures are visible to the caller.
+
     POST format:
     {
         "fermentable_list": [
-            {slug: 'grain1', max_percent: int, min:percent: int},
+            {slug: 'grain1', max_percent: int, min_percent: int},
             {slug: 'grain2'...}
         ],
         "category_model": CategoryModel,
         "sensory_model": SensoryModel,
         "max_unique_fermentables": int,
         "equipment_profile": EquipmentProfile,
-        "style": str(style-slug)
+        "beer_profile": BeerProfile
     }
     """
     data = request.json
-    print(data)
 
-    # Create a grain object from the list of slugs
-    fermentable_list = []
-    for fermentable in data.get('fermentable_list', []):
-        fermentable_obj = all_grains.get_grain_by_slug(fermentable['slug'])
-        fermentable_obj.set_usage(
-            fermentable['min_percent'], fermentable['max_percent'])
-        fermentable_list.append(fermentable_obj)
-    fermentable_list_obj = grain.GrainList(fermentable_list)
+    solver = _build_fermentable_solver(data)
 
-    # Create a category profile from the category data provided
-    categories = []
-    for category_data in data.get('category_model', []):
-        categories.append(category.Category(
-            category_data['name'], category_data['unique_fermentable_count'], category_data['min_percent'], category_data['max_percent']))
-    category_profile = category.CategoryProfile(categories)
-
-    # Create an equipment profile from the parameters
     equipment_profile = equipment.EquipmentProfile(
         target_volume_gallons=data.get('equipment_profile', {}).get(
             'target_volume_gallons', 5.5),
         mash_efficiency=data.get('equipment_profile', {}).get(
             'mash_efficiency', 75)
     )
-
-    # Create a beer profile from the parameters
     beer_profile = beer.BeerProfile(
         min_color_srm=data.get('beer_profile', {}).get('min_color_srm', 0),
         max_color_srm=data.get('beer_profile', {}).get('max_color_srm', 255),
         original_sg=data.get('beer_profile', {}).get('original_sg', 1.05)
     )
 
-    # Get the recipe list and return to the client
-    recipes = fermentable_list_obj.get_grain_bills(
-        category_model=category_profile,
-        sensory_model=data.get('sensory_model'),
-        max_unique_grains=data.get('max_unique_fermentables'),
-        equipment_profile=equipment_profile,
-        beer_profile=beer_profile
+    result = solver.generate(
+        original_sg=beer_profile.original_sg,
+        target_volume_gallons=equipment_profile.target_volume_gallons,
+        mash_efficiency=equipment_profile.mash_efficiency,
+        min_srm=beer_profile.min_color_srm,
+        max_srm=beer_profile.max_color_srm,
     )
 
-    recipe_response = []
-    for recipe in recipes:
-        recipe_response.append(recipe.get_recipe(
-            beer_profile.original_sg, equipment_profile))
+    # Serialize each alternative with per-grain pounds derived from the same
+    # color math the solver accepted the bill against.
+    slugs = [g['slug'] for g in solver.grains]
+    ppgs = [g['ppg'] for g in solver.grains]
+    alternatives = []
+    for bill in result.alternatives:
+        vector = [bill.percents.get(slug, 0) for slug in slugs]
+        pounds = grain_color.grain_pounds(
+            ppgs, vector, beer_profile.original_sg,
+            equipment_profile.target_volume_gallons,
+            equipment_profile.mash_efficiency)
+        alternatives.append({
+            'grains': [
+                {'slug': slugs[i], 'use_percent': vector[i],
+                 'use_pounds': pounds[i]}
+                for i in range(len(slugs)) if vector[i] > 0
+            ],
+            'srm': bill.srm,
+        })
 
-    color_only = request.args.get('coloronly')
-
-    if color_only == 'true':
-        srm_data = [int(recipe['srm']) for recipe in recipe_response]
-
-        chart_range = request.args.get('chartrange')
-        if chart_range:
-            # Set the return x data points to at least the provided chart range
-            chart_range = chart_range.split(',')
-            lowest = min(int(chart_range[0]), int(min(srm_data)))
-            highest = max(int(chart_range[1]), int(max(srm_data)))
-        else:
-            lowest = int(min(srm_data))
-            highest = int(max(srm_data))
-
-        srm_ints = list(range(lowest, highest+1))
-        srm_dist = []
-        for i in range(len(srm_ints)):
-            srm_count = sum(
-                1 for srm_value in srm_data if srm_value == srm_ints[i])
-            srm_dist.append({
-                "srm": srm_ints[i],
-                "count": srm_count
-            })
-        response = srm_dist
-    else:
-        response = recipe_response
-
-    return jsonify(response), 200
+    return jsonify({
+        'status': result.status.value,
+        'alternatives': alternatives,
+    }), 200
 
 
 @app.route('/api/v1/helpers/grain-model-valid', methods=['POST'])
@@ -355,28 +352,5 @@ def is_grain_model_valid():
     """
 
     data = request.json
-    category_profile = category.CategoryProfile([category.Category(
-        cat['name'], cat['unique_fermentable_count'], cat['min_percent'], cat['max_percent']) for cat in data['category_model']])
-
-    fermentable_list = []
-    for data_fermentable in data['fermentable_list']:
-        matched_fermentable = all_grains.get_grain_by_slug(
-            data_fermentable['slug'])
-        fermentable_list.append(
-            grain.Grain(
-                name=matched_fermentable.name,
-                brand=matched_fermentable.brand,
-                potential=matched_fermentable.potential,
-                color=matched_fermentable.color,
-                category=matched_fermentable.category,
-                sensory_data=matched_fermentable.sensory_data,
-                min_percent=data_fermentable['min_percent'],
-                max_percent=data_fermentable['max_percent']
-            )
-        )
-
-    fermentable_profile = grain.GrainList(fermentable_list)
-    result = fermentable_profile.is_valid_model(
-        category_profile, data['max_unique_fermentables'])
-
+    result = _build_fermentable_solver(data).is_valid()
     return jsonify(result), 200

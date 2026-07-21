@@ -12,9 +12,15 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Transitional floor through the widened 3.14 target.
+        python-version: ["3.11", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
       - run: python3 -m compileall -q brewgen recipe_analyzer archive
+      - run: python3 -m pip install ".[test]"
+      - run: python3 -m pytest tests -q
