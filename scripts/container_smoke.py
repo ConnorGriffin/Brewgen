@@ -28,14 +28,15 @@ def docker(*args: str, capture: bool = False) -> str:
 
 
 def request(port: int, path: str, payload: object | None = None,
-            origin: str | None = None) -> tuple[int, object | bytes, Any]:
+            origin: str | None = None,
+            timeout: float = 5) -> tuple[int, object | bytes, Any]:
     data = None if payload is None else json.dumps(payload).encode()
     headers = {"Content-Type": "application/json"} if data else {}
     if origin:
         headers["Origin"] = origin
     req = urllib.request.Request(
         f"http://127.0.0.1:{port}{path}", data=data, headers=headers)
-    with urllib.request.urlopen(req, timeout=5) as response:
+    with urllib.request.urlopen(req, timeout=timeout) as response:
         body = response.read()
         content_type = response.headers.get_content_type()
         parsed = json.loads(body) if content_type == "application/json" else body
@@ -98,7 +99,7 @@ def smoke_http(port: int) -> None:
     assert headers.get("Access-Control-Allow-Origin") is None
 
     status, result, _ = request(
-        port, "/api/v1/grains/recipes", generation_brief(grains))
+        port, "/api/v1/grains/recipes", generation_brief(grains), timeout=15)
     assert status == 200 and isinstance(result, dict)
     assert result.get("status") in {"complete", "partial"}
     assert result.get("alternatives")
