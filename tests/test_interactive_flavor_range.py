@@ -239,6 +239,13 @@ def test_focused_range_matches_full_sweep(style_slug):
     descriptor, across representative committed styles."""
     style_object = STYLES.get_style_by_slug(style_slug)
     solver = views._build_fermentable_solver(_style_body(style_object))
+    # This is a semantic-equivalence test, not the performance gate below.
+    # Remove production timing from the assertion so a loaded CI runner cannot
+    # turn an otherwise-correct solve into DEADLINE_EXCEEDED.
+    solver.config = SolverConfig(
+        solver_time_limit_seconds=float("inf"),
+        request_deadline_seconds=float("inf"),
+    )
 
     sweep = {r["name"]: (r["min"], r["max"]) for r in solver.sensory_ranges()}
     assert sweep, "style model should be feasible for the sweep"
