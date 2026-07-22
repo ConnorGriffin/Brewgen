@@ -126,10 +126,15 @@ What request schemas, size limits, solver deadlines, rate limits, concurrency ca
 
 ### Answer
 
+A single strict, versioned JSON grain-bill brief carries style/original gravity, equipment, allowed fermentables and optional whole-percent bounds, maximum fermentable count, sensory bounds, and exact SRM bounds; the server derives category/style-model constraints. Reject unknown fields, duplicate or unknown catalog values, non-finite numbers, inverted ranges, and non-JSON input. Cap the body at 64 KiB and lists at current catalog cardinality.
+
+Every compute request has a shared 1.8-second solver budget and 2-second end-to-end deadline. Permit six compute requests per visitor per minute with burst two, keyed only by a daily-rotated in-memory hash of the trusted client address (10-minute idle expiry; never logged or persisted). Allow two active solver requests per container with no queue. Log only timestamp, random request ID, operation, outcome, status, and duration for seven days; never log bodies, constraints, addresses/hashes, headers, cookies, user agents, referrers, or query strings.
+
+Return at most five unranked grain bills and preserve `complete`, `partial`, `infeasible`, and `deadline_exceeded` as distinct outcomes. Failures use `application/problem+json` with stable codes and no echoed input: malformed JSON 400, oversized 413, wrong media type 415, invalid/empty/infeasible brief 422, visitor limit 429, busy/deadline 503, and generic internal failure 500. Public cutover requires boundary, deadline, concurrency, rate-limit, privacy-log, failure-contract, and recovery tests plus a production-container benchmark. The locked evidence and exact field ranges are recorded in issue #29.
 
 ## #11: Prove the production artifact
 
-Blocked by: #6, #8, #9, #10
+Blocked by: #6, #8, #9, #10, #13, #14
 Type: Prototype
 
 ### Question
@@ -147,6 +152,30 @@ Type: Prototype
 ### Question
 
 Can the app repository publish the proven image and the homelab repository add the public-apps workload, least-privilege tailnet route, relay vhost, DNS record, monitoring, and tested rollback without exposing the residential IP?
+
+### Answer
+
+
+## #13: Define the public licensing boundary
+
+Blocked by: #5
+Type: Research
+
+### Question
+
+Which licenses and notices should cover Brewgen's source code, documentation, and retained legacy style models, given that the models' raw reference corpus is missing and their source rights are not cleared?
+
+### Answer
+
+
+## #14: Lock the project-support affordance
+
+Blocked by: #8, #13
+Type: Prototype
+
+### Question
+
+Where should a `Support this project` control appear in the locked public workflow, where should it lead, and how should it behave without competing with the grain-bill brief or implying paid access?
 
 ### Answer
 
