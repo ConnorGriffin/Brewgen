@@ -201,7 +201,10 @@ const feasLine = computed(() => {
   switch (feas.status) {
     case 'feasible': return { cls: 'ok', text: 'A grain bill can meet this brief.' }
     case 'infeasible': return { cls: 'no', text: 'No grain bill fits this brief yet — ease a flavour or widen the colour.' }
+    case 'deadline':
     case 'deadline_exceeded': return { cls: 'checking', text: 'This brief is taking a while to pin down.' }
+    case 'busy': return { cls: 'checking', text: 'Brewgen is busy right now — try again in a moment.' }
+    case 'rate_limited': return { cls: 'checking', text: 'Checking a lot right now — pause a moment, then edit again.' }
     case 'invalid': return { cls: 'checking', text: 'Add a little more to this brief.' }
     default: return { cls: 'checking', text: '' }
   }

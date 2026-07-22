@@ -167,6 +167,24 @@ describe('public results shelf', () => {
     leakless(wrapper.find('.notice').text())
   })
 
+  it('renders the busy state when every solver slot is taken', async () => {
+    // A 503 the fetch layer resolved to the busy outcome: an honest transient
+    // notice, reusing the single-notice treatment, never the malformed voice.
+    const wrapper = await mountShelf({ outcome: 'busy' })
+    expect(wrapper.find('.notice-busy').exists()).toBe(true)
+    expect(wrapper.find('.notice-title').text()).toBe('Brewgen is catching its breath')
+    expect(wrapper.find('.shelf').exists()).toBe(false)
+    leakless(wrapper.find('.notice').text())
+  })
+
+  it('renders the rate-limited state when the visitor is sending too fast', async () => {
+    const wrapper = await mountShelf({ outcome: 'rate_limited' })
+    expect(wrapper.find('.notice-rate_limited').exists()).toBe(true)
+    expect(wrapper.find('.notice-title').text()).toBe('One brief at a time')
+    expect(wrapper.find('.shelf').exists()).toBe(false)
+    leakless(wrapper.find('.notice').text())
+  })
+
   it('renders the empty state when no brief was submitted', async () => {
     const wrapper = await mountShelf(null, { context: null })
     expect(wrapper.find('.notice-empty').exists()).toBe(true)

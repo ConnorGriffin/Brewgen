@@ -89,21 +89,24 @@ def test_recipes_endpoint_alternatives_differ_by_ten_points(client):
 
 
 def test_recipes_endpoint_reports_infeasible(client):
-    # No blend of these pale grains can reach a very dark SRM.
+    # No blend of these pale grains can reach a very dark SRM. Under the public
+    # compute envelope an infeasible brief is the locked 422 problem+json
+    # outcome, carrying no bills and no solver internals.
     resp = client.post("/api/v1/grains/recipes", json=_body(min_srm=100, max_srm=200))
-    assert resp.status_code == 200
+    assert resp.status_code == 422
+    assert resp.mimetype == "application/problem+json"
     payload = resp.get_json()
-    assert payload["status"] == "infeasible"
-    assert payload["alternatives"] == []
+    assert payload["outcome"] == "infeasible"
+    assert "alternatives" not in payload
 
 
 def test_recipes_endpoint_reports_deadline_exceeded(client, monkeypatch):
     # Deadlines are server configuration; a zero request deadline yields the
-    # bounded deadline-exceeded state rather than an unbounded search.
+    # bounded deadline outcome, surfaced by the envelope as 503 problem+json
+    # rather than an unbounded search.
     monkeypatch.setattr(views, "SOLVER_CONFIG",
                         SolverConfig(request_deadline_seconds=0))
     resp = client.post("/api/v1/grains/recipes", json=_body())
-    assert resp.status_code == 200
-    payload = resp.get_json()
-    assert payload["status"] == "deadline_exceeded"
-    assert payload["alternatives"] == []
+    assert resp.status_code == 503
+    assert resp.mimetype == "application/problem+json"
+    assert resp.get_json()["outcome"] == "deadline"

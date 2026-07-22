@@ -19,6 +19,23 @@ async function getJson (path) {
   return res.json()
 }
 
+/*
+ * The public compute endpoints answer failures with `application/problem+json`
+ * carrying a stable machine `outcome` tag (oversized, invalid, infeasible,
+ * rate_limited, busy, deadline, …). Turn any response into that outcome tag so
+ * a limit or overload is never mistaken for solver data. Falls back to the
+ * status code when the body is unreadable.
+ */
+async function readOutcome (res) {
+  let body = {}
+  try { body = await res.json() } catch { body = {} }
+  if (res.ok) return { ok: true, body }
+  if (body && body.outcome) return { ok: false, outcome: body.outcome }
+  if (res.status === 429) return { ok: false, outcome: 'rate_limited' }
+  if (res.status === 503) return { ok: false, outcome: 'busy' }
+  return { ok: false, outcome: 'invalid' }
+}
+
 async function postJson (path, body, signal) {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
@@ -26,9 +43,11 @@ async function postJson (path, body, signal) {
     body: JSON.stringify(body),
     signal
   })
-  // The focused endpoints answer 400 with a stable {status:"invalid"} body for
-  // malformed briefs; surface that as data rather than throwing.
-  return res.json()
+  // A 200 carries the solver body ({status:"feasible", …}); a failure is
+  // reduced to {status:"<outcome>"} so callers surface a limit/overload
+  // honestly instead of treating the problem+json body as solver data.
+  const r = await readOutcome(res)
+  return r.ok ? r.body : { status: r.outcome }
 }
 
 export const listStyles = () => getJson('/api/v1/styles')
@@ -44,10 +63,22 @@ export function fetchFeasibility (payload, signal) {
   return postJson('/api/v1/grains/feasibility', payload, signal)
 }
 
+/* Map a compute failure's machine outcome tag onto the shelf's own outcome
+ * vocabulary: a transient limit/overload gets its honest notice; everything
+ * else (oversized, wrong media, unreadable) collapses to the stable malformed
+ * notice so no status code or endpoint name is ever leaked. */
+const SHELF_OUTCOME = {
+  infeasible: 'infeasible',
+  deadline: 'deadline',
+  rate_limited: 'rate_limited',
+  busy: 'busy'
+}
+
 /*
- * Generation for the results shelf. Unlike the focused endpoints, a non-200 or
- * an unreadable body is surfaced as {error:true} so the shelf can render its
- * stable "malformed" state without leaking a status code or endpoint name.
+ * Generation for the results shelf. A 200 returns the solver body unchanged; a
+ * failure is reduced to {outcome:"<shelf-state>"} so the shelf renders the
+ * matching quiet notice — busy and rate-limited included — without leaking a
+ * status code or endpoint name.
  */
 export async function fetchRecipes (payload, signal) {
   let res
@@ -59,12 +90,9 @@ export async function fetchRecipes (payload, signal) {
       signal
     })
   } catch {
-    return { error: true }
+    return { outcome: 'malformed' }
   }
-  if (!res.ok) return { error: true }
-  try {
-    return await res.json()
-  } catch {
-    return { error: true }
-  }
+  const r = await readOutcome(res)
+  if (r.ok) return r.body
+  return { outcome: SHELF_OUTCOME[r.outcome] || 'malformed' }
 }

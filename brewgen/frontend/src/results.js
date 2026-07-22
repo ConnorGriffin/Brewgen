@@ -23,12 +23,18 @@ export function withLetters (alternatives) {
 }
 
 /*
- * Six outcome states from four solver statuses plus two UI-only states:
- * `malformed` (an invalid brief or a non-200 answer) and `empty` (nothing was
- * submitted, or nothing came back to show). Leaks no solver/server internals.
+ * Eight outcome states. Four come from solver statuses (complete, partial,
+ * infeasible, deadline); two are transient envelope outcomes surfaced by the
+ * public compute limits (`busy` when every solver slot is taken, `rate_limited`
+ * when the visitor is sending too fast); and two are UI-only (`malformed` for
+ * an invalid brief or unreadable answer, `empty` when nothing was submitted).
+ * When the fetch layer has already resolved a transient/failed outcome it
+ * arrives as `result.outcome`; otherwise the solver body's status decides.
+ * Leaks no solver/server internals.
  */
 export function resolveOutcome (result) {
   if (!result) return 'empty'
+  if (result.outcome) return result.outcome
   if (result.error || !result.status) return 'malformed'
   if (result.status === 'infeasible') return 'infeasible'
   if (result.status === 'deadline_exceeded') return 'deadline'
@@ -40,7 +46,8 @@ export function resolveOutcome (result) {
 }
 
 /* Stable plain-language copy for the states that replace the shelf. Complete and
- * partial keep the shelf; the rest render a single quiet notice. */
+ * partial keep the shelf; the rest render a single quiet notice. Busy and
+ * rate-limited are transient, so their copy invites another try in a moment. */
 export const OUTCOME_NOTICE = {
   infeasible: {
     title: 'No grain bill fits',
@@ -49,6 +56,14 @@ export const OUTCOME_NOTICE = {
   deadline: {
     title: 'Ran out of time',
     message: 'The clock ran out before a grain bill came together. Send the brief again in a moment.'
+  },
+  busy: {
+    title: 'Brewgen is catching its breath',
+    message: 'A lot of brewers are asking at once right now. Give it a moment, then send the brief again.'
+  },
+  rate_limited: {
+    title: 'One brief at a time',
+    message: "That's a lot of briefs in a short while. Pause for a moment, then send this one again."
   },
   malformed: {
     title: 'That brief slipped through',
