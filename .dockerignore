@@ -1,0 +1,8 @@
+.agentflow
+.git
+.pytest_cache
+.venv
+**/__pycache__
+**/*.py[cod]
+**/node_modules
+brewgen/dist

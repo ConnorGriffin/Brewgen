@@ -69,7 +69,7 @@ Resource bounds:
   JSON data files loaded at startup.
 - **Processes:** `--pids-limit 64` — one gunicorn master + one worker, with
   headroom for CBC child processes.
-- **Logs:** structured to stdout/stderr (gunicorn `--access-logfile -`);
+- **Logs:** written to stdout/stderr (gunicorn `--access-logfile -`);
   capped at 10 MB × 3 files via the `local` log driver so the host disk is
   never exhausted by access logs.
 - **Read-only rootfs:** `/tmp` is the only writable mount. Python `.pyc` cache
@@ -78,7 +78,17 @@ Resource bounds:
 To build locally from source:
 
 ```sh
-docker build --build-arg GIT_COMMIT=$(git rev-parse HEAD) -t brewgen:local .
+docker build --platform linux/amd64 \
+  --build-arg GIT_COMMIT=$(git rev-parse HEAD) \
+  -t brewgen:local .
+```
+
+To build the Linux image and exercise the SPA, API, source label, same-origin
+boundary, health check, and grain-bill generation under the documented runtime
+limits:
+
+```sh
+python3 scripts/container_smoke.py
 ```
 
 ## Rollback (`.github/workflows/rollback.yml`)

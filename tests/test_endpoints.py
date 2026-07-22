@@ -14,20 +14,15 @@ def client():
 
 
 def test_healthz_returns_ok_without_solver(client, monkeypatch):
-    # Before this route existed, /healthz fell through to the catch-all which
-    # attempted render_template("index.html") — a TemplateNotFound 500 in the
-    # test environment. The dedicated route must return 200 JSON and must not
-    # touch the solver (patching generate proves it is never called).
-    called = []
-    from brewgen.backend.solver import fermentables as _fe
-    original_generate = _fe.FermentableSolver.generate
-    monkeypatch.setattr(_fe.FermentableSolver, "generate",
-                        lambda *a, **kw: called.append(1) or original_generate(*a, **kw))
+    def fail_if_solver_is_built(*args, **kwargs):
+        raise AssertionError("/healthz must not build a solver")
 
-    resp = client.get("/healthz")
+    monkeypatch.setattr(views, "_build_fermentable_solver", fail_if_solver_is_built)
+
+    resp = client.get("/healthz", headers={"Origin": "https://example.invalid"})
     assert resp.status_code == 200
     assert resp.get_json() == {"status": "ok"}
-    assert called == [], "/healthz must not invoke the solver"
+    assert "Access-Control-Allow-Origin" not in resp.headers
 
 
 def _body(min_srm=3, max_srm=20):
