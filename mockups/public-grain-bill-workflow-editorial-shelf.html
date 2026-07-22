@@ -1,0 +1,312 @@
+<!doctype html>
+<!--
+  LOCKED — visual spec for issue #26 (public grain-bill workflow).
+  Chosen: editorial malt-stack shelf per mockups/DIRECTION.md (grilling
+  2026-07-21), refined through a 3-persona walkthrough (Brewfather user,
+  veteran all-grain brewer, extract-kit upgrader) and an impeccable audit.
+  Key post-walkthrough decisions baked in:
+  - Grain layers painted at reduced effective SRM (grainHex) so kernels read
+    true; pour band picks its text color by measured WCAG contrast.
+  - Differentiator asides suppressed unless a tasteable spread exists.
+  - Expanded card carries pounds, total grain, OG, efficiency, and a
+    per-bill "tastes" line in the brief's own word vocabulary.
+  - All-grain / scope footnote under the shelf.
+  Implementation lift: repoint the fetch() at the live issue #19 endpoint;
+  the scaffold block (#scaffold) and URL-param deep links are mock-only.
+  Deferred to implementation issue (persona findings, product-level):
+  editable efficiency/batch volume in Advanced; plain-beer-language
+  infeasible suggestions; a save/export action on the open card.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Brewgen — grain bills (editorial malt-stack shelf)</title>
+<style>
+  /*
+   * Direction: mockups/DIRECTION.md — editorial brew-book × tactile malt.
+   * Brand tokens lifted from the approved constraint-canvas palette
+   * (primary amber #e6af2e, ink #212121, rosewood #6b0504), warmed per the
+   * locked grilling direction. No dark theme exists in the shipping app yet;
+   * a proposed dark mapping is included below.
+   */
+  :root {
+    --paper: #f4efe3;
+    --card: #fbf7ec;
+    --raised: #fffdf6;
+    --ink: #221d15;
+    --muted: #6b6353;
+    --faint: #6d6558;
+    --border: #d8cfba;
+    --dotted: #b3a78e;
+    --amber: #c88a2e;
+    --amber-deep: #8a5a2b;
+    --amber-soft: #f3e2bf;
+    --rosewood: #6b0504;
+    --rosewood-soft: #f0d4cb;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+  }
+  html[data-theme='dark'] {
+    --paper: #171310;
+    --card: #221c15;
+    --raised: #2b231a;
+    --ink: #f0e9da;
+    --muted: #b8ac97;
+    --faint: #a89d89;
+    --amber-deep: #d9a860;
+    --border: #453b2d;
+    --dotted: #5c503d;
+    --amber-soft: #3d2f17;
+    --rosewood-soft: #3d1712;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  }
+  .page { max-width: 1080px; margin: 0 auto; padding: 20px 20px 64px; }
+
+  .masthead { display: flex; align-items: baseline; gap: 10px; padding: 6px 0 22px; }
+  .masthead .mark { color: var(--amber); font-size: 14px; }
+  .masthead .name { font-family: var(--serif); font-size: 20px; letter-spacing: 0.02em; }
+
+  h1 { font-family: var(--serif); font-weight: 400; font-size: 34px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+  .sub a { color: var(--amber); }
+
+  /* ---- brief form ---- */
+  .brief-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 28px; max-width: 560px;
+  }
+  .field { margin-bottom: 22px; }
+  .field label { display: block; font-size: 12px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .field .readout { float: right; font-family: var(--serif); font-size: 14px;
+    color: var(--ink); text-transform: none; letter-spacing: 0; }
+  select {
+    width: 100%; font-family: var(--serif); font-size: 16px; color: var(--ink);
+    background: var(--raised); border: 1px solid var(--dotted); border-radius: 8px;
+    padding: 10px 12px; appearance: auto;
+  }
+  input[type=range] { width: 100%; accent-color: var(--amber); }
+  .srm-wrap { position: relative; height: 26px; }
+  #srm-track { position: absolute; inset: 8px 0; border-radius: 6px;
+    border: 1px solid var(--dotted); }
+  #srm { position: absolute; inset: 0; width: 100%; margin: 0; background: none;
+    -webkit-appearance: none; appearance: none; }
+  #srm::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--raised); border: 2px solid var(--ink);
+    cursor: pointer; margin-top: 0; }
+  #srm::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%;
+    background: var(--raised); border: 2px solid var(--ink); cursor: pointer; }
+  #srm::-moz-range-track { background: none; }
+
+  .flavor-row { display: flex; align-items: center; gap: 10px; padding: 7px 0;
+    border-top: 1px dotted var(--dotted); }
+  .flavor-row:first-child { border-top: 0; }
+  .flavor-name { font-family: var(--serif); font-size: 16px; flex: 1; }
+  .steps { display: inline-flex; border: 1px solid var(--dotted); border-radius: 8px;
+    overflow: hidden; }
+  .step { font-family: var(--sans); font-size: 12px; padding: 6px 11px; border: 0;
+    background: var(--raised); color: var(--muted); cursor: pointer;
+    border-left: 1px solid var(--border); }
+  .step:first-child { border-left: 0; }
+  .step.on { background: var(--ink); color: var(--paper); }
+  .step.on-none { background: var(--rosewood); color: #f5ecd8; }
+  .remove { border: 0; background: none; color: var(--faint); cursor: pointer;
+    font-size: 12px; padding: 4px; }
+  .add-wrap { padding-top: 10px; position: relative; }
+  #flavor-search { width: 180px; font-family: var(--serif); font-size: 14px;
+    background: none; border: 0; border-bottom: 2px dashed var(--dotted);
+    color: var(--ink); padding: 4px 2px; outline: none; }
+  #flavor-search::placeholder { color: var(--faint); font-style: italic; }
+  #flavor-suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .sugg { font-size: 13px; border: 1px solid var(--dotted); border-radius: 99px;
+    background: var(--raised); color: var(--ink); padding: 4px 12px; cursor: pointer; }
+  .sugg:hover { border-color: var(--amber); }
+  .max-note { font-size: 12px; color: var(--faint); font-style: italic; margin: 10px 0 0; }
+
+  details.advanced { margin: 4px 0 18px; }
+  details.advanced summary { font-size: 13px; color: var(--muted); cursor: pointer; }
+  details.advanced p { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+  .generate {
+    font-family: var(--serif); font-size: 16px; background: var(--ink);
+    color: var(--paper); border: 0; border-radius: 8px; padding: 12px 26px;
+    cursor: pointer; letter-spacing: 0.02em;
+  }
+  .generate:hover { background: #000; }
+  .form-foot { display: flex; justify-content: flex-end; }
+
+  /* ---- results ---- */
+  .brief-line {
+    font-family: var(--serif); font-size: 21px; line-height: 1.6; margin: 0;
+    max-width: 720px;
+  }
+  .u { border-bottom: 2px solid var(--amber); }
+  .ur { border-bottom-color: var(--rosewood); }
+  .edit-brief { display: inline-block; margin: 10px 0 0; font-size: 13px;
+    color: var(--amber-deep); text-decoration: none; cursor: pointer;
+    background: none; border: 0; padding: 0; font-family: var(--sans); }
+  .result-head { display: flex; align-items: baseline; gap: 14px; margin: 34px 0 16px; }
+  .result-head h2 { font-family: var(--serif); font-weight: 400; font-size: 30px; margin: 0; }
+  #result-note { font-size: 13px; color: var(--muted); }
+  #result-note a { color: var(--amber-deep); }
+
+  .shelf { display: flex; gap: 14px; align-items: stretch; }
+  .card {
+    background: var(--raised); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 18px; flex: 1; min-width: 0; cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--dotted); }
+  .card.open { border: 1.5px solid var(--ink); cursor: default; flex: 2.6;
+    max-width: 640px; }
+  .open-body { display: flex; gap: 20px; }
+  .open-left { flex: 0 0 44%; }
+  .open-right { flex: 1; min-width: 0; }
+  .open-right .grains { margin-top: 0; }
+  .shelf.focused { justify-content: flex-start; }
+  .card header { display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px; }
+  .letter { font-family: var(--serif); font-size: 30px; line-height: 1; }
+  .aside { font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--amber-deep); white-space: nowrap; }
+
+  .stack { display: flex; flex-direction: column; border: 1px solid var(--dotted);
+    border-radius: 8px; overflow: hidden; }
+  .layer { min-height: 4px; }
+  .layer + .layer { border-top: 1px solid rgba(33, 29, 21, 0.18); }
+  .chev { text-align: center; color: var(--dotted); font-size: 14px;
+    line-height: 1; margin: 1px 0; }
+  .pour { border: 1px solid var(--dotted); border-radius: 8px; padding: 8px 12px;
+    text-align: center; font-family: var(--serif); font-size: 14px; }
+
+  .grains { margin-top: 12px; }
+  .grain-row { display: flex; justify-content: space-between; align-items: baseline;
+    gap: 8px; padding: 6px 0; border-top: 1px dotted var(--dotted); font-size: 13px; }
+  .grain-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .grain-name small { display: block; color: var(--faint); font-size: 11px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; flex: none;
+    border: 1px solid var(--dotted); align-self: center; }
+  .grain-nums { display: flex; align-items: baseline; gap: 10px; flex: none; }
+  .grain-nums small { color: var(--muted); font-size: 12px; }
+  .grain-nums b { font-family: var(--serif); font-weight: 400; font-size: 16px; }
+  .batch-note { font-size: 12px; color: var(--faint); font-style: italic;
+    margin: 12px 0 0; }
+  .tastes { font-family: var(--serif); font-style: italic; font-size: 13.5px;
+    color: var(--muted); margin: 14px 0 0; }
+  .scope-note { font-size: 13px; color: var(--faint); margin: 20px 0 0; }
+
+  .spine {
+    width: 34px; flex: none; background: var(--raised); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 0 10px; display: flex; flex-direction: column;
+    align-items: center; gap: 6px; cursor: pointer;
+  }
+  .spine:hover { border-color: var(--dotted); }
+  .spine-letter { font-family: var(--serif); font-size: 14px; color: var(--muted); }
+  .spine .stack { width: 12px; flex: 1; border-radius: 3px; }
+
+  .notice { background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px; max-width: 520px; }
+  .notice-msg { font-family: var(--serif); font-size: 19px; margin: 0 0 16px; }
+  .suggestions { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .suggestion { font-family: var(--serif); font-size: 14px; background: var(--raised);
+    border: 1px solid var(--dotted); border-radius: 8px; padding: 8px 14px;
+    cursor: pointer; color: var(--ink); }
+  .suggestion:hover { border-color: var(--amber); }
+  .retry { margin-top: 4px; }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 26px; }
+    .brief-line { font-size: 17px; }
+    .page { max-width: 100%; padding: 14px 12px 48px; }
+    .brief-card { padding: 20px 16px; }
+    .shelf { gap: 6px; min-width: 0; }
+    .card { min-width: 0; }
+    .card, .card.open { padding: 14px 12px; }
+    .card.open { min-width: 0; flex: 1 1 auto; }
+    .letter { font-size: 22px; }
+    .steps { flex: none; }
+    .step { padding: 11px 8px; font-size: 11px; }
+    .spine { width: 28px; }
+    .open-body { flex-direction: column; gap: 12px; }
+    .open-left { flex: none; }
+    .card.open .stack { height: 130px !important; }
+  }
+
+  /* Mock-only scaffold — not part of the real app. */
+  #scaffold { position: fixed; bottom: 12px; right: 12px; display: flex; gap: 6px;
+    background: rgba(33,33,33,0.85); border-radius: 10px; padding: 8px 10px;
+    z-index: 9; flex-wrap: wrap; max-width: 320px; }
+  #scaffold button { font-size: 11px; border: 1px solid #666; border-radius: 6px;
+    background: none; color: #ddd; padding: 4px 8px; cursor: pointer; }
+  #scaffold button.active { background: #e6af2e; color: #212121; border-color: #e6af2e; }
+  @media print { #scaffold { display: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="masthead"><span class="mark">▲</span><span class="name">Brewgen</span></div>
+
+  <section id="screen-brief">
+    <h1>Brew something</h1>
+    <p class="sub">Say what you want to taste. Brewgen finds the grain bills.</p>
+    <div class="brief-card">
+      <div class="field">
+        <label for="style">Style</label>
+        <select id="style"><option>American Pale Ale</option></select>
+      </div>
+      <div class="field">
+        <label for="abv">Strength <span class="readout" id="abv-out">5.2%</span></label>
+        <input type="range" id="abv" step="0.1" />
+      </div>
+      <div class="field">
+        <label for="srm">Color <span class="readout" id="srm-out">8 SRM</span></label>
+        <div class="srm-wrap"><div id="srm-track"></div><input type="range" id="srm" step="1" /></div>
+      </div>
+      <div class="field">
+        <label>Flavors</label>
+        <div id="flavor-rows"></div>
+      </div>
+      <details class="advanced">
+        <summary>Advanced</summary>
+        <p>Original gravity 1.052 · apparent attenuation 75% · 5.5 gal batch ·
+           75% mash efficiency · fermentables from your grain list.</p>
+      </details>
+      <div class="form-foot">
+        <button class="generate" onclick="show('results')">Generate</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="screen-results" hidden>
+    <p class="brief-line" id="brief-line"></p>
+    <button class="edit-brief" onclick="show('brief')">✎ edit brief</button>
+    <div class="result-head">
+      <h2 id="result-title"></h2>
+      <span id="result-note"></span>
+    </div>
+    <div class="shelf" id="shelf" aria-live="polite"></div>
+    <p class="scope-note">All-grain bills — the grain is mashed, not steeped.
+      Hops, yeast, and water are up to you.</p>
+  </section>
+</div>
+
+<!-- Mock-only scaffold: outcome/theme switcher, not part of the real app. -->
+<div id="scaffold">
+  <button data-outcome="typical" class="active" onclick="setOutcome('typical')">5 bills</button>
+  <button data-outcome="partial" onclick="setOutcome('partial')">3 bills</button>
+  <button data-outcome="infeasible" onclick="setOutcome('infeasible')">infeasible</button>
+  <button data-outcome="deadline" onclick="setOutcome('deadline')">deadline</button>
+  <button onclick="document.documentElement.toggleAttribute('data-theme') || document.documentElement.setAttribute('data-theme','dark')">☾</button>
+</div>
+
+<script src="public-grain-bill-workflow-editorial-shelf.js"></script>
+</body>
+</html>
