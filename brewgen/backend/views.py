@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, request, render_template
 from .models import grain, beer, category, equipment, style
 from .solver import color as grain_color
-from .solver.fermentables import FermentableSolver, SolverConfig
+from .solver.fermentables import (
+    FermentableSolver, SolverConfig, ColorContext, CheckStatus)
 from flask_cors import CORS
 from difflib import SequenceMatcher
 
@@ -54,6 +55,24 @@ def _build_fermentable_solver(data):
         sensory_keywords=all_grains.get_sensory_keywords(),
         sensory_bounds=data.get('sensory_model'),
         config=SOLVER_CONFIG,
+    )
+
+
+def _color_context(data):
+    """Build the gravity/equipment/SRM color context from a request body.
+
+    Reads the same ``beer_profile``/``equipment_profile`` shape the recipe
+    endpoint uses, applying the same defaults so color is judged identically
+    across generation, feasibility, and focused ranges.
+    """
+    beer_profile = data.get('beer_profile', {})
+    equipment_profile = data.get('equipment_profile', {})
+    return ColorContext(
+        original_sg=beer_profile.get('original_sg', 1.05),
+        target_volume_gallons=equipment_profile.get('target_volume_gallons', 5.5),
+        mash_efficiency=equipment_profile.get('mash_efficiency', 75),
+        min_srm=beer_profile.get('min_color_srm', 0),
+        max_srm=beer_profile.get('max_color_srm', 255),
     )
 
 
@@ -232,24 +251,73 @@ def get_fermentable_list_sensory_keywords():
         pass
 
 
-@app.route('/api/v1/grains/sensory-profiles', methods=['POST'])
-def get_fermentable_list_sensory_values():
-    """Return all possible sensory value min/max data for the given parameters.
+@app.route('/api/v1/grains/sensory-range', methods=['POST'])
+def get_fermentable_sensory_range():
+    """Return the exact achievable min/max for one named sensory descriptor.
+
+    Holds every other configured constraint fixed and excludes the target
+    descriptor's own bound, so the range is its full editable span. This is the
+    focused replacement for the retired all-descriptor sweep; one request asks
+    about exactly one flavor.
+
     POST format:
+    {
+        "descriptor": "bready",
+        "fermentable_list": [grain1, grain2],
+        "category_model": CategoryModel,
+        "sensory_model": SensoryModel,
+        "max_unique_fermentables": int,
+        "equipment_profile": EquipmentProfile,  # optional; holds color fixed
+        "beer_profile": BeerProfile             # optional; holds color fixed
+    }
+    """
+    data = request.json
+    try:
+        solver = _build_fermentable_solver(data)
+        name = data['descriptor']
+        # Hold color fixed only when the brief actually pins a color band.
+        context = _color_context(data) if data.get('beer_profile') else None
+    except (AttributeError, KeyError, TypeError):
+        return jsonify({'status': CheckStatus.INVALID.value}), 400
+
+    result = solver.sensory_range(name, color_context=context)
+    if result.status == CheckStatus.INVALID:
+        return jsonify({'status': result.status.value, 'name': result.name}), 400
+
+    body = {'status': result.status.value, 'name': result.name}
+    if result.status == CheckStatus.FEASIBLE:
+        body['min'] = result.minimum
+        body['max'] = result.maximum
+    return jsonify(body), 200
+
+
+@app.route('/api/v1/grains/feasibility', methods=['POST'])
+def get_fermentable_brief_feasibility():
+    """Report whether one complete grain-bill brief is feasible.
+
+    Applies sensory, color, category, cardinality, gravity, and equipment
+    constraints together and returns a stable status without leaking solver
+    internals.
+
+    POST format matches the recipe endpoint:
     {
         "fermentable_list": [grain1, grain2],
         "category_model": CategoryModel,
         "sensory_model": SensoryModel,
         "max_unique_fermentables": int,
+        "equipment_profile": EquipmentProfile,
+        "beer_profile": BeerProfile
     }
     """
     data = request.json
+    try:
+        solver = _build_fermentable_solver(data)
+        context = _color_context(data)
+    except (AttributeError, KeyError, TypeError):
+        return jsonify({'status': CheckStatus.INVALID.value}), 400
 
-    # Achievable min/max of each descriptor under the same cardinality limits
-    # as generation. Cardinality-preserving MILP, no color constraints.
-    profiles = _build_fermentable_solver(data).sensory_ranges()
-
-    return jsonify(profiles), 200
+    result = solver.feasibility(color_context=context)
+    return jsonify({'status': result.status.value}), 200
 
 
 @app.route('/api/v1/grains/recipes', methods=['POST'])
