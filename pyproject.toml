@@ -12,7 +12,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "Flask",
-    "Flask-CORS",
+    "gunicorn",
     "python-slugify",
     # <4 keeps the bundled-CBC PULP_CBC_CMD path the solver relies on.
     "PuLP>=2.7,<4",
