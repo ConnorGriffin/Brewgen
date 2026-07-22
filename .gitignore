@@ -100,6 +100,8 @@ celerybeat-schedule
 # Environments
 .env
 .venv
+.runtimevenv
+.npm-cache
 env/
 venv/
 ENV/

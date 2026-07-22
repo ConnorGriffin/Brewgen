@@ -10,12 +10,16 @@ readme = "README.md"
 # The fermentables solver runs on PuLP; the historical OR-Tools/CP-SAT
 # dependency has been removed, which widens support to include Python 3.14.
 requires-python = ">=3.11"
+# Direct runtime dependencies are pinned to exact versions so the shipped image
+# is reproducible and measurable against #28's security baseline. The full
+# resolved closure (these plus their transitive dependencies) is locked in
+# requirements.txt; keep the two in sync when bumping a dependency.
 dependencies = [
-    "Flask",
-    "Flask-CORS",
-    "python-slugify",
-    # <4 keeps the bundled-CBC PULP_CBC_CMD path the solver relies on.
-    "PuLP>=2.7,<4",
+    "Flask==3.1.3",
+    "Flask-CORS==6.0.5",
+    "python-slugify==8.0.4",
+    # PuLP <4 keeps the bundled-CBC PULP_CBC_CMD path the solver relies on.
+    "PuLP==3.3.2",
 ]
 
 [project.optional-dependencies]

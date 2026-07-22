@@ -3,7 +3,7 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import FlavorRow from './FlavorRow.vue'
 import { listStyles, getStyle, fetchSensoryRange, fetchFeasibility } from '@/api.js'
 import { srmGradient, srmWord } from '@/srm.js'
-import { seedLevel, briefPayload, humanize } from '@/brief.js'
+import { seedLevel, buildBrief, humanize } from '@/brief.js'
 
 const emit = defineEmits(['generate'])
 
@@ -95,7 +95,7 @@ async function refreshRange (flavor) {
   const ctrl = new AbortController()
   rangeAbort[name] = ctrl
 
-  const payload = { descriptor: name, ...briefPayload(style.value, brief) }
+  const payload = { ...buildBrief(style.value, brief), descriptor: name }
   let result
   try {
     result = await fetchSensoryRange(payload, ctrl.signal)
@@ -125,7 +125,7 @@ async function runFeasibility () {
 
   let result
   try {
-    result = await fetchFeasibility(briefPayload(style.value, brief), ctrl.signal)
+    result = await fetchFeasibility(buildBrief(style.value, brief), ctrl.signal)
   } catch {
     return // aborted by a newer request, or transient failure
   }
@@ -214,7 +214,7 @@ const canGenerate = computed(() => feas.status === 'feasible')
 function onGenerate () {
   if (!canGenerate.value || !style.value) return
   emit('generate', {
-    payload: briefPayload(style.value, brief),
+    payload: buildBrief(style.value, brief),
     context: {
       styleName: style.value.name,
       abv: brief.abv,

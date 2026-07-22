@@ -45,9 +45,11 @@ export function fetchFeasibility (payload, signal) {
 }
 
 /*
- * Generation for the results shelf. Unlike the focused endpoints, a non-200 or
- * an unreadable body is surfaced as {error:true} so the shelf can render its
- * stable "malformed" state without leaking a status code or endpoint name.
+ * Generation for the results shelf. A 200 carries the solver status
+ * (complete/partial) and the bills. A failure answers application/problem+json
+ * with a stable machine code; we surface that code as {error:true, code} so the
+ * shelf can map it to the locked notice for that outcome, without ever leaking
+ * the HTTP status or an endpoint name.
  */
 export async function fetchRecipes (payload, signal) {
   let res
@@ -61,10 +63,12 @@ export async function fetchRecipes (payload, signal) {
   } catch {
     return { error: true }
   }
-  if (!res.ok) return { error: true }
+  let body = null
   try {
-    return await res.json()
+    body = await res.json()
   } catch {
-    return { error: true }
+    body = null
   }
+  if (res.ok) return body || { error: true }
+  return { error: true, code: (body && body.code) || null }
 }

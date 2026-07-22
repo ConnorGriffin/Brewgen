@@ -1,16 +1,32 @@
+import os
+import time
+
 from flask import Flask, jsonify, request, render_template
-from .models import grain, beer, category, equipment, style
+from .models import grain, category, style
 from .solver import color as grain_color
 from .solver.fermentables import (
-    FermentableSolver, SolverConfig, ColorContext, CheckStatus)
+    FermentableSolver, SolverConfig, ColorContext, CheckStatus, GenerationStatus)
 from flask_cors import CORS
 from difflib import SequenceMatcher
+
+from . import envelope
+from .brief import parse_brief, BriefError
+from .envelope import compute_endpoint, problem, solver_slot
 
 app = Flask(__name__,
             static_folder='../dist/static',
             template_folder='../dist'
             )
-CORS(app)
+
+# The public compute surface is anonymous and same-origin: the built frontend is
+# served by this app. Cross-origin access is off unless a deployment names the
+# allowed origins, so the browser is never handed a wide-open policy.
+_cors_origins = [o for o in os.environ.get("BREWGEN_CORS_ORIGINS", "").split(",") if o]
+CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
+
+# Refuse an over-cap body before Werkzeug reads it, so the 64 KiB limit bites
+# before any JSON parsing (issue #29).
+app.config['MAX_CONTENT_LENGTH'] = envelope.MAX_BODY_BYTES
 
 all_grains = grain.GrainList()
 category_model = category.CategoryModel()
@@ -20,59 +36,31 @@ all_styles = style.StyleModel()
 # the caller, so a slow or malicious request cannot ask for unbounded compute.
 SOLVER_CONFIG = SolverConfig()
 
+# The monotonic clock every public solve shares. A module attribute so a test
+# can drive the shared deadline with a fake clock through the public interface.
+_clock = time.monotonic
 
-def _build_fermentable_solver(data):
-    """Adapt a request body into a FermentableSolver.
 
-    Reads the shared ``fermentable_list``/``category_model`` shape used by the
-    validity, sensory-range, and recipe endpoints.
-    """
-    grains = []
-    for item in data.get('fermentable_list', []):
-        matched = all_grains.get_grain_by_slug(item['slug'])
-        grains.append(grain.Grain(
-            name=matched.name,
-            brand=matched.brand,
-            potential=matched.potential,
-            color=matched.color,
-            category=matched.category,
-            sensory_data=matched.sensory_data,
-            min_percent=item['min_percent'],
-            max_percent=item['max_percent'],
-        ).get_grain_data())
-
-    categories = [{
-        'name': cat['name'],
-        'unique_fermentable_count': cat.get('unique_fermentable_count'),
-        'min_percent': cat['min_percent'],
-        'max_percent': cat['max_percent'],
-    } for cat in data.get('category_model', [])]
-
+def _solver_for(derived):
+    """Build the shared MILP from a validated, server-derived brief."""
     return FermentableSolver(
-        grains,
-        categories,
-        max_unique_grains=data.get('max_unique_fermentables', 4),
-        sensory_keywords=all_grains.get_sensory_keywords(),
-        sensory_bounds=data.get('sensory_model'),
+        derived.grains,
+        derived.categories,
+        max_unique_grains=derived.max_unique,
+        sensory_keywords=derived.sensory_keywords,
+        sensory_bounds=derived.sensory_bounds,
         config=SOLVER_CONFIG,
     )
 
 
-def _color_context(data):
-    """Build the gravity/equipment/SRM color context from a request body.
-
-    Reads the same ``beer_profile``/``equipment_profile`` shape the recipe
-    endpoint uses, applying the same defaults so color is judged identically
-    across generation, feasibility, and focused ranges.
-    """
-    beer_profile = data.get('beer_profile', {})
-    equipment_profile = data.get('equipment_profile', {})
+def _color_context(derived):
+    """The gravity/equipment/SRM color band the brief pins."""
     return ColorContext(
-        original_sg=beer_profile.get('original_sg', 1.05),
-        target_volume_gallons=equipment_profile.get('target_volume_gallons', 5.5),
-        mash_efficiency=equipment_profile.get('mash_efficiency', 75),
-        min_srm=beer_profile.get('min_color_srm', 0),
-        max_srm=beer_profile.get('max_color_srm', 255),
+        original_sg=derived.original_sg,
+        target_volume_gallons=derived.target_volume_gallons,
+        mash_efficiency=derived.mash_efficiency,
+        min_srm=derived.min_srm,
+        max_srm=derived.max_srm,
     )
 
 
@@ -252,119 +240,77 @@ def get_fermentable_list_sensory_keywords():
 
 
 @app.route('/api/v1/grains/sensory-range', methods=['POST'])
-def get_fermentable_sensory_range():
+@compute_endpoint("sensory_range")
+def get_fermentable_sensory_range(payload, request_id):
     """Return the exact achievable min/max for one named sensory descriptor.
 
-    Holds every other configured constraint fixed and excludes the target
-    descriptor's own bound, so the range is its full editable span. This is the
-    focused replacement for the retired all-descriptor sweep; one request asks
-    about exactly one flavor.
-
-    POST format:
-    {
-        "descriptor": "bready",
-        "fermentable_list": [grain1, grain2],
-        "category_model": CategoryModel,
-        "sensory_model": SensoryModel,
-        "max_unique_fermentables": int,
-        "equipment_profile": EquipmentProfile,  # optional; holds color fixed
-        "beer_profile": BeerProfile             # optional; holds color fixed
-    }
+    Holds every other configured constraint fixed (including the brief's colour
+    band) and excludes the target descriptor's own bound, so the range is its
+    full editable span. One request asks about exactly one flavour: the brief
+    carries a sibling ``descriptor`` naming it.
     """
-    data = request.json
-    try:
-        solver = _build_fermentable_solver(data)
-        name = data['descriptor']
-        # Hold color fixed only when the brief actually pins a color band.
-        context = _color_context(data) if data.get('beer_profile') else None
-    except (AttributeError, KeyError, TypeError):
-        return jsonify({'status': CheckStatus.INVALID.value}), 400
+    derived = parse_brief(payload, all_grains, all_styles, allow_extra=("descriptor",))
+    descriptor = payload.get("descriptor")
+    if not isinstance(descriptor, str) or descriptor not in derived.sensory_keywords:
+        raise BriefError("invalid_brief", 422, [{"path": "descriptor"}])
 
-    result = solver.sensory_range(name, color_context=context)
-    if result.status == CheckStatus.INVALID:
-        return jsonify({'status': result.status.value, 'name': result.name}), 400
+    solver = _solver_for(derived)
+    with solver_slot():
+        result = solver.sensory_range(
+            descriptor, color_context=_color_context(derived), clock=_clock)
 
     body = {'status': result.status.value, 'name': result.name}
     if result.status == CheckStatus.FEASIBLE:
         body['min'] = result.minimum
         body['max'] = result.maximum
-    return jsonify(body), 200
+    return jsonify(body), result.status.value
 
 
 @app.route('/api/v1/grains/feasibility', methods=['POST'])
-def get_fermentable_brief_feasibility():
+@compute_endpoint("feasibility")
+def get_fermentable_brief_feasibility(payload, request_id):
     """Report whether one complete grain-bill brief is feasible.
 
-    Applies sensory, color, category, cardinality, gravity, and equipment
+    Applies sensory, colour, category, cardinality, gravity, and equipment
     constraints together and returns a stable status without leaking solver
-    internals.
-
-    POST format matches the recipe endpoint:
-    {
-        "fermentable_list": [grain1, grain2],
-        "category_model": CategoryModel,
-        "sensory_model": SensoryModel,
-        "max_unique_fermentables": int,
-        "equipment_profile": EquipmentProfile,
-        "beer_profile": BeerProfile
-    }
+    internals. Server-derives the category/style-model constraints from the
+    brief's style slug.
     """
-    data = request.json
-    try:
-        solver = _build_fermentable_solver(data)
-        context = _color_context(data)
-    except (AttributeError, KeyError, TypeError):
-        return jsonify({'status': CheckStatus.INVALID.value}), 400
-
-    result = solver.feasibility(color_context=context)
-    return jsonify({'status': result.status.value}), 200
+    derived = parse_brief(payload, all_grains, all_styles)
+    solver = _solver_for(derived)
+    with solver_slot():
+        result = solver.feasibility(
+            color_context=_color_context(derived), clock=_clock)
+    return jsonify({'status': result.status.value}), result.status.value
 
 
 @app.route('/api/v1/grains/recipes', methods=['POST'])
-def get_fermentable_list_recipes():
+@compute_endpoint("generate")
+def get_fermentable_list_recipes(payload, request_id):
     """Generate up to five unranked, meaningfully different grain bills.
 
-    Every returned bill is a whole-percentage bill summing to 100 that lands
-    inside the requested SRM range; the bills carry no ranking. The response
-    exposes an explicit completion status (complete, partial, infeasible, or
-    deadline_exceeded) so bounded failures are visible to the caller.
-
-    POST format:
-    {
-        "fermentable_list": [
-            {slug: 'grain1', max_percent: int, min_percent: int},
-            {slug: 'grain2'...}
-        ],
-        "category_model": CategoryModel,
-        "sensory_model": SensoryModel,
-        "max_unique_fermentables": int,
-        "equipment_profile": EquipmentProfile,
-        "beer_profile": BeerProfile
-    }
+    Accepts the strict ``version: 1`` brief and derives the category/style-model
+    constraints server-side. Every returned bill is a whole-percentage bill
+    summing to 100 that lands inside the requested SRM range; the bills carry no
+    ranking. ``complete`` and ``partial`` are HTTP 200; an infeasible brief is
+    422 ``infeasible`` and an exhausted deadline is 503 ``deadline_exceeded``.
     """
-    data = request.json
+    derived = parse_brief(payload, all_grains, all_styles)
+    solver = _solver_for(derived)
+    with solver_slot():
+        result = solver.generate(
+            original_sg=derived.original_sg,
+            target_volume_gallons=derived.target_volume_gallons,
+            mash_efficiency=derived.mash_efficiency,
+            min_srm=derived.min_srm,
+            max_srm=derived.max_srm,
+            clock=_clock,
+        )
 
-    solver = _build_fermentable_solver(data)
-
-    equipment_profile = equipment.EquipmentProfile(
-        target_volume_gallons=data.get('equipment_profile', {}).get(
-            'target_volume_gallons', 5.5),
-        mash_efficiency=data.get('equipment_profile', {}).get(
-            'mash_efficiency', 75)
-    )
-    beer_profile = beer.BeerProfile(
-        min_color_srm=data.get('beer_profile', {}).get('min_color_srm', 0),
-        max_color_srm=data.get('beer_profile', {}).get('max_color_srm', 255),
-        original_sg=data.get('beer_profile', {}).get('original_sg', 1.05)
-    )
-
-    result = solver.generate(
-        original_sg=beer_profile.original_sg,
-        target_volume_gallons=equipment_profile.target_volume_gallons,
-        mash_efficiency=equipment_profile.mash_efficiency,
-        min_srm=beer_profile.min_color_srm,
-        max_srm=beer_profile.max_color_srm,
-    )
+    if result.status == GenerationStatus.INFEASIBLE:
+        return problem("infeasible", 422, request_id), "infeasible"
+    if result.status == GenerationStatus.DEADLINE_EXCEEDED:
+        return problem("deadline_exceeded", 503, request_id), "deadline_exceeded"
 
     # Serialize each alternative with per-grain pounds derived from the same
     # color math the solver accepted the bill against. Each grain carries the
@@ -378,9 +324,8 @@ def get_fermentable_list_recipes():
     for bill in result.alternatives:
         vector = [bill.percents.get(slug, 0) for slug in slugs]
         pounds = grain_color.grain_pounds(
-            ppgs, vector, beer_profile.original_sg,
-            equipment_profile.target_volume_gallons,
-            equipment_profile.mash_efficiency)
+            ppgs, vector, derived.original_sg,
+            derived.target_volume_gallons, derived.mash_efficiency)
         alternatives.append({
             'grains': [
                 {'slug': slugs[i], 'use_percent': vector[i],
@@ -397,36 +342,4 @@ def get_fermentable_list_recipes():
     return jsonify({
         'status': result.status.value,
         'alternatives': alternatives,
-    }), 200
-
-
-@app.route('/api/v1/helpers/grain-model-valid', methods=['POST'])
-def is_grain_model_valid():
-    """Returns whether or not a grain model is mathematically valid
-    POST format:
-    {
-        max_unique_fermentables: int,
-        category_model: [
-            {
-                name: str,
-                min_percent: int,
-                max_percent: int
-            }, {
-                etc.
-            }
-        ]
-        fermentable_list: [
-            {
-                slug: str,
-                min_percent: int,
-                max_percent: int
-            }, {
-                etc.
-            }
-        ]
-    ]
-    """
-
-    data = request.json
-    result = _build_fermentable_solver(data).is_valid()
-    return jsonify(result), 200
+    }), result.status.value

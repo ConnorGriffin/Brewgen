@@ -23,15 +23,32 @@ export function withLetters (alternatives) {
 }
 
 /*
- * Six outcome states from four solver statuses plus two UI-only states:
- * `malformed` (an invalid brief or a non-200 answer) and `empty` (nothing was
- * submitted, or nothing came back to show). Leaks no solver/server internals.
+ * The stable failure codes the public generate endpoint returns map onto the
+ * shelf's outcome states. Anything not listed (an invalid or empty brief, a
+ * wrong media type, an unreadable answer) falls through to `malformed`. No
+ * solver or server internal ever reaches the visitor.
+ */
+const CODE_OUTCOME = {
+  infeasible: 'infeasible',
+  deadline_exceeded: 'deadline',
+  rate_limited: 'rate_limited',
+  busy: 'busy',
+  internal_error: 'internal'
+}
+
+/*
+ * Outcome states: the shelf (`complete`/`partial`), the failure notices
+ * (`infeasible`/`deadline`/`rate_limited`/`busy`/`internal`), and the two
+ * UI-only states `malformed` and `empty`. A failure answer arrives as
+ * {error:true, code}; a success carries the solver status and the bills.
  */
 export function resolveOutcome (result) {
   if (!result) return 'empty'
-  if (result.error || !result.status) return 'malformed'
+  if (result.error) return CODE_OUTCOME[result.code] || 'malformed'
+  // A success body carries the solver status directly.
   if (result.status === 'infeasible') return 'infeasible'
   if (result.status === 'deadline_exceeded') return 'deadline'
+  if (!result.status) return 'malformed'
   const bills = result.alternatives || []
   if (!bills.length) return 'empty'
   if (result.status === 'partial') return 'partial'
@@ -40,7 +57,8 @@ export function resolveOutcome (result) {
 }
 
 /* Stable plain-language copy for the states that replace the shelf. Complete and
- * partial keep the shelf; the rest render a single quiet notice. */
+ * partial keep the shelf; the rest render a single quiet notice. Never mentions
+ * solvers, servers, deadlines, or status codes. */
 export const OUTCOME_NOTICE = {
   infeasible: {
     title: 'No grain bill fits',
@@ -49,6 +67,18 @@ export const OUTCOME_NOTICE = {
   deadline: {
     title: 'Ran out of time',
     message: 'The clock ran out before a grain bill came together. Send the brief again in a moment.'
+  },
+  rate_limited: {
+    title: 'One brief at a time',
+    message: 'That’s a lot of briefs in a short while. Give it a minute, then send this one again.'
+  },
+  busy: {
+    title: 'Brewgen is busy',
+    message: 'Brewgen is working through a rush right now. Try this brief again in a moment.'
+  },
+  internal: {
+    title: 'Something went sideways',
+    message: 'Brewgen couldn’t put grain bills together just now. Give it another try in a moment.'
   },
   malformed: {
     title: 'That brief slipped through',

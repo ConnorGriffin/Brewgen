@@ -68,53 +68,58 @@ export function reachableLevels (styleMin, styleMax, range) {
   })
 }
 
-/* ---- solver payloads ---------------------------------------------------- */
+/* ---- the versioned public brief ----------------------------------------- */
 
-export function fermentableList (style) {
-  return (style.grain_usage || []).map((g) => ({
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+
+/* The allowed fermentables and their whole-percent bounds, taken straight from
+ * the style's own grain usage. The server derives the category and style-model
+ * constraints itself from the style slug — the client never sends them. */
+export function allowedFermentables (style) {
+  const usage = style.grain_usage || []
+  const allowed_slugs = usage.map((g) => g.slug)
+  const bounds = usage.map((g) => ({
     slug: g.slug,
-    min_percent: g.min_percent,
-    max_percent: g.max_percent
+    minimum_percent: clamp(Math.round(Number(g.min_percent) || 0), 0, 100),
+    maximum_percent: clamp(Math.round(Number(g.max_percent) || 100), 0, 100)
   }))
+  const maximum_count = clamp(
+    Math.round(style.unique_fermentable_count || 4), 1, Math.min(allowed_slugs.length, 7))
+  return { allowed_slugs, bounds, maximum_count }
 }
 
-export function categoryModel (style) {
-  // The style endpoint already returns the category shape the solver reads.
-  return style.category_usage || []
-}
-
-export function sensoryModel (flavors) {
+/* Each flavour row's desired band as a sensory bound (0–5). */
+export function sensoryBounds (flavors) {
   return flavors.map((f) => {
     const band = levelBand(f.level, f.styleMin, f.styleMax)
-    return { name: f.name, min: band.min, max: band.max }
+    const minimum = clamp(band.min, 0, 5)
+    const maximum = clamp(Math.max(band.max, minimum), 0, 5)
+    return { name: f.name, minimum, maximum }
   })
 }
 
-export function beerProfile (brief) {
+/*
+ * The one strict `version: 1` brief every compute endpoint accepts. The focused
+ * range caller adds a sibling `descriptor`; feasibility and generation send it
+ * as-is. Whole model objects are never included — only the visitor's choices.
+ */
+export function buildBrief (style, brief) {
   const half = SRM_TOLERANCE
   return {
-    original_sg: Number(abvToOg(brief.abv).toFixed(4)),
-    min_color_srm: Math.max(0, brief.srm - half),
-    max_color_srm: brief.srm + half
-  }
-}
-
-export function equipmentProfile () {
-  return {
-    target_volume_gallons: BATCH_GALLONS,
-    mash_efficiency: MASH_EFFICIENCY
-  }
-}
-
-/* The shared body both focused endpoints accept. `descriptor` is added by the
- * single-flavour range caller; feasibility omits it. */
-export function briefPayload (style, brief) {
-  return {
-    fermentable_list: fermentableList(style),
-    category_model: categoryModel(style),
-    sensory_model: sensoryModel(brief.flavors),
-    max_unique_fermentables: style.unique_fermentable_count || 4,
-    equipment_profile: equipmentProfile(),
-    beer_profile: beerProfile(brief)
+    version: 1,
+    style: {
+      slug: style.slug,
+      original_gravity: clamp(Number(abvToOg(brief.abv).toFixed(4)), 1.0, 1.2)
+    },
+    equipment: {
+      batch_volume_gallons: BATCH_GALLONS,
+      mash_efficiency_percent: MASH_EFFICIENCY
+    },
+    fermentables: allowedFermentables(style),
+    sensory: sensoryBounds(brief.flavors),
+    color_srm: {
+      minimum: clamp(brief.srm - half, 0, 255),
+      maximum: clamp(brief.srm + half, 0, 255)
+    }
   }
 }
