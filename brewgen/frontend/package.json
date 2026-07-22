@@ -1,65 +1,26 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "brewgen-frontend",
+  "version": "0.2.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "dev": "vite",
+    "build": "vite build",
+    "build:offline": "vite build --base=./ --outDir offline",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "npm run build:offline && node tests/browser/focused-range.mjs"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-svg-core": "^1.2.30",
-    "@fortawesome/free-solid-svg-icons": "^5.14.0",
-    "@fortawesome/vue-fontawesome": "^0.1.10",
-    "apexcharts": "^3.20.0",
-    "axios": "^0.19.2",
-    "bootstrap": "^4.5.2",
-    "buefy": "^0.8.20",
-    "core-js": "^2.6.11",
-    "jquery": "^3.5.1",
-    "lodash": "^4.17.20",
-    "node-sass": "^4.14.1",
-    "popper.js": "^1.16.1",
-    "sass-loader": "^8.0.2",
-    "vue": "^2.6.12",
-    "vue-apexcharts": "^1.6.0",
-    "vue-axios": "^2.1.5",
-    "vue-router": "^3.4.3",
-    "vuex": "^3.5.1"
+    "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.12.1",
-    "@vue/cli-plugin-eslint": "^3.12.1",
-    "@vue/cli-service": "^3.12.1",
-    "@vue/eslint-config-standard": "^4.0.0",
-    "babel-eslint": "^10.1.0",
-    "bootstrap-vue": "^2.16.0",
-    "eslint": "^5.16.0",
-    "eslint-plugin-vue": "^5.0.0",
-    "vue-cli-plugin-fontawesome": "^0.2.0",
-    "vue-template-compiler": "^2.6.12"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "@vue/standard"
-    ],
-    "rules": {},
-    "parserOptions": {
-      "parser": "babel-eslint"
-    }
-  },
-  "postcss": {
-    "plugins": {
-      "autoprefixer": {}
-    }
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions"
-  ]
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^15.11.7",
+    "playwright": "^1.49.1",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
 }
