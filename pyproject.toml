@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brewgen"
+version = "0.1.0"
+description = "Generate homebrew recipes from desired flavor characteristics."
+readme = "README.md"
+# The fermentables solver runs on PuLP; the historical OR-Tools/CP-SAT
+# dependency has been removed, which widens support to include Python 3.14.
+requires-python = ">=3.11"
+dependencies = [
+    "Flask",
+    "Flask-CORS",
+    "python-slugify",
+    # <4 keeps the bundled-CBC PULP_CBC_CMD path the solver relies on.
+    "PuLP>=2.7,<4",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools]
+# The app is run from source (FLASK_APP=brewgen.backend.views flask run), so the
+# project only needs to pin runtime dependencies rather than vendor the code.
+packages = []
+
+[tool.pytest.ini_options]
+# Only collect the real suite. The models package still holds a print-driven
+# experiment (hop_experiment.py) that must never be imported by a test run.
+testpaths = ["tests"]
+filterwarnings = [
+    # PuLP 3.x warns that PULP_CBC_CMD / direct LpVariable use will change in
+    # 4.0; the manifest pins PuLP<4, so silence the noise here.
+    "ignore::DeprecationWarning:pulp",
+]
