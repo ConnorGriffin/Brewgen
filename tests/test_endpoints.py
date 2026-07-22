@@ -13,6 +13,18 @@ def client():
     return views.app.test_client()
 
 
+def test_healthz_returns_ok_without_solver(client, monkeypatch):
+    def fail_if_solver_is_built(*args, **kwargs):
+        raise AssertionError("/healthz must not build a solver")
+
+    monkeypatch.setattr(views, "_build_fermentable_solver", fail_if_solver_is_built)
+
+    resp = client.get("/healthz", headers={"Origin": "https://example.invalid"})
+    assert resp.status_code == 200
+    assert resp.get_json() == {"status": "ok"}
+    assert "Access-Control-Allow-Origin" not in resp.headers
+
+
 def _body(min_srm=3, max_srm=20):
     grains = views.all_grains.get_grain_list()
     by_cat = {}

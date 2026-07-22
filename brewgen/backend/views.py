@@ -6,14 +6,12 @@ from .solver.fermentables import (
     FermentableSolver, SolverConfig, ColorContext, CheckStatus, GenerationStatus)
 from . import envelope
 from .envelope import compute_endpoint, ok_json, problem, BriefContract
-from flask_cors import CORS
 from difflib import SequenceMatcher
 
 app = Flask(__name__,
             static_folder='../dist/static',
             template_folder='../dist'
             )
-CORS(app)
 
 # Resolve the client address as exactly one trusted proxy hop. The public deploy
 # (#12/#16) puts the API a single relay behind the visitor, so the last
@@ -89,6 +87,11 @@ def _color_context(data):
         min_srm=beer_profile.get('min_color_srm', 0),
         max_srm=beer_profile.get('max_color_srm', 255),
     )
+
+
+@app.route('/healthz')
+def healthz():
+    return jsonify({'status': 'ok'}), 200
 
 
 @app.route('/', defaults={'path': ''})

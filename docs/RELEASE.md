@@ -40,15 +40,56 @@ built and scanned in that run is pushed under its immutable commit tag, and
 gate — including the container scan — but the login and push steps are skipped,
 so they perform zero registry writes.
 
-### Awaiting the production image (#47)
+## Running the image locally
 
-The container build, scan, and publish steps are gated on the production
-`Dockerfile`, which is delivered by issue #47. Until that Dockerfile exists the
-container steps are a green no-op (the code gate still runs in full). The moment
-the Dockerfile lands, the same pipeline builds, scans, and publishes with no
-further change. If #47's image reports its running commit through a mechanism
-other than the `GIT_COMMIT` build arg / OCI revision label described above, that
-is a coordination point to reconcile with #47 — not something to invent here.
+The image needs no secrets and no persistent volumes. The only writable path
+required at runtime is `/tmp`, which the CBC solver uses for temporary `.lp` and
+`.sol` files.
+
+```sh
+docker run --rm \
+  --read-only \
+  --tmpfs /tmp \
+  --user nonroot \
+  --cpus 1 \
+  --memory 512m \
+  --pids-limit 64 \
+  --log-driver local --log-opt max-size=10m --log-opt max-file=3 \
+  -p 5000:5000 \
+  ghcr.io/connorgriffin/brewgen:release
+```
+
+Resource bounds:
+
+- **Workers:** 1 gunicorn worker. Matches the single-trusted-hop assumption and
+  keeps the CBC solver's temp-file footprint bounded.
+- **CPU:** `--cpus 1` — one virtual CPU. The solver is CPU-bound; this is the
+  expected ceiling for normal requests.
+- **Memory:** `--memory 512m` — covers the solver's ILP working set plus the
+  JSON data files loaded at startup.
+- **Processes:** `--pids-limit 64` — one gunicorn master + one worker, with
+  headroom for CBC child processes.
+- **Logs:** written to stdout/stderr (gunicorn `--access-logfile -`);
+  capped at 10 MB × 3 files via the `local` log driver so the host disk is
+  never exhausted by access logs.
+- **Read-only rootfs:** `/tmp` is the only writable mount. Python `.pyc` cache
+  writes are suppressed by `PYTHONDONTWRITEBYTECODE=1` in the image.
+
+To build locally from source:
+
+```sh
+docker build --platform linux/amd64 \
+  --build-arg GIT_COMMIT=$(git rev-parse HEAD) \
+  -t brewgen:local .
+```
+
+To build the Linux image and exercise the SPA, API, source label, same-origin
+boundary, health check, and grain-bill generation under the documented runtime
+limits:
+
+```sh
+python3 scripts/container_smoke.py
+```
 
 ## Rollback (`.github/workflows/rollback.yml`)
 
