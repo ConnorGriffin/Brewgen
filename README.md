@@ -3,9 +3,11 @@
 A web application for generating beer recipes based on desired flavor characteristics rather than selecting ingredients manually.
 
 ## Overview
-This is still a major work-in-progress and was built as a way for me to learn Flask, Node, Vue, and how to put it all together into a web application. 
+This is still a major work-in-progress and was built as a way for me to learn Flask, Node, Vue, and how to put it all together into a web application.
 
-I analyzed a large number of public recipes, combined that data with the BJCP 2015 guidelines, and built a model for each style. For fermentables, I analyzed the average fermentable type (Pale 2-Row, Maris Otter, Vienna, etc.) and fermentablue category (Base, Munich, Caramel, Roasted, etc.) usage across recipes, and then used the maltsters' sensory descriptors for their grains to build a possible flavor profile. For example, according to my analysis, the typical American IPA has a range of 0-2.13 out of 5 for "Bready", with a mean of 0.66. You can ask Brewgen for an American IPA recipe with Bready '>2.0', yielding recipes that use high percentages of Golden Promise and Munich malts, which both are high in "Bready" character according to the malster's sensory data.
+Brewgen uses per-style aggregate models combined with the BJCP 2015 guidelines to generate grain bills. For fermentables, the models capture average fermentable type (Pale 2-Row, Maris Otter, Vienna, etc.) and category (Base, Munich, Caramel, Roasted, etc.) usage, combined with maltsters' sensory descriptors to build a flavor profile per style. For example, the American IPA model shows a Bready range of 0–2.13 out of 5, mean 0.66. Requesting an American IPA with Bready '>2.0' yields grain bills that lean on Golden Promise and Munich malts.
+
+**Style model provenance:** The current style models are legacy derived artifacts produced from a corpus scraped from BeerSmith Recipes and Brewers Friend. The raw corpus is not in this repository and cannot be recovered; the models are not currently reproducible or rights-cleared. See [`recipe_analyzer/PROVENANCE.md`](recipe_analyzer/PROVENANCE.md) for full disclosure.
 
 
 ## Example
