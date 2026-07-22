@@ -50,7 +50,7 @@ required at runtime is `/tmp`, which the CBC solver uses for temporary `.lp` and
 docker run --rm \
   --read-only \
   --tmpfs /tmp \
-  --user 1000 \
+  --user nonroot \
   --cpus 1 \
   --memory 512m \
   --pids-limit 64 \

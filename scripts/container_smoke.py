@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import time
@@ -103,14 +104,44 @@ def smoke_http(port: int) -> None:
     assert result.get("alternatives")
 
 
+def launch_and_smoke(port: int, sentinel: Path | None) -> None:
+    server = subprocess.Popen(
+        ["gunicorn", "brewgen.backend.views:app"],
+        stdout=subprocess.DEVNULL,
+    )
+    try:
+        smoke_http(port)
+        if sentinel is not None:
+            sentinel.parent.mkdir(parents=True, exist_ok=True)
+            sentinel.touch()
+    finally:
+        server.terminate()
+        try:
+            server.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            server.kill()
+            server.wait()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--port", type=int,
         help="exercise an already-running container instead of building one")
+    parser.add_argument(
+        "--launch", action="store_true",
+        help="launch Gunicorn before exercising the service")
+    parser.add_argument(
+        "--sentinel", type=Path,
+        help="write this file after a successful launched-service smoke test")
     args = parser.parse_args()
     if args.port is not None:
-        smoke_http(args.port)
+        if args.launch:
+            launch_and_smoke(args.port, args.sentinel)
+        else:
+            if args.sentinel is not None:
+                parser.error("--sentinel requires --launch")
+            smoke_http(args.port)
         print("Production HTTP smoke test passed.")
         return
 
@@ -138,7 +169,7 @@ def main() -> None:
         container_id = docker(
             "run", "--detach", "--rm", "--name", container_name,
             "--read-only", "--tmpfs", "/tmp:rw,nosuid,nodev,size=64m",
-            "--user", "1000", "--cpus", "1", "--memory", "512m",
+            "--user", "nonroot", "--cpus", "1", "--memory", "512m",
             "--pids-limit", "64", "--log-driver", "local",
             "--log-opt", "max-size=10m", "--log-opt", "max-file=3",
             "--publish", "127.0.0.1::5000", IMAGE, capture=True)
