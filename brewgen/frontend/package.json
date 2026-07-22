@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:browser": "npm run build:offline && node tests/browser/focused-range.mjs"
+    "test:browser": "npm run build:offline && node tests/browser/focused-range.mjs && node tests/browser/results-shelf.mjs"
   },
   "dependencies": {
     "vue": "^3.5.13"

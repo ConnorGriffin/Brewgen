@@ -16,6 +16,7 @@
  *         "out":       string,              // PNG output path (absolute or relative to cwd)
  *         "viewport":  { "width": N, "height": N },           // optional; defaults to 1280x900
  *         "settle":    number,              // optional extra ms wait before the shot
+ *         "clicks":    [ "<css-selector>", ... ],             // optional: click each in order after load
  *         "fetchStub": { "<url-substr>": <json-value>, ... }  // optional per-shot stubs
  *       }
  *     ]
@@ -148,6 +149,17 @@ async function captureShots(shots) {
 
     // Append the shot index so the init script selects the right fetch stub.
     await page.goto(withShotParam(url, i), { waitUntil: 'networkidle' });
+
+    // Optional interaction steps for screens that are only reached by clicking
+    // (e.g. a Generate button, then opening a results card). Each entry is a CSS
+    // selector; Playwright's click auto-waits for the element to be visible and
+    // enabled. Omitted for static screens, so existing configs are unaffected.
+    if (Array.isArray(shots[i].clicks)) {
+      for (const selector of shots[i].clicks) {
+        await page.click(selector);
+        await page.waitForTimeout(200);
+      }
+    }
 
     if (theme) {
       // Set theme AFTER content renders — setting it before boot races the app

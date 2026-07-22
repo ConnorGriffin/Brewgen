@@ -32,6 +32,40 @@ const SRM_WORDS = [
 export const srmWord = (srm) => SRM_WORDS.find(([max]) => srm <= max)[1]
 
 /*
+ * Grain kernels read far lighter than the beer their Lovibond predicts, so a
+ * malt-stack layer paints at a reduced effective SRM — Honey 20L looks
+ * golden-sweet, not porter-brown (locked mockup, persona finding Walt r2).
+ */
+export const grainHex = (lovibond) => srmHex(Math.max(1, lovibond * 0.6))
+
+/*
+ * Pick the pour band's text colour by measured WCAG contrast rather than a
+ * threshold guess: mid-amber SRM colours (6-12) fail with cream text (audit
+ * finding). Compares the two candidate inks and keeps whichever reads better.
+ */
+const POUR_DARK_TEXT = '#3f2a06'
+const POUR_LIGHT_TEXT = '#fdf6e8'
+
+function relLum (hex) {
+  const c = hex.replace('#', '')
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const v = parseInt(c.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+function contrast (a, b) {
+  const [la, lb] = [relLum(a), relLum(b)]
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+}
+
+export const pourText = (bg) =>
+  contrast(POUR_DARK_TEXT, bg) >= contrast(POUR_LIGHT_TEXT, bg)
+    ? POUR_DARK_TEXT
+    : POUR_LIGHT_TEXT
+
+/*
  * Build the CSS gradient for a track clipped to [min, max] SRM: one colour stop
  * per integer SRM step across exactly that span, so the visible band shows only
  * the colours reachable in this style.

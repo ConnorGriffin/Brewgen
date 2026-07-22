@@ -258,6 +258,20 @@ class FermentableSolver:
             })
         return ranges
 
+    def sensory_values(self, percents):
+        """Return the usage-weighted sensory value of every descriptor for a bill.
+
+        ``percents`` is a slug->whole-percent mapping (summing to 100). Each
+        value is the same usage-weighted average the range search optimizes,
+        evaluated at a fixed bill, so a displayed grain bill's tastes read back
+        from the real sensory model rather than being invented downstream."""
+        values = {}
+        for key in self.sensory_keywords:
+            total = sum(grain["sensory_data"].get(key, 0) * percents.get(grain["slug"], 0)
+                        for grain in self.grains)
+            values[key] = round(total / 100, 6)
+        return values
+
     def _extreme(self, coeffs, sense, exclude_sensory, color_context, budget):
         """Minimize or maximize one descriptor over a fresh copy of the model.
 

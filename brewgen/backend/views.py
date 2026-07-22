@@ -367,7 +367,11 @@ def get_fermentable_list_recipes():
     )
 
     # Serialize each alternative with per-grain pounds derived from the same
-    # color math the solver accepted the bill against.
+    # color math the solver accepted the bill against. Each grain carries the
+    # malt metadata the results shelf paints its stack from (name, brand, and
+    # Lovibond colour), and each bill carries its per-descriptor sensory values
+    # straight from the sensory model so the tastes line is never fabricated.
+    by_slug = {g['slug']: g for g in solver.grains}
     slugs = [g['slug'] for g in solver.grains]
     ppgs = [g['ppg'] for g in solver.grains]
     alternatives = []
@@ -380,10 +384,14 @@ def get_fermentable_list_recipes():
         alternatives.append({
             'grains': [
                 {'slug': slugs[i], 'use_percent': vector[i],
-                 'use_pounds': pounds[i]}
+                 'use_pounds': pounds[i],
+                 'name': by_slug[slugs[i]]['name'],
+                 'brand': by_slug[slugs[i]]['brand'],
+                 'color_lovibond': by_slug[slugs[i]]['color']}
                 for i in range(len(slugs)) if vector[i] > 0
             ],
             'srm': bill.srm,
+            'sensory': solver.sensory_values(bill.percents),
         })
 
     return jsonify({
