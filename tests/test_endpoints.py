@@ -67,6 +67,37 @@ def test_recipes_endpoint_returns_unranked_alternatives(client):
         assert all(g["use_pounds"] > 0 for g in alt["grains"])
 
 
+def test_recipes_endpoint_exposes_per_grain_metadata_and_per_bill_sensory(client):
+    # The results shelf paints each malt layer from its real Lovibond colour and
+    # reads the tastes line from the sensory model, so both must ride along with
+    # every bill rather than be fabricated in the browser.
+    resp = client.post("/api/v1/grains/recipes", json=_body())
+    payload = resp.get_json()
+    assert payload["alternatives"]
+    for alt in payload["alternatives"]:
+        assert isinstance(alt["sensory"], dict) and alt["sensory"]
+        assert all(isinstance(v, (int, float)) for v in alt["sensory"].values())
+        for g in alt["grains"]:
+            assert g["name"] and g["brand"]
+            assert isinstance(g["color_lovibond"], (int, float))
+
+
+def test_recipes_endpoint_alternatives_differ_by_ten_points(client):
+    # Every displayed pair of bills must differ by at least ten summed
+    # percentage points — the diversity floor the shelf promises. Guarded here at
+    # the public interface so a serializer change can never quietly collapse it.
+    resp = client.post("/api/v1/grains/recipes", json=_body())
+    alternatives = resp.get_json()["alternatives"]
+    vectors = [{g["slug"]: g["use_percent"] for g in alt["grains"]}
+               for alt in alternatives]
+    for i in range(len(vectors)):
+        for j in range(i + 1, len(vectors)):
+            slugs = set(vectors[i]) | set(vectors[j])
+            distance = sum(abs(vectors[i].get(s, 0) - vectors[j].get(s, 0))
+                           for s in slugs)
+            assert distance >= 10
+
+
 def test_recipes_endpoint_reports_infeasible(client):
     # No blend of these pale grains can reach a very dark SRM.
     resp = client.post("/api/v1/grains/recipes", json=_body(min_srm=100, max_srm=200))

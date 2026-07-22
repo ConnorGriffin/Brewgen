@@ -43,3 +43,28 @@ export function fetchSensoryRange (payload, signal) {
 export function fetchFeasibility (payload, signal) {
   return postJson('/api/v1/grains/feasibility', payload, signal)
 }
+
+/*
+ * Generation for the results shelf. Unlike the focused endpoints, a non-200 or
+ * an unreadable body is surfaced as {error:true} so the shelf can render its
+ * stable "malformed" state without leaking a status code or endpoint name.
+ */
+export async function fetchRecipes (payload, signal) {
+  let res
+  try {
+    res = await fetch(`${BASE}/api/v1/grains/recipes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal
+    })
+  } catch {
+    return { error: true }
+  }
+  if (!res.ok) return { error: true }
+  try {
+    return await res.json()
+  } catch {
+    return { error: true }
+  }
+}

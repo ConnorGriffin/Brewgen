@@ -5,6 +5,8 @@ import { listStyles, getStyle, fetchSensoryRange, fetchFeasibility } from '@/api
 import { srmGradient, srmWord } from '@/srm.js'
 import { seedLevel, briefPayload, humanize } from '@/brief.js'
 
+const emit = defineEmits(['generate'])
+
 const MAX_ROWS = 5
 const DEBOUNCE_MS = 300
 
@@ -207,6 +209,26 @@ const feasLine = computed(() => {
 
 const canGenerate = computed(() => feas.status === 'feasible')
 
+/* Hand the results shelf both the solver payload and a display context: the
+ * brief read back in its own terms (style, strength, colour, flavour steps). */
+function onGenerate () {
+  if (!canGenerate.value || !style.value) return
+  emit('generate', {
+    payload: briefPayload(style.value, brief),
+    context: {
+      styleName: style.value.name,
+      abv: brief.abv,
+      srm: brief.srm,
+      flavors: brief.flavors.map((f) => ({
+        name: f.name,
+        level: f.level,
+        styleMin: f.styleMin,
+        styleMax: f.styleMax
+      }))
+    }
+  })
+}
+
 function round1 (n) { return Math.round(Number(n) * 10) / 10 }
 </script>
 
@@ -284,7 +306,7 @@ function round1 (n) { return Math.round(Number(n) * 10) / 10 }
 
       <div class="form-foot">
         <span class="feas" :class="feasLine.cls">{{ feasLine.text }}</span>
-        <button class="generate" type="button" :disabled="!canGenerate">Generate</button>
+        <button class="generate" type="button" :disabled="!canGenerate" @click="onGenerate">Generate</button>
       </div>
     </div>
   </section>
