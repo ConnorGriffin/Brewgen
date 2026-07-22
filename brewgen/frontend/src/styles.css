@@ -1,0 +1,143 @@
+/*
+ * Locked visual language for the public brief editor — issue #26.
+ * Palette and type tokens lifted verbatim from the approved mockup
+ * (mockups/public-grain-bill-workflow-editorial-shelf.html): editorial
+ * brew-book x tactile malt. Do not reopen the #26 design.
+ */
+:root {
+  --paper: #f4efe3;
+  --card: #fbf7ec;
+  --raised: #fffdf6;
+  --ink: #221d15;
+  --muted: #6b6353;
+  --faint: #6d6558;
+  --border: #d8cfba;
+  --dotted: #b3a78e;
+  --amber: #c88a2e;
+  --amber-deep: #8a5a2b;
+  --amber-soft: #f3e2bf;
+  --rosewood: #6b0504;
+  --rosewood-soft: #f0d4cb;
+  --rosewood-text: #6b0504;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+html[data-theme='dark'] {
+  --paper: #171310;
+  --card: #221c15;
+  --raised: #2b231a;
+  --ink: #f0e9da;
+  --muted: #b8ac97;
+  --faint: #a89d89;
+  --amber-deep: #d9a860;
+  --border: #453b2d;
+  --dotted: #5c503d;
+  --amber-soft: #3d2f17;
+  --rosewood-soft: #3d1712;
+  --rosewood-text: #e39189;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--sans); font-size: 15px; line-height: 1.5;
+}
+.page { max-width: 1080px; margin: 0 auto; padding: 20px 20px 64px; }
+
+.masthead { display: flex; align-items: baseline; gap: 10px; padding: 6px 0 22px; }
+.masthead .mark { color: var(--amber); font-size: 14px; }
+.masthead .name { font-family: var(--serif); font-size: 20px; letter-spacing: 0.02em; }
+
+h1 { font-family: var(--serif); font-weight: 400; font-size: 34px; margin: 0 0 4px; }
+.sub { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+.sub a { color: var(--amber); }
+
+/* ---- brief form ---- */
+.brief-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 28px; max-width: 560px;
+}
+.field { margin-bottom: 22px; }
+.field label { display: block; font-size: 12px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.field .readout { float: right; font-family: var(--serif); font-size: 14px;
+  color: var(--ink); text-transform: none; letter-spacing: 0; }
+select {
+  width: 100%; font-family: var(--serif); font-size: 16px; color: var(--ink);
+  background: var(--raised); border: 1px solid var(--dotted); border-radius: 8px;
+  padding: 10px 12px; appearance: auto;
+}
+input[type=range] { width: 100%; accent-color: var(--amber); }
+.srm-wrap { position: relative; height: 26px; }
+.srm-track { position: absolute; inset: 8px 0; border-radius: 6px;
+  border: 1px solid var(--dotted); }
+.srm-range { position: absolute; inset: 0; width: 100%; margin: 0; background: none;
+  -webkit-appearance: none; appearance: none; }
+.srm-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--raised); border: 2px solid var(--ink);
+  cursor: pointer; margin-top: 0; }
+.srm-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%;
+  background: var(--raised); border: 2px solid var(--ink); cursor: pointer; }
+.srm-range::-moz-range-track { background: none; }
+
+.flavor-row { display: flex; align-items: center; gap: 10px; padding: 7px 0;
+  border-top: 1px dotted var(--dotted); }
+.flavor-row:first-child { border-top: 0; }
+.flavor-name { font-family: var(--serif); font-size: 16px; flex: 1; }
+.flavor-name .reach { display: block; font-family: var(--sans); font-size: 11px;
+  font-style: italic; color: var(--faint); }
+.steps { display: inline-flex; border: 1px solid var(--dotted); border-radius: 8px;
+  overflow: hidden; }
+.step { font-family: var(--sans); font-size: 12px; padding: 6px 11px; border: 0;
+  background: var(--raised); color: var(--muted); cursor: pointer;
+  border-left: 1px solid var(--border); }
+.step:first-child { border-left: 0; }
+.step.on { background: var(--ink); color: var(--paper); }
+.step.on-none { background: var(--rosewood); color: #f5ecd8; }
+.step.unreachable { opacity: 0.4; text-decoration: line-through; }
+.remove { border: 0; background: none; color: var(--faint); cursor: pointer;
+  font-size: 12px; padding: 4px; }
+.add-wrap { padding-top: 10px; position: relative; }
+.flavor-search { width: 180px; font-family: var(--serif); font-size: 14px;
+  background: none; border: 0; border-bottom: 2px dashed var(--dotted);
+  color: var(--ink); padding: 4px 2px; outline: none; }
+.flavor-search::placeholder { color: var(--faint); font-style: italic; }
+.flavor-suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.sugg { font-size: 13px; border: 1px solid var(--dotted); border-radius: 99px;
+  background: var(--raised); color: var(--ink); padding: 4px 12px; cursor: pointer; }
+.sugg:hover { border-color: var(--amber); }
+.max-note { font-size: 12px; color: var(--faint); font-style: italic; margin: 10px 0 0; }
+
+details.advanced { margin: 4px 0 18px; }
+details.advanced summary { font-size: 13px; color: var(--muted); cursor: pointer; }
+details.advanced p { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+.generate {
+  font-family: var(--serif); font-size: 16px; background: var(--ink);
+  color: var(--paper); border: 0; border-radius: 8px; padding: 12px 26px;
+  cursor: pointer; letter-spacing: 0.02em;
+}
+.generate:hover { background: #000; }
+.generate:disabled { opacity: 0.45; cursor: not-allowed; }
+.form-foot { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+
+/* Feasibility voice — quiet, no solver/server internals. */
+.feas { font-size: 13px; font-family: var(--serif); font-style: italic; min-height: 1.2em; }
+.feas.ok { color: var(--amber-deep); }
+.feas.no { color: var(--rosewood-text); }
+.feas.checking { color: var(--faint); }
+
+.notice { background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 22px; max-width: 560px; margin: 0 0 18px; }
+.notice-msg { font-family: var(--serif); font-size: 17px; margin: 0; }
+
+@media (max-width: 640px) {
+  h1 { font-size: 26px; }
+  .page { max-width: 100%; padding: 14px 12px 48px; }
+  .brief-card { padding: 20px 16px; }
+  .steps { flex: none; }
+  .step { padding: 11px 8px; font-size: 11px; }
+  .flavor-row { flex-wrap: wrap; }
+}
