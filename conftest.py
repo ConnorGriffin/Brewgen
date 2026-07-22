@@ -44,6 +44,24 @@ def make_category(name, min_percent=0, max_percent=100,
     }
 
 
+@pytest.fixture(autouse=True)
+def _reset_compute_envelope():
+    """Reset the anonymous-compute envelope's process-wide state before each test.
+
+    Keeps the burst-2 rate limiter and the two-slot concurrency ceiling from
+    leaking tokens or permits from one case into the next. A no-op when the
+    Flask-dependent envelope module cannot be imported (e.g. a solver-only run
+    without the web dependencies installed).
+    """
+    try:
+        from brewgen.backend import envelope
+    except Exception:
+        yield
+        return
+    envelope.reset_state()
+    yield
+
+
 @pytest.fixture(scope="session")
 def real_grains():
     """All grains from the shipped database as solver grain dicts."""
