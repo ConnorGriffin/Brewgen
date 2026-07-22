@@ -139,19 +139,19 @@ Type: Prototype
 
 ### Question
 
-Can one non-root container serve the built frontend and production Python API with a health check, bounded resources, reproducible builds, clean scans, and rollback-safe GHCR release tags?
+Can one reproducible Linux/amd64 container build the Vue frontend, serve it with the production Python API as a non-root process, expose a cheap health check, preserve the anonymous-compute limits, and remain healthy under explicit CPU and memory bounds with no shipped critical/high vulnerabilities?
 
 ### Answer
 
 
 ## #12: Cut over `brewgen.connorcg.com`
 
-Blocked by: #11
+Blocked by: #15, #16
 Type: Prototype
 
 ### Question
 
-Can the app repository publish the proven image and the homelab repository add the public-apps workload, least-privilege tailnet route, relay vhost, DNS record, monitoring, and tested rollback without exposing the residential IP?
+Can DNS be switched to the existing relay only after the release and serving paths are healthy, then can public TLS, client-address forwarding, compute limits, monitoring, and rollback be verified without exposing the residential IP?
 
 ### Answer
 
@@ -176,6 +176,30 @@ Type: Prototype
 ### Question
 
 Where should a `Support this project` control appear in the locked public workflow, where should it lead, and how should it behave without competing with the grain-bill brief or implying paid access?
+
+### Answer
+
+
+## #15: Prove the image release and rollback path
+
+Blocked by: #11
+Type: Prototype
+
+### Question
+
+Can CI on `main` enforce backend and frontend tests, dependency and code scanning, and a blocking container scan before publishing the proven image to GHCR under both an immutable commit tag and `release`, with a tested manual republish of a previous commit for rollback?
+
+### Answer
+
+
+## #16: Add Brewgen to the shared public-apps serving path
+
+Blocked by: #11
+Type: Prototype
+
+### Question
+
+Can the homelab repository add a bounded Brewgen workload on a dedicated public-apps port, move the label-scoped Watchtower out of hdfinder ownership now that it serves a second app, grant the relay access only to that port, and add the `brewgen.connorcg.com` Caddy route with tests and health verification before DNS changes?
 
 ### Answer
 
