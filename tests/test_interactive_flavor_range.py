@@ -7,10 +7,7 @@ checks call the solver the same way the views do.
 
 Run with the project venv, e.g.::
 
-    .venv/bin/python -m pytest brewgen/backend/tests/test_interactive_flavor_range.py
-
-These are NOT part of the compile gate and must never be wired into pytest
-discovery as the CI gate (see AGENTS.md).
+    .venv/bin/python -m pytest tests/test_interactive_flavor_range.py
 """
 
 import time
