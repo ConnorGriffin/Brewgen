@@ -2,15 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Dedupe rapid PR pushes, but never cancel a main-branch run mid-publish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  backend:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,3 +28,130 @@ jobs:
       - run: python3 -m compileall -q brewgen recipe_analyzer archive
       - run: python3 -m pip install ".[test]"
       - run: python3 -m pytest tests -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: brewgen/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: brewgen/frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      # Production build of the public grain-bill workflow.
+      - run: npm run build
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Python dependency audit: block on any known-vulnerable shipped
+      # dependency. Scoped to the project's declared dependency closure so it
+      # audits what the container ships, not the CI runner's own toolchain.
+      - run: python3 -m pip install pip-audit
+      - run: pip-audit --progress-spinner off .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: brewgen/frontend/package-lock.json
+      - run: npm ci
+        working-directory: brewgen/frontend
+      # JS dependency audit: block on high-or-worse advisories.
+      - run: npm audit --audit-level=high
+        working-directory: brewgen/frontend
+
+  code-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/autobuild@v3
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # Build the exact production image, scan it, and — only on a green main push —
+  # publish it to GHCR. The container steps are gated on the Dockerfile that
+  # issue #47 lands; until then this job is a green no-op and the pipeline
+  # activates automatically the moment that image arrives.
+  image:
+    needs: [backend, frontend, dependency-audit, code-scan]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      # Real releases share one group with rollback so the mutable `release`
+      # tag can never be moved by two runs at once. PR scans get their own
+      # per-ref group and never queue behind a release.
+      group: ${{ (github.event_name == 'push' && github.repository == 'ConnorGriffin/brewgen') && 'brewgen-release-tag' || format('brewgen-image-{0}', github.ref) }}
+      cancel-in-progress: false
+    env:
+      IMAGE: ghcr.io/connorgriffin/brewgen
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        name: Detect the production Dockerfile (issue #47 contract)
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Dockerfile yet — awaiting the proven production image from #47. Build, scan, and publish are wired and activate automatically once it lands."
+          fi
+      - uses: docker/setup-buildx-action@v3
+        if: steps.detect.outputs.present == 'true'
+      - name: Build production image (linux/amd64)
+        if: steps.detect.outputs.present == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/ConnorGriffin/brewgen
+      # Blocking container scan: any critical/high finding fails the job and so
+      # blocks publication of that exact image.
+      - name: Scan image for critical/high vulnerabilities
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          trivy image --severity CRITICAL,HIGH --exit-code 1 "$IMAGE:${{ github.sha }}"
+      # Publish only from a real push to the canonical repo. Skipped on every
+      # pull_request and on any fork, so PRs prove the gate without registry writes.
+      - name: Log in to GHCR
+        if: steps.detect.outputs.present == 'true' && github.event_name == 'push' && github.repository == 'ConnorGriffin/brewgen'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish immutable commit tag and move release to it
+        if: steps.detect.outputs.present == 'true' && github.event_name == 'push' && github.repository == 'ConnorGriffin/brewgen'
+        run: |
+          docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:release"
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:release"

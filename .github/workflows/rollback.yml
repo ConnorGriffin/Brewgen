@@ -1,0 +1,105 @@
+name: Rollback release tag
+
+# Manually move `release` back to a previously merged commit. The commit is
+# retested and rescanned before its exact image is republished as `release`.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full 40-character commit SHA already merged into main
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  # Shared with the forward-release group so a rollback and a release can never
+  # move the mutable `release` tag at the same time.
+  group: brewgen-release-tag
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    if: github.repository == 'ConnorGriffin/brewgen'
+    env:
+      IMAGE: ghcr.io/connorgriffin/brewgen
+      COMMIT: ${{ github.event.inputs.commit }}
+    steps:
+      - name: Validate SHA shape
+        run: echo "$COMMIT" | grep -Eq '^[0-9a-f]{40}$' || { echo "::error::commit must be a full 40-character SHA"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.commit }}
+          fetch-depth: 0
+      # Reject any commit that is not an ancestor of main.
+      - name: Verify commit is reachable from main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$COMMIT" origin/main || { echo "::error::$COMMIT is not reachable from main"; exit 1; }
+
+      # Retest the exact commit (backend + frontend) before republishing it.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python3 -m compileall -q brewgen recipe_analyzer archive
+      - run: python3 -m pip install ".[test]"
+      - run: python3 -m pytest tests -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: brewgen/frontend/package-lock.json
+      - run: npm ci
+        working-directory: brewgen/frontend
+      - run: npm test
+        working-directory: brewgen/frontend
+      - run: npm run build
+        working-directory: brewgen/frontend
+
+      # Rebuild, rescan, and republish the exact image for this commit. Gated on
+      # the Dockerfile from #47, mirroring the forward-release path.
+      - id: detect
+        name: Detect the production Dockerfile (issue #47 contract)
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Dockerfile yet — awaiting the proven production image from #47. Rollback build/scan/publish activate automatically once it lands."
+          fi
+      - uses: docker/setup-buildx-action@v3
+        if: steps.detect.outputs.present == 'true'
+      - name: Build the commit's production image (linux/amd64)
+        if: steps.detect.outputs.present == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ${{ env.IMAGE }}:${{ github.event.inputs.commit }}
+          build-args: |
+            GIT_COMMIT=${{ github.event.inputs.commit }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.event.inputs.commit }}
+            org.opencontainers.image.source=https://github.com/ConnorGriffin/brewgen
+      - name: Rescan image for critical/high vulnerabilities
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          trivy image --severity CRITICAL,HIGH --exit-code 1 "$IMAGE:$COMMIT"
+      - name: Log in to GHCR
+        if: steps.detect.outputs.present == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Republish the commit image as release
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          docker tag "$IMAGE:$COMMIT" "$IMAGE:release"
+          docker push "$IMAGE:$COMMIT"
+          docker push "$IMAGE:release"
