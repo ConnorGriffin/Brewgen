@@ -16,11 +16,11 @@ Brewgen uses per-style aggregate models combined with the BJCP 2015 guidelines t
 
 Choose a beer style, strength, color, and flavor profile at [brewgen.connorcg.com](https://brewgen.connorcg.com).
 
-![Brewgen recipe builder running on the production site](docs/images/brewgen-live-builder.jpg)
+![Complete Brewgen recipe builder with style, strength, color, flavor, advanced, validation, and Generate controls](docs/images/brewgen-live-builder.jpg)
 
 Generate five grain bills that fit the brief, then compare their ingredients and proportions.
 
-![Brewgen grain bill results generated on the production site](docs/images/brewgen-live-results.jpg)
+![Five Brewgen grain bills showing color, strength, fermentables, maltsters, and percentages](docs/images/brewgen-live-results.jpg)
 
 ## Project Status
 
