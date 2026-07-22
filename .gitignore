@@ -129,3 +129,6 @@ dmypy.json
 
 # Project files
 recipe_analyzer/test_recipes/
+
+# Local UI-mockup captures may contain source-derived or personal data.
+mockups/*.capture.json
