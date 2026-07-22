@@ -87,7 +87,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/ConnorGriffin/brewgen
       - name: Rescan image for critical/high vulnerabilities
         if: steps.detect.outputs.present == 'true'
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
         with:
           image-ref: ${{ env.IMAGE }}:${{ github.event.inputs.commit }}
           severity: CRITICAL,HIGH
