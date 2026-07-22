@@ -43,10 +43,10 @@ def test_ci_runs_dependency_audit_and_code_scanning():
 
 def test_container_scan_blocks_on_critical_high():
     ci = _read("ci.yml")
-    assert "aquasecurity/trivy-action" in ci
-    assert "severity: CRITICAL,HIGH" in ci
+    assert "trivy image" in ci
+    assert "--severity CRITICAL,HIGH" in ci
     # A finding must fail the job (and so block publication).
-    assert 'exit-code: "1"' in ci
+    assert "--exit-code 1" in ci
 
 
 def test_release_publishes_immutable_and_mutable_tags():
@@ -89,7 +89,7 @@ def test_rollback_rejects_commits_not_on_main_and_retests():
     # It retests and rescans before republishing.
     assert "pytest tests" in rollback
     assert "npm test" in rollback
-    assert "severity: CRITICAL,HIGH" in rollback
+    assert "--severity CRITICAL,HIGH" in rollback
     assert "docker push" in rollback
 
 
