@@ -13,7 +13,7 @@ COPY brewgen/frontend/ ./
 RUN npm run build
 
 # ── Stage 2: Python runtime ───────────────────────────────────────────────────
-FROM python:3.11-slim-bookworm@sha256:28255a3ace7eb4c48bc1b57b90af29e1bc82b4fd6c60614a8e3dce61b87ff941 AS runtime
+FROM python:3.11-slim-trixie@sha256:00af38ae2ed311628970782e8a2d7f014d8909dbc63cb97bc0a158187f4db045 AS runtime
 ARG GIT_COMMIT
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}" \
       org.opencontainers.image.source="https://github.com/ConnorGriffin/brewgen"
@@ -23,7 +23,8 @@ WORKDIR /app
 # Install the exact, hash-checked runtime dependency closure. PuLP bundles its
 # own CBC binary; no system solver package is needed.
 COPY requirements.lock ./
-RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock \
+    && pip uninstall --yes setuptools wheel jaraco.context
 
 # Suppress .pyc writes so a --read-only rootfs never trips on cache dirs.
 ENV PYTHONDONTWRITEBYTECODE=1
