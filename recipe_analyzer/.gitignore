@@ -1,4 +1,4 @@
-# Recipe training data
-brewtoad_scrape/
+# Raw scraped recipe data — never committed; see PROVENANCE.md
 recipes/
 brewersfriend_scrape/recipes/
+brewtoad_scrape/
