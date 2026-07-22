@@ -42,10 +42,16 @@ function initScript (fixture) {
     var f = ${JSON.stringify(fixture)};
     window.__recipes = f.recipesComplete;
     window.__malformed = false;
+    window.__problem = null;
     window.fetch = function (url) {
       var s = String(url), data = {}, status = 200;
       if (s.indexOf('/grains/recipes') !== -1) {
-        if (window.__malformed) { status = 400; data = {}; }
+        if (window.__problem) {
+          // A real application/problem+json failure (429 rate-limited, 503 busy)
+          // carrying only the stable machine outcome tag — no echoed input.
+          status = window.__problem.status;
+          data = { title: 'compute failure', status: status, outcome: window.__problem.outcome };
+        } else if (window.__malformed) { status = 400; data = {}; }
         else { data = window.__recipes; }
       } else if (s.indexOf('/grains/sensory-range') !== -1) {
         data = { status: 'feasible', min: 0.1, max: 2.6 };
@@ -91,10 +97,13 @@ const noLeak = (t) => assert(!/infeasible|deadline_exceeded|solver|status/i.test
   'outcome copy leaked a solver/server internal: ' + t)
 
 async function setRecipes (value) {
-  await page.evaluate((v) => { window.__recipes = v; window.__malformed = false }, value)
+  await page.evaluate((v) => { window.__recipes = v; window.__malformed = false; window.__problem = null }, value)
 }
 async function setMalformed () {
-  await page.evaluate(() => { window.__malformed = true })
+  await page.evaluate(() => { window.__malformed = true; window.__problem = null })
+}
+async function setProblem (status, outcome) {
+  await page.evaluate((p) => { window.__problem = p; window.__malformed = false }, { status, outcome })
 }
 async function generate () {
   await page.waitForFunction(() => {
@@ -178,7 +187,25 @@ try {
   await page.waitForSelector('.notice-empty')
   noLeak(await page.$eval('.notice', (e) => e.textContent))
 
-  console.log('PASS: feasible generation renders 2–5 lettered unranked bills, selection yields spines, and all six outcomes render')
+  // 8) Busy: a real 503 from the two-slot concurrency ceiling.
+  await backToBrief()
+  await setProblem(503, 'busy')
+  await generate()
+  await page.waitForSelector('.notice-busy')
+  assert((await page.$eval('.notice-title', (e) => e.textContent.trim())) === 'Brewgen is catching its breath',
+    'busy title mismatch')
+  noLeak(await page.$eval('.notice', (e) => e.textContent))
+
+  // 9) Rate-limited: a real 429 from the per-visitor request budget.
+  await backToBrief()
+  await setProblem(429, 'rate_limited')
+  await generate()
+  await page.waitForSelector('.notice-rate_limited')
+  assert((await page.$eval('.notice-title', (e) => e.textContent.trim())) === 'One brief at a time',
+    'rate-limited title mismatch')
+  noLeak(await page.$eval('.notice', (e) => e.textContent))
+
+  console.log('PASS: feasible generation renders 2–5 lettered unranked bills, selection yields spines, and all eight outcomes (incl. real 503 busy + 429 rate-limited) render')
 } finally {
   await browser.close()
 }

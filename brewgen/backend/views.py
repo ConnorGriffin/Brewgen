@@ -1,8 +1,11 @@
 from flask import Flask, jsonify, request, render_template
+from werkzeug.middleware.proxy_fix import ProxyFix
 from .models import grain, beer, category, equipment, style
 from .solver import color as grain_color
 from .solver.fermentables import (
-    FermentableSolver, SolverConfig, ColorContext, CheckStatus)
+    FermentableSolver, SolverConfig, ColorContext, CheckStatus, GenerationStatus)
+from . import envelope
+from .envelope import compute_endpoint, ok_json, problem, BriefContract
 from flask_cors import CORS
 from difflib import SequenceMatcher
 
@@ -12,9 +15,21 @@ app = Flask(__name__,
             )
 CORS(app)
 
+# Resolve the client address as exactly one trusted proxy hop. The public deploy
+# (#12/#16) puts the API a single relay behind the visitor, so the last
+# X-Forwarded-For entry is the real client; ProxyFix(x_for=1) rewrites
+# remote_addr to it. Raw remote_addr would collapse every visitor to the relay,
+# and a blindly trusted full X-Forwarded-For chain would be spoofable. The
+# deploy must forward exactly one hop for the per-visitor rate limit to hold.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
 all_grains = grain.GrainList()
 category_model = category.CategoryModel()
 all_styles = style.StyleModel()
+
+# The versioned brief contract, built once from the shipped catalog so it can
+# reject unknown/duplicate slugs and cap every list at catalog cardinality.
+CONTRACT = BriefContract.from_grain_list(all_grains)
 
 # Solver deadlines and diversity limits are server configuration, never set by
 # the caller, so a slow or malicious request cannot ask for unbounded compute.
@@ -252,7 +267,8 @@ def get_fermentable_list_sensory_keywords():
 
 
 @app.route('/api/v1/grains/sensory-range', methods=['POST'])
-def get_fermentable_sensory_range():
+@compute_endpoint('sensory_range', CONTRACT, require_descriptor=True)
+def get_fermentable_sensory_range(data):
     """Return the exact achievable min/max for one named sensory descriptor.
 
     Holds every other configured constraint fixed and excludes the target
@@ -271,28 +287,25 @@ def get_fermentable_sensory_range():
         "beer_profile": BeerProfile             # optional; holds color fixed
     }
     """
-    data = request.json
-    try:
-        solver = _build_fermentable_solver(data)
-        name = data['descriptor']
-        # Hold color fixed only when the brief actually pins a color band.
-        context = _color_context(data) if data.get('beer_profile') else None
-    except (AttributeError, KeyError, TypeError):
-        return jsonify({'status': CheckStatus.INVALID.value}), 400
+    solver = _build_fermentable_solver(data)
+    # Hold color fixed only when the brief actually pins a color band.
+    context = _color_context(data) if data.get('beer_profile') else None
+    result = solver.sensory_range(data['descriptor'], color_context=context)
 
-    result = solver.sensory_range(name, color_context=context)
-    if result.status == CheckStatus.INVALID:
-        return jsonify({'status': result.status.value, 'name': result.name}), 400
-
-    body = {'status': result.status.value, 'name': result.name}
     if result.status == CheckStatus.FEASIBLE:
-        body['min'] = result.minimum
-        body['max'] = result.maximum
-    return jsonify(body), 200
+        return ok_json({'status': 'feasible', 'name': result.name,
+                        'min': result.minimum, 'max': result.maximum},
+                       outcome='feasible')
+    if result.status == CheckStatus.INFEASIBLE:
+        return problem(422, 'infeasible')
+    if result.status == CheckStatus.DEADLINE_EXCEEDED:
+        return problem(503, 'deadline')
+    return problem(422, 'invalid')
 
 
 @app.route('/api/v1/grains/feasibility', methods=['POST'])
-def get_fermentable_brief_feasibility():
+@compute_endpoint('feasibility', CONTRACT)
+def get_fermentable_brief_feasibility(data):
     """Report whether one complete grain-bill brief is feasible.
 
     Applies sensory, color, category, cardinality, gravity, and equipment
@@ -309,25 +322,27 @@ def get_fermentable_brief_feasibility():
         "beer_profile": BeerProfile
     }
     """
-    data = request.json
-    try:
-        solver = _build_fermentable_solver(data)
-        context = _color_context(data)
-    except (AttributeError, KeyError, TypeError):
-        return jsonify({'status': CheckStatus.INVALID.value}), 400
-
+    solver = _build_fermentable_solver(data)
+    context = _color_context(data)
     result = solver.feasibility(color_context=context)
-    return jsonify({'status': result.status.value}), 200
+
+    if result.status == CheckStatus.FEASIBLE:
+        return ok_json({'status': 'feasible'}, outcome='feasible')
+    if result.status == CheckStatus.INFEASIBLE:
+        return problem(422, 'infeasible')
+    return problem(503, 'deadline')  # DEADLINE_EXCEEDED
 
 
 @app.route('/api/v1/grains/recipes', methods=['POST'])
-def get_fermentable_list_recipes():
+@compute_endpoint('recipes', CONTRACT)
+def get_fermentable_list_recipes(data):
     """Generate up to five unranked, meaningfully different grain bills.
 
     Every returned bill is a whole-percentage bill summing to 100 that lands
-    inside the requested SRM range; the bills carry no ranking. The response
-    exposes an explicit completion status (complete, partial, infeasible, or
-    deadline_exceeded) so bounded failures are visible to the caller.
+    inside the requested SRM range; the bills carry no ranking. ``complete`` and
+    ``partial`` sets are returned as 200 so partial results show honestly;
+    ``infeasible`` and ``deadline_exceeded`` are surfaced as the locked 422/503
+    problem+json outcomes.
 
     POST format:
     {
@@ -342,8 +357,6 @@ def get_fermentable_list_recipes():
         "beer_profile": BeerProfile
     }
     """
-    data = request.json
-
     solver = _build_fermentable_solver(data)
 
     equipment_profile = equipment.EquipmentProfile(
@@ -365,6 +378,11 @@ def get_fermentable_list_recipes():
         min_srm=beer_profile.min_color_srm,
         max_srm=beer_profile.max_color_srm,
     )
+
+    if result.status == GenerationStatus.INFEASIBLE:
+        return problem(422, 'infeasible')
+    if result.status == GenerationStatus.DEADLINE_EXCEEDED:
+        return problem(503, 'deadline')
 
     # Serialize each alternative with per-grain pounds derived from the same
     # color math the solver accepted the bill against. Each grain carries the
@@ -394,10 +412,10 @@ def get_fermentable_list_recipes():
             'sensory': solver.sensory_values(bill.percents),
         })
 
-    return jsonify({
+    return ok_json({
         'status': result.status.value,
         'alternatives': alternatives,
-    }), 200
+    }, outcome=result.status.value)
 
 
 @app.route('/api/v1/helpers/grain-model-valid', methods=['POST'])

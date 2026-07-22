@@ -14,7 +14,7 @@ import time
 
 import pytest
 
-from brewgen.backend import views
+from brewgen.backend import views, envelope
 from brewgen.backend.models import grain, style
 from brewgen.backend.solver.fermentables import SolverConfig
 
@@ -25,7 +25,12 @@ KEYWORDS = sorted(GRAINS.get_sensory_keywords())
 
 
 @pytest.fixture
-def client():
+def client(monkeypatch):
+    # These are solver-semantics tests, not envelope tests: several make more
+    # than the burst of two rapid calls, so install a non-throttling limiter and
+    # let test_envelope own the real rate-limit contract.
+    monkeypatch.setattr(envelope, "RATE_LIMITER",
+                        envelope.RateLimiter(per_minute=6000, burst=1000))
     views.app.testing = True
     return views.app.test_client()
 
@@ -131,14 +136,14 @@ def test_sensory_range_unknown_descriptor_is_invalid(client):
         "/api/v1/grains/sensory-range",
         json=_feasible_body(descriptor="not-a-real-descriptor"),
     )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
+    assert resp.status_code == 422
+    assert resp.get_json()["outcome"] == "invalid"
 
 
 def test_sensory_range_missing_descriptor_is_invalid(client):
     resp = client.post("/api/v1/grains/sensory-range", json=_feasible_body())
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
+    assert resp.status_code == 422
+    assert resp.get_json()["outcome"] == "invalid"
 
 
 def test_sensory_range_unknown_slug_is_invalid(client):
@@ -148,8 +153,8 @@ def test_sensory_range_unknown_slug_is_invalid(client):
                            "min_percent": 0, "max_percent": 100}],
     )
     resp = client.post("/api/v1/grains/sensory-range", json=body)
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
+    assert resp.status_code == 422
+    assert resp.get_json()["outcome"] == "invalid"
 
 
 # -- full-brief feasibility --------------------------------------------------
@@ -169,8 +174,8 @@ def test_feasibility_infeasible_on_impossible_color(client):
         equipment_profile={"target_volume_gallons": 5.5, "mash_efficiency": 75},
     )
     resp = client.post("/api/v1/grains/feasibility", json=body)
-    assert resp.status_code == 200
-    assert resp.get_json()["status"] == "infeasible"
+    assert resp.status_code == 422
+    assert resp.get_json()["outcome"] == "infeasible"
 
 
 def test_feasibility_infeasible_on_contradictory_sensory(client):
@@ -185,14 +190,14 @@ def test_feasibility_infeasible_on_contradictory_sensory(client):
                         "min": span["max"] + 1.0, "max": span["max"] + 2.0}],
     )
     resp = client.post("/api/v1/grains/feasibility", json=body)
-    assert resp.status_code == 200
-    assert resp.get_json()["status"] == "infeasible"
+    assert resp.status_code == 422
+    assert resp.get_json()["outcome"] == "infeasible"
 
 
 def test_feasibility_malformed_input_is_invalid(client):
     resp = client.post("/api/v1/grains/feasibility", json="not-a-brief")
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
+    assert resp.status_code == 422
+    assert resp.get_json()["outcome"] == "invalid"
 
 
 # -- shared deadline ---------------------------------------------------------
@@ -205,15 +210,15 @@ def test_operations_report_deadline_when_budget_spent(client, monkeypatch):
     monkeypatch.setattr(views, "SOLVER_CONFIG", spent)
 
     r1 = client.post("/api/v1/grains/feasibility", json=_feasible_body())
-    assert r1.status_code == 200
-    assert r1.get_json()["status"] == "deadline_exceeded"
+    assert r1.status_code == 503
+    assert r1.get_json()["outcome"] == "deadline"
 
     r2 = client.post(
         "/api/v1/grains/sensory-range",
         json=_feasible_body(descriptor=KEYWORDS[0]),
     )
-    assert r2.status_code == 200
-    assert r2.get_json()["status"] == "deadline_exceeded"
+    assert r2.status_code == 503
+    assert r2.get_json()["outcome"] == "deadline"
 
 
 # -- the plural sweep path is gone -------------------------------------------
