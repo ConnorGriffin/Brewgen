@@ -1,12 +1,20 @@
 """Flask-independent fermentables solver built on a bounded PuLP MILP.
 
-One shared constraint model backs three operations:
+One shared constraint model backs these operations:
 
 * :meth:`FermentableSolver.is_valid` -- does any grain bill satisfy the model?
-* :meth:`FermentableSolver.sensory_ranges` -- achievable min/max of each
-  sensory descriptor, preserving the same grain-count limits as generation.
+* :meth:`FermentableSolver.feasibility` -- is one complete brief (sensory,
+  color, category, cardinality, gravity and equipment) feasible?
+* :meth:`FermentableSolver.sensory_range` -- the exact achievable min/max for
+  one named descriptor, holding every other configured constraint fixed.
 * :meth:`FermentableSolver.generate` -- up to five deterministic, meaningfully
   different grain bills inside exact SRM bounds and a hard deadline.
+
+The public interactive editor asks only for one focused descriptor range or one
+full-brief feasibility check at a time; it never triggers an all-descriptor
+sweep. :meth:`FermentableSolver.sensory_ranges` computes every descriptor at
+once and is retained only as the transitional equivalence reference for the
+focused path -- no public request reaches it.
 
 Percentages are integer points 0-100 that sum to exactly 100; a binary
 used/not-used variable links each grain's zero/min/max usage and drives the
@@ -33,15 +41,87 @@ class GenerationStatus(str, Enum):
     DEADLINE_EXCEEDED = "deadline_exceeded"  # deadline hit before any bill
 
 
+class CheckStatus(str, Enum):
+    """Outcome of a focused range or full-brief feasibility check. Stable and
+    solver-agnostic: no CBC/PuLP internals leak through these names."""
+
+    FEASIBLE = "feasible"            # the constraints admit at least one bill
+    INFEASIBLE = "infeasible"       # the constraints admit no bill
+    INVALID = "invalid"             # the request itself is malformed
+    DEADLINE_EXCEEDED = "deadline_exceeded"  # ran out of budget before a proof
+
+
 @dataclass(frozen=True)
 class SolverConfig:
     """Deadlines and diversity limits. These are configuration, never caller
-    controlled per request."""
+    controlled per request. Defaults are issue #29's public compute envelope:
+    1.8 seconds of solver budget under a 2.0-second end-to-end deadline, shared
+    across every solve performed for one request."""
 
     max_bills: int = 5
     min_pairwise_distance: int = 10
-    solver_time_limit_seconds: float = 5.0
-    request_deadline_seconds: float = 15.0
+    solver_time_limit_seconds: float = 1.8
+    request_deadline_seconds: float = 2.0
+
+
+@dataclass(frozen=True)
+class ColorContext:
+    """The gravity/equipment/SRM inputs that turn a bill into an exact color.
+
+    Supplying one to :meth:`FermentableSolver.feasibility` or
+    :meth:`FermentableSolver.sensory_range` holds color fixed while the check
+    runs, so the returned answer respects the brief's color band."""
+
+    original_sg: float
+    target_volume_gallons: float
+    mash_efficiency: float
+    min_srm: float
+    max_srm: float
+
+
+class _Budget:
+    """A shared monotonic budget across every solve in one request.
+
+    Enforces two ceilings at once: a wall-clock end-to-end deadline and a
+    cumulative solver-time cap. Each solve is granted the smaller of what is
+    left of either; a non-positive grant means the request is already spent.
+    Both ceilings are server config, never caller-set, and the clock is
+    injectable so deadline behavior is testable without real waiting."""
+
+    def __init__(self, config, clock):
+        self._clock = clock
+        self._deadline = clock() + config.request_deadline_seconds
+        self._solver_remaining = config.solver_time_limit_seconds
+
+    @property
+    def clock(self):
+        return self._clock
+
+    def next_limit(self):
+        """Seconds the next solve may run; <= 0 means no budget remains."""
+        return min(self._solver_remaining, self._deadline - self._clock())
+
+    def charge(self, seconds):
+        """Debit the cumulative solver budget by an elapsed solve."""
+        self._solver_remaining -= seconds
+
+
+@dataclass
+class RangeResult:
+    """Result of a focused sensory-range check: a stable status plus, when
+    feasible, the exact achievable min/max for the named descriptor."""
+
+    status: CheckStatus
+    name: str
+    minimum: float = None
+    maximum: float = None
+
+
+@dataclass
+class FeasibilityResult:
+    """Result of a full-brief feasibility check: just a stable status."""
+
+    status: CheckStatus
 
 
 @dataclass
@@ -100,19 +180,76 @@ class FermentableSolver:
         prob.solve(self._solver())
         return pulp.LpStatus[prob.status] == "Optimal"
 
-    def sensory_ranges(self):
-        """Return achievable ``{name, min, max}`` for each sensory descriptor.
+    def feasibility(self, color_context=None, clock=time.monotonic):
+        """Check whether one complete brief is feasible under a shared budget.
 
-        Cardinality-preserving MILP with no invented color constraints. Returns
-        an empty list if the underlying model is infeasible.
+        Applies every configured constraint at once -- sensory bounds, category
+        usage, global and per-category cardinality, and (when ``color_context``
+        is supplied) the exact gravity/equipment/SRM color band -- and asks only
+        whether any grain bill satisfies all of them.
+
+        Returns a :class:`FeasibilityResult` whose status is ``FEASIBLE``,
+        ``INFEASIBLE`` or ``DEADLINE_EXCEEDED``. No solver internals leak out.
+        """
+        budget = _Budget(self.config, clock)
+        limit = budget.next_limit()
+        if limit <= 0:
+            return FeasibilityResult(CheckStatus.DEADLINE_EXCEEDED)
+        prob, x, _used = self._base_problem("feasibility")
+        if color_context is not None:
+            self._add_color_constraints(prob, x, color_context)
+        prob += 0  # feasibility only, no objective
+        prob.solve(self._solver(limit))
+        return FeasibilityResult(self._check_status(prob))
+
+    def sensory_range(self, name, color_context=None, clock=time.monotonic):
+        """Return the exact achievable min/max for one named descriptor.
+
+        Every other configured constraint is held fixed, but the target
+        descriptor's own sensory bound is excluded so the returned span is its
+        full editable range rather than the slice a stale bound would allow.
+        Both the minimize and maximize solves draw from one shared budget.
+
+        Returns a :class:`RangeResult`. ``INVALID`` means the descriptor is not
+        a known sensory keyword; ``FEASIBLE`` carries ``minimum``/``maximum``;
+        ``INFEASIBLE`` and ``DEADLINE_EXCEEDED`` carry neither.
+        """
+        if name not in self.sensory_keywords:
+            return RangeResult(CheckStatus.INVALID, name)
+        budget = _Budget(self.config, clock)
+        coeffs = [self.grains[i]["sensory_data"].get(name, 0) for i in self._range]
+        low_status, low = self._extreme(
+            coeffs, pulp.LpMinimize, name, color_context, budget)
+        if low_status is not CheckStatus.FEASIBLE:
+            return RangeResult(low_status, name)
+        high_status, high = self._extreme(
+            coeffs, pulp.LpMaximize, name, color_context, budget)
+        if high_status is not CheckStatus.FEASIBLE:
+            return RangeResult(high_status, name)
+        # Divided-down integer sums carry tiny float noise; trim it.
+        return RangeResult(CheckStatus.FEASIBLE, name,
+                           round(low, 6), round(high, 6))
+
+    def sensory_ranges(self):
+        """Return achievable ``{name, min, max}`` for every sensory descriptor.
+
+        Retained only as the transitional equivalence reference for
+        :meth:`sensory_range`; no public request reaches this all-descriptor
+        sweep. Cardinality-preserving MILP with no invented color constraints.
+        Returns an empty list if the underlying model is infeasible.
         """
         ranges = []
+        budget = _Budget(SolverConfig(request_deadline_seconds=float("inf"),
+                                      solver_time_limit_seconds=float("inf")),
+                         time.monotonic)
         for key in self.sensory_keywords:
             coeffs = [self.grains[i]["sensory_data"].get(key, 0) for i in self._range]
-            minimum = self._extreme(coeffs, pulp.LpMinimize)
-            if minimum is None:
+            min_status, minimum = self._extreme(
+                coeffs, pulp.LpMinimize, None, None, budget)
+            if min_status is not CheckStatus.FEASIBLE:
                 return []
-            maximum = self._extreme(coeffs, pulp.LpMaximize)
+            _max_status, maximum = self._extreme(
+                coeffs, pulp.LpMaximize, None, None, budget)
             ranges.append({
                 "name": key,
                 # Divided-down integer sums carry tiny float noise; trim it.
@@ -135,21 +272,43 @@ class FermentableSolver:
             values[key] = round(total / 100, 6)
         return values
 
-    def _extreme(self, coeffs, sense):
+    def _extreme(self, coeffs, sense, exclude_sensory, color_context, budget):
         """Minimize or maximize one descriptor over a fresh copy of the model.
 
         A fresh problem per solve avoids CBC's trouble with re-solving the same
-        problem object dozens of times. Returns the descriptor's sensory value
-        (usage-weighted average), or None if the model is infeasible."""
-        prob, x, _used = self._base_problem("sensory")
+        problem object dozens of times. ``exclude_sensory`` drops that
+        descriptor's own bound so a focused range spans its full editable width.
+        Returns ``(status, value)`` where ``value`` is the descriptor's sensory
+        value (usage-weighted average) only when the status is ``FEASIBLE``."""
+        limit = budget.next_limit()
+        if limit <= 0:
+            return CheckStatus.DEADLINE_EXCEEDED, None
+        prob, x, _used = self._base_problem("sensory", exclude_sensory=exclude_sensory)
+        if color_context is not None:
+            self._add_color_constraints(prob, x, color_context)
         prob.sense = sense
         prob.setObjective(pulp.lpSum(coeffs[i] * x[i] for i in self._range))
-        prob.solve(self._solver())
-        if pulp.LpStatus[prob.status] != "Optimal":
-            return None
+        start = budget.clock()
+        prob.solve(self._solver(limit))
+        budget.charge(budget.clock() - start)
+        status = self._check_status(prob)
+        if status is not CheckStatus.FEASIBLE:
+            return status, None
         # Read straight from the integer percentages rather than the PuLP
         # objective, whose .value() is None for an all-zero descriptor.
-        return sum(coeffs[i] * (x[i].value() or 0) for i in self._range) / 100
+        value = sum(coeffs[i] * (x[i].value() or 0) for i in self._range) / 100
+        return status, value
+
+    @staticmethod
+    def _check_status(prob):
+        """Map a solved problem onto a stable, solver-agnostic CheckStatus."""
+        name = pulp.LpStatus[prob.status]
+        if name == "Optimal":
+            return CheckStatus.FEASIBLE
+        if name == "Infeasible":
+            return CheckStatus.INFEASIBLE
+        # Undefined/Not Solved: CBC hit the time limit without a proof.
+        return CheckStatus.DEADLINE_EXCEEDED
 
     def generate(self, original_sg, target_volume_gallons, mash_efficiency,
                  min_srm, max_srm, clock=time.monotonic):
@@ -167,13 +326,11 @@ class FermentableSolver:
             clock (callable): monotonic seconds source; injectable for tests.
         """
         prob, x, _used = self._base_problem("generation")
+        ctx = ColorContext(original_sg, target_volume_gallons, mash_efficiency,
+                           min_srm, max_srm)
+        self._add_color_constraints(prob, x, ctx)
         colors = [g["color"] for g in self.grains]
         ppgs = [g["ppg"] for g in self.grains]
-        lower, upper = color.color_bound_coefficients(
-            colors, ppgs, original_sg, target_volume_gallons, mash_efficiency,
-            min_srm, max_srm)
-        prob += pulp.lpSum(lower[i] * x[i] for i in self._range) >= 0
-        prob += pulp.lpSum(upper[i] * x[i] for i in self._range) >= 0
         prob += 0  # unranked: feasibility only, no brewing preference objective
 
         alternatives = []
@@ -216,10 +373,26 @@ class FermentableSolver:
 
     # -- model construction ------------------------------------------------
 
-    def _base_problem(self, name):
+    def _add_color_constraints(self, prob, x, ctx):
+        """Constrain the bill's exact Morey SRM into ``ctx``'s color band.
+
+        The two half-plane coefficient rows come straight from the shared color
+        math generation uses, so validity, focused ranges and generation all
+        judge color identically."""
+        colors = [g["color"] for g in self.grains]
+        ppgs = [g["ppg"] for g in self.grains]
+        lower, upper = color.color_bound_coefficients(
+            colors, ppgs, ctx.original_sg, ctx.target_volume_gallons,
+            ctx.mash_efficiency, ctx.min_srm, ctx.max_srm)
+        prob += pulp.lpSum(lower[i] * x[i] for i in self._range) >= 0
+        prob += pulp.lpSum(upper[i] * x[i] for i in self._range) >= 0
+
+    def _base_problem(self, name, exclude_sensory=None):
         """Build the shared model: total==100, per-grain min/max linked to a
         used binary, category usage bounds, global and per-category cardinality,
-        and any sensory bounds. Returns (problem, x_vars, used_vars)."""
+        and any sensory bounds. ``exclude_sensory`` drops the bound with that
+        descriptor name so a focused range is not clipped by its own stale
+        bound. Returns (problem, x_vars, used_vars)."""
         prob = pulp.LpProblem(name, pulp.LpMinimize)
         x = [pulp.LpVariable("x_%d" % i, lowBound=0, upBound=100, cat="Integer")
              for i in self._range]
@@ -251,6 +424,8 @@ class FermentableSolver:
 
         for bound in self.sensory_bounds:
             key = bound["name"]
+            if key == exclude_sensory:
+                continue
             expr = pulp.lpSum(
                 self.grains[i]["sensory_data"].get(key, 0) * x[i] for i in self._range)
             prob += expr >= bound["min"] * 100
