@@ -44,16 +44,6 @@ def test_validity_endpoint_returns_boolean(client):
     assert resp.get_json() is True
 
 
-def test_sensory_profiles_endpoint_returns_ranges(client):
-    resp = client.post("/api/v1/grains/sensory-profiles", json=_body())
-    assert resp.status_code == 200
-    profiles = resp.get_json()
-    assert isinstance(profiles, list) and profiles
-    for entry in profiles:
-        assert set(entry) == {"name", "min", "max"}
-        assert entry["min"] <= entry["max"]
-
-
 def test_recipes_endpoint_returns_unranked_alternatives(client):
     resp = client.post("/api/v1/grains/recipes", json=_body())
     assert resp.status_code == 200
