@@ -1,7 +1,7 @@
 /*
  * Brief model helpers: the locked none/hint/present/bold word steps and the
- * translation from a visitor's brief into the payloads the two focused #36
- * solver endpoints consume. Nothing here ever asks for the all-descriptor set.
+ * translation from a visitor's brief into the one versioned choice brief every
+ * compute route accepts. Nothing here ever asks for the all-descriptor set.
  */
 
 /* Word-step levels. Index 0 ("none") doubles as the rosewood avoid state. */

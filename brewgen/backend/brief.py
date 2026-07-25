@@ -12,6 +12,12 @@ from dataclasses import dataclass
 MAX_ALLOWED_FERMENTABLES = 71
 MAX_SENSORY_DESCRIPTORS = 48
 
+# A rejection is reported before the rate limiter runs, so the failure body has
+# to stay small no matter how many bad fields a 64 KiB body packs in. Reporting
+# the first few dozen paths is enough to fix a brief; without the cap a single
+# anonymous request turns 64 KiB of junk into roughly 850 KB of response.
+MAX_REPORTED_ERRORS = 50
+
 
 class BriefError(Exception):
     """A rejected brief whose errors contain field paths, never field values."""
@@ -50,9 +56,12 @@ def _is_number(value):
 class _Errors:
     def __init__(self):
         self.items = []
+        self.rejected = False
 
     def add(self, path):
-        self.items.append({"path": path})
+        if len(self.items) < MAX_REPORTED_ERRORS:
+            self.items.append({"path": path})
+        self.rejected = True
 
     def number(self, obj, key, path, low, high):
         if key not in obj or not _is_number(obj[key]):
@@ -115,7 +124,7 @@ class BriefContract:
         min_srm, max_srm = self._color(payload, errors)
         descriptor = self._descriptor(payload, require_descriptor, errors)
 
-        if errors.items:
+        if errors.rejected:
             raise BriefError(errors.items)
 
         return DerivedBrief(

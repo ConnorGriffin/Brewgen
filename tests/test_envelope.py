@@ -17,6 +17,7 @@ from copy import deepcopy
 import pytest
 
 from brewgen.backend import views, envelope
+from brewgen.backend import brief as brief_module
 from brewgen.backend.solver.fermentables import SolverConfig
 
 COMPUTE_ENDPOINTS = [
@@ -568,6 +569,24 @@ def test_problem_json_never_echoes_input(client):
         "type", "title", "status", "outcome", "errors"}
     assert {"path": "fermentables.allowed_slugs[0]"} \
         in resp.get_json()["errors"]
+
+
+def test_rejection_body_stays_small_for_a_maximally_invalid_brief(client):
+    """A full-size body of nothing but bad fields is still rejected with a
+    small failure body -- the rejection runs before the rate limiter, so it
+    must not become an amplifier."""
+    brief = _brief("/api/v1/grains/recipes")
+    brief["fermentables"]["bounds"] = [0]
+    while len(json.dumps(brief).encode("utf-8")) <= envelope.MAX_BODY_BYTES:
+        brief["fermentables"]["bounds"] += [0] * 500
+    brief["fermentables"]["bounds"] = brief["fermentables"]["bounds"][:-500]
+    raw = json.dumps(brief)
+    assert len(raw.encode("utf-8")) > envelope.MAX_BODY_BYTES / 2
+
+    resp = _post_raw(client, "/api/v1/grains/recipes", raw)
+    assert resp.status_code == 422
+    assert len(resp.get_json()["errors"]) <= brief_module.MAX_REPORTED_ERRORS
+    assert len(resp.get_data()) < 8_192
 
 
 # -- privacy log ------------------------------------------------------------

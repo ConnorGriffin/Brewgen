@@ -12,10 +12,15 @@ generation. The read-only GET endpoints and the SPA catch-all stay outside it.
 2. **Size** — the body is capped at **64 KiB (65 536 bytes)**; a larger body is
    **413** and is rejected *before* it is read into memory or a solver is built.
 3. **JSON** — must parse, else **400**.
-4. **Versioned brief contract** — a single strict schema: unknown fields,
-   unknown or duplicate catalog slugs/categories/descriptors, non-finite
-   numbers, inverted ranges, and over-cardinality lists are all **422**. Lists
-   are capped at the shipped catalog's cardinality.
+4. **Versioned choice brief** — a single strict schema requiring `version: 1`.
+   A caller submits only its own choices — style slug and gravity, equipment
+   values, allowed fermentable slugs with optional whole-percent bounds and a
+   maximum count, sensory names and bounds, and exact SRM bounds — and the
+   server derives the grain details and the style's category constraints from
+   the shipped catalogs. Whole constraint models cannot be submitted. Unknown
+   fields at any level, unknown or duplicate catalog values, booleans used as
+   numbers, non-finite numbers, inverted ranges, bounds for slugs outside
+   `allowed_slugs`, and over-cardinality lists are all **422**.
 5. **Per-visitor rate limit** — **six requests per minute with a burst of two**,
    keyed by a daily-rotated in-memory hash of the client address with a
    ten-minute idle expiry. The seventh-in-a-burst is **429**. The key material
@@ -28,7 +33,10 @@ Only then does the operation run under the solver's own shared **1.8 s solver /
 `deadline_exceeded` and a no-slot refusal are **503**; `infeasible` is **422**.
 
 All failures use `application/problem+json` with a stable machine `outcome` tag
-and **no echoed input**. Every request emits exactly one aggregate log line
+and **no echoed input**. A rejected brief additionally carries an `errors` array
+naming the offending fields **by path only** — never their submitted values —
+capped at the first 50 paths so a rejection stays small even for a body packed
+with bad fields. Every request emits exactly one aggregate log line
 carrying only `{timestamp, request_id, operation, outcome, status, duration}`,
 retained for seven days — never the brief, the address, the hash, headers,
 cookies, user agents, referrers, or query strings.
