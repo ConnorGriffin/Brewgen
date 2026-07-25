@@ -335,18 +335,18 @@ class FermentableSolver:
 
         alternatives = []
         vectors = []
-        start = clock()
-        deadline = start + self.config.request_deadline_seconds
+        budget = _Budget(self.config, clock)
 
         while len(alternatives) < self.config.max_bills:
-            now = clock()
-            if now >= deadline:
+            time_limit = budget.next_limit()
+            if time_limit <= 0:
                 status = (GenerationStatus.PARTIAL if alternatives
                           else GenerationStatus.DEADLINE_EXCEEDED)
                 return GenerationResult(status, alternatives)
 
-            time_limit = min(self.config.solver_time_limit_seconds, deadline - now)
+            start = budget.clock()
             prob.solve(self._solver(time_limit))
+            budget.charge(budget.clock() - start)
             status_name = pulp.LpStatus[prob.status]
 
             if status_name == "Infeasible":
