@@ -5,6 +5,7 @@ Every returned bill is independently recomputed here (total, bounds, cardinality
 MCU/SRM, pairwise L1) rather than trusting the solver's own bookkeeping."""
 
 import pytest
+import pulp
 
 from conftest import make_grain, make_category
 from brewgen.backend.solver import color
@@ -172,3 +173,58 @@ def test_generation_partial_when_deadline_hits_after_first_bill():
         1.05, 5.5, 75, 0.0, 100.0, clock=lambda: next(times))
     assert result.status == GenerationStatus.PARTIAL
     assert len(result.alternatives) == 1
+
+
+def test_generation_shares_solver_budget_across_attempts(monkeypatch):
+    grains = [make_grain("base", "base", color=2.0, ppg=37.0)]
+    cats = [make_category("base", 100, 100)]
+    config = SolverConfig(max_bills=5, solver_time_limit_seconds=1.8,
+                          request_deadline_seconds=2.0)
+    solver = FermentableSolver(grains, cats, max_unique_grains=1, config=config)
+    clock = {"now": 0.0}
+    limits = []
+
+    class TimedOptimalSolver:
+        def __init__(self, limit):
+            self.limit = limit
+
+        def actualSolve(self, prob):
+            limits.append(self.limit)
+            clock["now"] += 0.9
+            for variable in prob.variables():
+                if variable.name == "x_0":
+                    variable.varValue = 100
+            prob.status = pulp.LpStatusOptimal
+            return prob.status
+
+    monkeypatch.setattr(solver, "_solver", lambda limit: TimedOptimalSolver(limit))
+
+    result = solver.generate(1.05, 5.5, 75, 0.0, 100.0,
+                             clock=lambda: clock["now"])
+
+    assert limits == [1.8, 0.9]
+    assert result.status == GenerationStatus.PARTIAL
+    assert len(result.alternatives) == 2
+
+
+def test_generation_reports_deadline_when_solver_budget_expires_first(monkeypatch):
+    grains = [make_grain("base", "base", color=2.0, ppg=37.0)]
+    cats = [make_category("base", 100, 100)]
+    config = SolverConfig(solver_time_limit_seconds=1.8,
+                          request_deadline_seconds=2.0)
+    solver = FermentableSolver(grains, cats, max_unique_grains=1, config=config)
+    clock = {"now": 0.0}
+
+    class TimedUnsolvedSolver:
+        def actualSolve(self, prob):
+            clock["now"] += 1.8
+            prob.status = pulp.LpStatusNotSolved
+            return prob.status
+
+    monkeypatch.setattr(solver, "_solver", lambda limit: TimedUnsolvedSolver())
+
+    result = solver.generate(1.05, 5.5, 75, 0.0, 100.0,
+                             clock=lambda: clock["now"])
+
+    assert result.status == GenerationStatus.DEADLINE_EXCEEDED
+    assert result.alternatives == []
