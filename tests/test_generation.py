@@ -166,8 +166,8 @@ def test_generation_partial_when_deadline_hits_after_first_bill():
               make_grain("base2", "base", color=3.0, ppg=36.0)]
     cats = [make_category("base", 0, 100)]
     config = SolverConfig(request_deadline_seconds=50)
-    # start, first-iteration check (proceed), second-iteration check (expired).
-    times = iter([0.0, 0.0, 1000.0])
+    # Budget start, first grant, first solve start/end, then expired grant.
+    times = iter([0.0, 0.0, 0.0, 0.0, 1000.0])
     result = FermentableSolver(grains, cats, max_unique_grains=2,
                                config=config).generate(
         1.05, 5.5, 75, 0.0, 100.0, clock=lambda: next(times))
