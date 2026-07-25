@@ -58,6 +58,50 @@ beforeEach(() => { vi.restoreAllMocks() })
 afterEach(() => { delete global.fetch })
 
 describe('public brief editor', () => {
+  it('sends only the version-one choice brief for range, feasibility, and generation', async () => {
+    const { calls } = installFetch()
+    const wrapper = await mountLoaded()
+
+    const expectedKeys = [
+      'color_srm', 'equipment', 'fermentables', 'sensory', 'style', 'version'
+    ]
+    const feasibility = paths(calls, '/api/v1/grains/feasibility').at(-1)
+    expect(Object.keys(feasibility.body).sort()).toEqual(expectedKeys)
+    expect(feasibility.body.version).toBe(1)
+    expect(Object.keys(feasibility.body.style).sort()).toEqual(
+      ['original_gravity', 'slug'])
+    expect(Object.keys(feasibility.body.equipment).sort()).toEqual(
+      ['batch_volume_gallons', 'mash_efficiency_percent'])
+    expect(Object.keys(feasibility.body.fermentables).sort()).toEqual(
+      ['allowed_slugs', 'bounds', 'maximum_count'])
+    expect(Object.keys(feasibility.body.fermentables.bounds[0]).sort()).toEqual(
+      ['maximum_percent', 'minimum_percent', 'slug'])
+    expect(Object.keys(feasibility.body.sensory[0]).sort()).toEqual(
+      ['maximum', 'minimum', 'name'])
+    expect(Object.keys(feasibility.body.color_srm).sort()).toEqual(
+      ['maximum', 'minimum'])
+    expect(feasibility.body.fermentables.bounds.every(
+      (bound) => Number.isInteger(bound.minimum_percent) &&
+        Number.isInteger(bound.maximum_percent)
+    )).toBe(true)
+
+    await wrapper.find('.generate').trigger('click')
+    const generated = wrapper.emitted('generate').at(-1)[0].payload
+    expect(Object.keys(generated).sort()).toEqual(expectedKeys)
+
+    calls.length = 0
+    await wrapper.findAll('.flavor-row')[0].findAll('.step')[3].trigger('click')
+    await flushPromises()
+    const range = paths(calls, '/api/v1/grains/sensory-range')[0]
+    expect(Object.keys(range.body).sort()).toEqual(
+      [...expectedKeys, 'descriptor'].sort())
+    expect(range.body.descriptor).toBe('malty')
+
+    const serialized = JSON.stringify([feasibility.body, generated, range.body])
+    expect(serialized).not.toMatch(
+      /fermentable_list|category_model|sensory_model|max_unique_fermentables|equipment_profile|beer_profile/)
+  })
+
   it('seeds style-mentioned flavors and renders the SRM gradient clipped to the style range', async () => {
     installFetch()
     const wrapper = await mountLoaded()

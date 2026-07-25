@@ -12,6 +12,7 @@ import json
 import logging
 import threading
 import time
+from copy import deepcopy
 
 import pytest
 
@@ -33,27 +34,29 @@ def client():
 def _brief(endpoint=None):
     """A valid brief for any compute endpoint (adds a descriptor for the focused
     range endpoint, whose contract requires one)."""
-    grains = views.all_grains.get_grain_list()
-    by_cat = {}
-    for g in grains:
-        by_cat.setdefault(g["category"], []).append(g["slug"])
-    fermentables = [
-        {"slug": s, "min_percent": 0, "max_percent": 100} for s in by_cat["base"][:2]
-    ] + [
-        {"slug": s, "min_percent": 0, "max_percent": 25} for s in by_cat["crystal"][:2]
-    ]
+    style = views.all_styles.get_style_by_slug("american-pale-ale")
+    usage = style.get_grain_usage()
     brief = {
-        "fermentable_list": fermentables,
-        "category_model": [
-            {"name": "base", "min_percent": 60, "max_percent": 100,
-             "unique_fermentable_count": 2},
-            {"name": "crystal", "min_percent": 0, "max_percent": 25,
-             "unique_fermentable_count": 2},
-        ],
-        "max_unique_fermentables": 4,
-        "equipment_profile": {"target_volume_gallons": 5.5, "mash_efficiency": 75},
-        "beer_profile": {"min_color_srm": 3, "max_color_srm": 20,
-                         "original_sg": 1.055},
+        "version": 1,
+        "style": {"slug": style.slug, "original_gravity": 1.055},
+        "equipment": {
+            "batch_volume_gallons": 5.5,
+            "mash_efficiency_percent": 75,
+        },
+        "fermentables": {
+            "allowed_slugs": [item["slug"] for item in usage],
+            "bounds": [
+                {
+                    "slug": item["slug"],
+                    "minimum_percent": int(item["min_percent"]),
+                    "maximum_percent": int(item["max_percent"]),
+                }
+                for item in usage
+            ],
+            "maximum_count": min(style.unique_fermentable_count, 7),
+        },
+        "sensory": [],
+        "color_srm": {"minimum": 3, "maximum": 20},
     }
     if endpoint and endpoint.endswith("sensory-range"):
         brief["descriptor"] = views.all_grains.get_sensory_keywords()[0]
@@ -110,31 +113,61 @@ def test_empty_body_is_400(client, endpoint):
 
 # -- versioned brief contract ----------------------------------------------
 
+@pytest.mark.parametrize("endpoint", COMPUTE_ENDPOINTS)
+def test_version_one_choice_brief_is_accepted(client, endpoint):
+    resp = client.post(endpoint, json=_brief(endpoint))
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] in {"feasible", "complete", "partial"}
+
+
 def _mutations():
-    keyword_count = len(views.all_grains.get_sensory_keywords())
+    slugs = views.all_grains.get_grain_slugs()
+    keywords = views.all_grains.get_sensory_keywords()
 
     def unknown_field(b):
         b["surprise"] = True
 
     def unknown_slug(b):
-        b["fermentable_list"][0]["slug"] = "definitely-not-a-real-grain"
+        b["fermentables"]["allowed_slugs"][0] = "definitely-not-a-real-grain"
 
     def duplicate_slug(b):
-        b["fermentable_list"].append(dict(b["fermentable_list"][0]))
+        b["fermentables"]["allowed_slugs"][1] = \
+            b["fermentables"]["allowed_slugs"][0]
 
     def non_finite(b):
-        b["max_unique_fermentables"] = float("inf")
+        b["style"]["original_gravity"] = float("inf")
 
     def inverted_range(b):
-        b["fermentable_list"][0]["min_percent"] = 90
-        b["fermentable_list"][0]["max_percent"] = 10
+        b["fermentables"]["bounds"][0]["minimum_percent"] = 90
+        b["fermentables"]["bounds"][0]["maximum_percent"] = 10
 
     def over_cardinality(b):
-        b["sensory_model"] = [{"name": "x", "min": 0, "max": 1}
-                              for _ in range(keyword_count + 1)]
+        b["sensory"] = [
+            {"name": keywords[0], "minimum": 0, "maximum": 1}
+            for _ in range(49)
+        ]
+
+    def boolean_number(b):
+        b["equipment"]["mash_efficiency_percent"] = True
+
+    def unknown_nested_field(b):
+        b["color_srm"]["surprise"] = 1
+
+    def bound_for_absent_slug(b):
+        absent = next(
+            slug for slug in slugs
+            if slug not in set(b["fermentables"]["allowed_slugs"]))
+        b["fermentables"]["bounds"][0]["slug"] = absent
+
+    def count_over_allowed(b):
+        first = b["fermentables"]["allowed_slugs"][0]
+        b["fermentables"]["allowed_slugs"] = [first]
+        b["fermentables"]["bounds"] = []
+        b["fermentables"]["maximum_count"] = 2
 
     return [unknown_field, unknown_slug, duplicate_slug, non_finite,
-            inverted_range, over_cardinality]
+            inverted_range, over_cardinality, boolean_number,
+            unknown_nested_field, bound_for_absent_slug, count_over_allowed]
 
 
 @pytest.mark.parametrize("endpoint", COMPUTE_ENDPOINTS)
@@ -156,6 +189,207 @@ def test_unknown_brief_version_is_rejected(client):
     resp = _post_raw(client, "/api/v1/grains/recipes", json.dumps(brief))
     assert resp.status_code == 422
     assert resp.get_json()["outcome"] == "invalid"
+
+
+@pytest.mark.parametrize("endpoint", COMPUTE_ENDPOINTS)
+def test_version_is_required_and_legacy_model_fields_are_rejected(
+        client, endpoint):
+    missing = _brief(endpoint)
+    del missing["version"]
+    resp = client.post(endpoint, json=missing)
+    assert resp.status_code == 422
+    assert {error["path"] for error in resp.get_json()["errors"]} >= {"version"}
+
+    for field in [
+        "fermentable_list",
+        "category_model",
+        "sensory_model",
+        "max_unique_fermentables",
+        "equipment_profile",
+        "beer_profile",
+    ]:
+        brief = _brief(endpoint)
+        brief[field] = []
+        resp = client.post(endpoint, json=brief)
+        assert resp.status_code == 422
+        assert field in {error["path"] for error in resp.get_json()["errors"]}
+
+
+def _invalid_path_cases():
+    return [
+        ("style unknown", lambda b: b["style"].update(extra=1), "style.extra"),
+        ("style slug unknown",
+         lambda b: b["style"].update(slug="not-a-real-style"),
+         "style.slug"),
+        ("equipment unknown", lambda b: b["equipment"].update(extra=1),
+         "equipment.extra"),
+        ("fermentables unknown", lambda b: b["fermentables"].update(extra=1),
+         "fermentables.extra"),
+        ("bound unknown", lambda b: b["fermentables"]["bounds"][0].update(extra=1),
+         "fermentables.bounds[0].extra"),
+        ("bound duplicate", _duplicate_bound, "fermentables.bounds[1].slug"),
+        ("sensory unknown", _add_unknown_sensory_field, "sensory[0].extra"),
+        ("color unknown", lambda b: b["color_srm"].update(extra=1),
+         "color_srm.extra"),
+        ("version boolean", lambda b: b.update(version=True), "version"),
+        ("gravity low", lambda b: b["style"].update(original_gravity=.999),
+         "style.original_gravity"),
+        ("gravity high", lambda b: b["style"].update(original_gravity=1.201),
+         "style.original_gravity"),
+        ("volume low", lambda b: b["equipment"].update(batch_volume_gallons=.24),
+         "equipment.batch_volume_gallons"),
+        ("volume high", lambda b: b["equipment"].update(batch_volume_gallons=101),
+         "equipment.batch_volume_gallons"),
+        ("efficiency low",
+         lambda b: b["equipment"].update(mash_efficiency_percent=.9),
+         "equipment.mash_efficiency_percent"),
+        ("efficiency high",
+         lambda b: b["equipment"].update(mash_efficiency_percent=101),
+         "equipment.mash_efficiency_percent"),
+        ("percent float", _set_float_percent,
+         "fermentables.bounds[0].minimum_percent"),
+        ("percent high", _set_high_percent,
+         "fermentables.bounds[0].maximum_percent"),
+        ("count float", lambda b: b["fermentables"].update(maximum_count=2.0),
+         "fermentables.maximum_count"),
+        ("count low", lambda b: b["fermentables"].update(maximum_count=0),
+         "fermentables.maximum_count"),
+        ("count high", lambda b: b["fermentables"].update(maximum_count=8),
+         "fermentables.maximum_count"),
+        ("sensory duplicate", _duplicate_sensory, "sensory[1].name"),
+        ("sensory unknown name", _unknown_sensory, "sensory[0].name"),
+        ("sensory high", _high_sensory, "sensory[0].maximum"),
+        ("sensory inverted", _inverted_sensory, "sensory[0].minimum"),
+        ("srm low", lambda b: b.update(color_srm={"minimum": -1, "maximum": 20}),
+         "color_srm.minimum"),
+        ("srm high", lambda b: b.update(color_srm={"minimum": 0, "maximum": 256}),
+         "color_srm.maximum"),
+        ("srm inverted",
+         lambda b: b.update(color_srm={"minimum": 20, "maximum": 5}),
+         "color_srm.minimum"),
+    ]
+
+
+def _sensory_item():
+    return {
+        "name": views.all_grains.get_sensory_keywords()[0],
+        "minimum": 0,
+        "maximum": 1,
+    }
+
+
+def _add_unknown_sensory_field(brief):
+    brief["sensory"] = [_sensory_item()]
+    brief["sensory"][0]["extra"] = 1
+
+
+def _set_float_percent(brief):
+    brief["fermentables"]["bounds"][0]["minimum_percent"] = 1.5
+
+
+def _set_high_percent(brief):
+    brief["fermentables"]["bounds"][0]["maximum_percent"] = 101
+
+
+def _duplicate_bound(brief):
+    brief["fermentables"]["bounds"][1] = deepcopy(
+        brief["fermentables"]["bounds"][0])
+
+
+def _duplicate_sensory(brief):
+    brief["sensory"] = [_sensory_item(), deepcopy(_sensory_item())]
+
+
+def _unknown_sensory(brief):
+    brief["sensory"] = [_sensory_item()]
+    brief["sensory"][0]["name"] = "not-a-real-sensory-name"
+
+
+def _high_sensory(brief):
+    brief["sensory"] = [_sensory_item()]
+    brief["sensory"][0]["maximum"] = 5.1
+
+
+def _inverted_sensory(brief):
+    brief["sensory"] = [_sensory_item()]
+    brief["sensory"][0].update(minimum=4, maximum=1)
+
+
+@pytest.mark.parametrize(
+    "_label,mutate,path", _invalid_path_cases(),
+    ids=[case[0] for case in _invalid_path_cases()])
+def test_invalid_choice_fields_report_only_their_paths(
+        client, _label, mutate, path):
+    brief = _brief("/api/v1/grains/recipes")
+    mutate(brief)
+    resp = client.post("/api/v1/grains/recipes", json=brief)
+    assert resp.status_code == 422
+    assert path in {error["path"] for error in resp.get_json()["errors"]}
+
+
+def test_exact_numeric_and_cardinality_boundaries_are_accepted(client):
+    brief = _brief("/api/v1/grains/feasibility")
+    brief["style"]["original_gravity"] = 1.200
+    brief["equipment"] = {
+        "batch_volume_gallons": 100,
+        "mash_efficiency_percent": 100,
+    }
+    brief["fermentables"] = {
+        "allowed_slugs": views.all_grains.get_grain_slugs(),
+        "bounds": [{
+            "slug": views.all_grains.get_grain_slugs()[0],
+            "minimum_percent": 0,
+            "maximum_percent": 100,
+        }],
+        "maximum_count": 7,
+    }
+    brief["sensory"] = [
+        {"name": name, "minimum": 0, "maximum": 5}
+        for name in views.all_grains.get_sensory_keywords()
+    ]
+    brief["color_srm"] = {"minimum": 0, "maximum": 255}
+
+    resp = client.post("/api/v1/grains/feasibility", json=brief)
+    assert resp.get_json().get("outcome") != "invalid"
+
+    brief["style"]["original_gravity"] = 1.000
+    brief["equipment"] = {
+        "batch_volume_gallons": .25,
+        "mash_efficiency_percent": 1,
+    }
+    resp = client.post("/api/v1/grains/feasibility", json=brief)
+    assert resp.get_json().get("outcome") != "invalid"
+
+
+def test_non_finite_choice_numbers_report_paths(client):
+    brief = _brief("/api/v1/grains/recipes")
+    brief["style"]["original_gravity"] = float("nan")
+    brief["equipment"]["batch_volume_gallons"] = float("inf")
+    resp = _post_raw(
+        client, "/api/v1/grains/recipes", json.dumps(brief))
+    assert resp.status_code == 422
+    paths = {error["path"] for error in resp.get_json()["errors"]}
+    assert paths >= {
+        "style.original_gravity",
+        "equipment.batch_volume_gallons",
+    }
+
+
+def test_style_category_constraints_are_derived_server_side(client):
+    brief = _brief("/api/v1/grains/feasibility")
+    crystal = next(
+        grain for grain in views.all_grains.get_grain_list()
+        if grain["category"] == "crystal")
+    brief["fermentables"] = {
+        "allowed_slugs": [crystal["slug"]],
+        "bounds": [],
+        "maximum_count": 1,
+    }
+    brief["color_srm"] = {"minimum": 0, "maximum": 255}
+
+    resp = client.post("/api/v1/grains/feasibility", json=brief)
+    assert resp.status_code == 422
+    assert resp.get_json()["outcome"] == "infeasible"
 
 
 # -- per-visitor rate limit -------------------------------------------------
@@ -325,19 +559,22 @@ def test_deadline_maps_to_503(client, monkeypatch, endpoint):
 def test_problem_json_never_echoes_input(client):
     marker = "zzz-marker-not-a-real-slug"
     brief = _brief("/api/v1/grains/recipes")
-    brief["fermentable_list"][0]["slug"] = marker
+    brief["fermentables"]["allowed_slugs"][0] = marker
     resp = _post_raw(client, "/api/v1/grains/recipes", json.dumps(brief))
     assert resp.status_code == 422
     text = resp.get_data(as_text=True)
     assert marker not in text
-    assert set(resp.get_json()) == {"type", "title", "status", "outcome"}
+    assert set(resp.get_json()) == {
+        "type", "title", "status", "outcome", "errors"}
+    assert {"path": "fermentables.allowed_slugs[0]"} \
+        in resp.get_json()["errors"]
 
 
 # -- privacy log ------------------------------------------------------------
 
 def test_log_carries_only_aggregate_fields(client, caplog):
     marker_ip = "203.0.113.77"
-    marker_slug = _brief()["fermentable_list"][0]["slug"]
+    marker_slug = _brief()["fermentables"]["allowed_slugs"][0]
     with caplog.at_level(logging.INFO, logger="brewgen.compute"):
         client.post("/api/v1/grains/recipes", json=_brief(),
                     headers={"X-Forwarded-For": marker_ip})
@@ -442,7 +679,7 @@ def test_different_canonical_keys_never_share_a_result(monkeypatch):
     endpoint = "/api/v1/grains/feasibility"
     a = _brief(endpoint)
     b = _brief(endpoint)
-    b["fermentable_list"][0]["max_percent"] = 90  # a different grain bound
+    b["fermentables"]["bounds"][0]["maximum_percent"] = 90
 
     _post_from(endpoint, a, "203.0.113.1")
     _post_from(endpoint, b, "203.0.113.2")
@@ -458,9 +695,17 @@ def test_sensory_range_key_ignores_the_queried_descriptors_own_bound(monkeypatch
     def brief(target_bound, other_bound):
         b = _brief(endpoint)
         b["descriptor"] = target
-        b["sensory_model"] = [
-            {"name": target, "min": target_bound[0], "max": target_bound[1]},
-            {"name": other, "min": other_bound[0], "max": other_bound[1]},
+        b["sensory"] = [
+            {
+                "name": target,
+                "minimum": target_bound[0],
+                "maximum": target_bound[1],
+            },
+            {
+                "name": other,
+                "minimum": other_bound[0],
+                "maximum": other_bound[1],
+            },
         ]
         return b
 

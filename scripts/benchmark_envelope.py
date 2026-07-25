@@ -60,27 +60,28 @@ RSS_CEILING_MB = 512
 # -- a valid brief straight from the shipped catalog ------------------------
 
 def _briefs():
-    grains = views.all_grains.get_grain_list()
-    by_cat = {}
-    for g in grains:
-        by_cat.setdefault(g["category"], []).append(g["slug"])
-    fermentables = [
-        {"slug": s, "min_percent": 0, "max_percent": 100} for s in by_cat["base"][:2]
-    ] + [
-        {"slug": s, "min_percent": 0, "max_percent": 25} for s in by_cat["crystal"][:2]
-    ]
+    style = views.all_styles.get_style_by_slug("american-pale-ale")
+    usage = style.get_grain_usage()
+    allowed = [grain["slug"] for grain in usage]
     brief = {
-        "fermentable_list": fermentables,
-        "category_model": [
-            {"name": "base", "min_percent": 60, "max_percent": 100,
-             "unique_fermentable_count": 2},
-            {"name": "crystal", "min_percent": 0, "max_percent": 25,
-             "unique_fermentable_count": 2},
-        ],
-        "max_unique_fermentables": 4,
-        "equipment_profile": {"target_volume_gallons": 5.5, "mash_efficiency": 75},
-        "beer_profile": {"min_color_srm": 3, "max_color_srm": 20,
-                         "original_sg": 1.055},
+        "version": 1,
+        "style": {"slug": style.slug, "original_gravity": 1.055},
+        "equipment": {
+            "batch_volume_gallons": 5.5,
+            "mash_efficiency_percent": 75,
+        },
+        "fermentables": {
+            "allowed_slugs": allowed,
+            "bounds": [{
+                "slug": grain["slug"],
+                "minimum_percent": int(grain["min_percent"]),
+                "maximum_percent": int(grain["max_percent"]),
+            } for grain in usage],
+            "maximum_count": min(
+                style.unique_fermentable_count or 4, len(allowed), 7),
+        },
+        "sensory": [],
+        "color_srm": {"minimum": 3, "maximum": 20},
     }
     range_brief = dict(brief)
     range_brief["descriptor"] = views.all_grains.get_sensory_keywords()[0]
