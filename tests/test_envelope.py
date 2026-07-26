@@ -10,6 +10,8 @@ oversized body must be rejected before the solver is ever built."""
 
 import json
 import logging
+import threading
+import time
 
 import pytest
 
@@ -278,3 +280,140 @@ def test_log_carries_only_aggregate_fields(client, caplog):
     # The address, its hash, and brief content never reach the log.
     assert marker_ip not in records[0].getMessage()
     assert marker_slug not in records[0].getMessage()
+
+
+# -- single-flight coalescing + short-lived result cache -------------------
+
+def _counting_solver_spy(monkeypatch, gate=None):
+    """Replace the solver builder with a spy that counts executions and,
+    optionally, blocks the leader on ``gate`` so followers reliably attach while
+    it is still in flight. Returns the shared call counter (a list)."""
+    real_build = views._build_fermentable_solver
+    calls = []
+    lock = threading.Lock()
+
+    def spy(data):
+        with lock:
+            calls.append(1)
+        if gate is not None:
+            gate.wait(timeout=5)
+        return real_build(data)
+
+    monkeypatch.setattr(views, "_build_fermentable_solver", spy)
+    return calls
+
+
+def _post_from(client_endpoint, brief, ip):
+    resp = views.app.test_client().post(
+        client_endpoint, json=brief, headers={"X-Forwarded-For": ip})
+    return resp
+
+
+def test_concurrent_identical_briefs_run_the_solver_once(monkeypatch):
+    # N byte-identical valid briefs racing one endpoint must cause exactly one
+    # solver execution; every caller gets the same 200 body, and no follower is
+    # turned away busy even though N exceeds the two-slot ceiling. Distinct
+    # forwarded hops keep the per-visitor rate limit out of the way -- the
+    # canonical key is the brief, not the address.
+    gate = threading.Event()
+    calls = _counting_solver_spy(monkeypatch, gate=gate)
+    endpoint = "/api/v1/grains/feasibility"
+    brief = _brief(endpoint)
+
+    results = {}
+
+    def worker(i):
+        results[i] = _post_from(endpoint, brief, "203.0.113.%d" % (i + 1))
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(4)]
+    for t in threads:
+        t.start()
+    # Let the leader reach the solver and the followers reach their wait.
+    deadline = time.monotonic() + 5
+    while not calls and time.monotonic() < deadline:
+        time.sleep(0.01)
+    time.sleep(0.1)
+    gate.set()
+    for t in threads:
+        t.join(timeout=5)
+
+    assert len(calls) == 1, "identical concurrent briefs must share one execution"
+    bodies = {r.get_data() for r in results.values()}
+    statuses = {r.status_code for r in results.values()}
+    assert statuses == {200}, "no follower is turned away while one leader runs"
+    assert len(bodies) == 1, "every caller receives the byte-identical body"
+
+
+def test_identical_brief_replays_from_cache_then_recomputes_after_ttl(monkeypatch):
+    clock = {"now": 1000.0}
+    monkeypatch.setattr(envelope, "COALESCER",
+                        envelope.ComputeCoalescer(clock=lambda: clock["now"]))
+    calls = _counting_solver_spy(monkeypatch)
+    endpoint = "/api/v1/grains/feasibility"
+    brief = _brief(endpoint)
+
+    first = _post_from(endpoint, brief, "203.0.113.1")
+    assert first.status_code == 200
+    assert len(calls) == 1
+    # A repeat inside the TTL replays the cached answer -- no new solver work.
+    cached = _post_from(endpoint, brief, "203.0.113.2")
+    assert cached.status_code == 200
+    assert cached.get_data() == first.get_data()
+    assert len(calls) == 1
+    # Past the TTL the cache entry is gone and the brief recomputes.
+    clock["now"] += envelope.RESULT_CACHE_TTL_SECONDS + 1
+    _post_from(endpoint, brief, "203.0.113.3")
+    assert len(calls) == 2
+
+
+def test_different_canonical_keys_never_share_a_result(monkeypatch):
+    calls = _counting_solver_spy(monkeypatch)
+    endpoint = "/api/v1/grains/feasibility"
+    a = _brief(endpoint)
+    b = _brief(endpoint)
+    b["fermentable_list"][0]["max_percent"] = 90  # a different grain bound
+
+    _post_from(endpoint, a, "203.0.113.1")
+    _post_from(endpoint, b, "203.0.113.2")
+    assert len(calls) == 2, "briefs with different keys must not false-share"
+
+
+def test_sensory_range_key_ignores_the_queried_descriptors_own_bound(monkeypatch):
+    calls = _counting_solver_spy(monkeypatch)
+    endpoint = "/api/v1/grains/sensory-range"
+    keywords = views.all_grains.get_sensory_keywords()
+    target, other = keywords[0], keywords[1]
+
+    def brief(target_bound, other_bound):
+        b = _brief(endpoint)
+        b["descriptor"] = target
+        b["sensory_model"] = [
+            {"name": target, "min": target_bound[0], "max": target_bound[1]},
+            {"name": other, "min": other_bound[0], "max": other_bound[1]},
+        ]
+        return b
+
+    # Differ only in the queried descriptor's own bound -> one execution.
+    _post_from(endpoint, brief((0, 5), (0, 5)), "203.0.113.1")
+    _post_from(endpoint, brief((1, 4), (0, 5)), "203.0.113.2")
+    assert len(calls) == 1, "the queried descriptor's own bound is not part of the key"
+
+    # Differ in a *different* descriptor's bound -> a second execution.
+    _post_from(endpoint, brief((0, 5), (0, 4)), "203.0.113.3")
+    assert len(calls) == 2, "another descriptor's bound does change the key"
+
+
+def test_deadline_outcome_is_not_cached(monkeypatch):
+    # A transient 503 must never be replayed: an immediately repeated identical
+    # brief re-enters the solver rather than being handed the cached timeout.
+    monkeypatch.setattr(views, "SOLVER_CONFIG",
+                        SolverConfig(request_deadline_seconds=0))
+    calls = _counting_solver_spy(monkeypatch)
+    endpoint = "/api/v1/grains/feasibility"
+    brief = _brief(endpoint)
+
+    first = _post_from(endpoint, brief, "203.0.113.1")
+    second = _post_from(endpoint, brief, "203.0.113.2")
+    assert first.status_code == 503
+    assert second.status_code == 503
+    assert len(calls) == 2, "a deadline is not cached; the repeat recomputes"

@@ -26,6 +26,7 @@ per-container and correct only under that shape. The deploy must forward exactly
 one hop.
 """
 
+import collections
 import hashlib
 import json
 import logging
@@ -47,6 +48,13 @@ RATE_LIMIT_BURST = 2              # tokens a fresh visitor may spend at once
 RATE_IDLE_EXPIRY_SECONDS = 600    # drop a visitor's bucket after 10 idle minutes
 CONCURRENCY_LIMIT = 2             # active solver operations per container, no queue
 LOG_RETENTION_DAYS = 7            # documented retention; enforced by the log sink
+RESULT_CACHE_TTL_SECONDS = 60     # replay window for a just-computed identical brief
+RESULT_CACHE_MAX_ENTRIES = 256    # bound the cache so distinct briefs can't grow it
+
+# The outcomes that represent a genuine solver answer and are safe to replay. A
+# transient/limit state (deadline, busy, rate_limited, internal) is never cached
+# so an immediate retry is always free to succeed.
+_CACHEABLE_OUTCOMES = frozenset({"feasible", "infeasible", "complete", "partial"})
 
 # Stable, input-free titles. These are never shown to the visitor (the frontend
 # renders its own copy from the machine ``outcome`` tag); they only have to stay
@@ -340,20 +348,177 @@ class RateLimiter:
             del self._buckets[key]
 
 
+# -- canonical brief key ----------------------------------------------------
+
+def _normalize_brief(data, require_descriptor):
+    """Canonicalize a validated brief into a shape that is stable across
+    equivalent-but-differently-written requests.
+
+    Applies the same field defaults the endpoints apply so an omitted field and
+    its default collide, sorts each list by its identity key so ordering is
+    irrelevant, and drops an omitted-vs-present ``version``. For a focused
+    ``sensory_range``, the queried descriptor's own ``sensory_model`` entry is
+    dropped because that endpoint computes the descriptor's full editable span
+    independently of its current bound.
+    """
+    norm = {
+        "fermentable_list": sorted(data.get("fermentable_list", []),
+                                   key=lambda item: item["slug"]),
+        "max_unique_fermentables": data.get("max_unique_fermentables", 4),
+    }
+
+    categories = data.get("category_model")
+    if categories is not None:
+        norm["category_model"] = sorted(categories, key=lambda item: item["name"])
+
+    sensory = data.get("sensory_model")
+    if sensory is not None:
+        entries = sensory
+        if require_descriptor:
+            descriptor = data.get("descriptor")
+            entries = [item for item in entries if item.get("name") != descriptor]
+        norm["sensory_model"] = sorted(entries, key=lambda item: item["name"])
+
+    # The color context is applied unconditionally by feasibility/recipes but
+    # only when a brief actually pins a color band for sensory_range (see
+    # views.py); mirror that so an absent band never collides with a default one.
+    if not require_descriptor or data.get("beer_profile"):
+        equipment = data.get("equipment_profile", {})
+        beer = data.get("beer_profile", {})
+        norm["equipment_profile"] = {
+            "target_volume_gallons": equipment.get("target_volume_gallons", 5.5),
+            "mash_efficiency": equipment.get("mash_efficiency", 75),
+        }
+        norm["beer_profile"] = {
+            "original_sg": beer.get("original_sg", 1.05),
+            "min_color_srm": beer.get("min_color_srm", 0),
+            "max_color_srm": beer.get("max_color_srm", 255),
+        }
+
+    if require_descriptor:
+        norm["descriptor"] = data.get("descriptor")
+
+    return norm
+
+
+def canonical_key(operation, data, require_descriptor):
+    """A deterministic string key for ``(operation, canonical brief)``."""
+    payload = json.dumps(_normalize_brief(data, require_descriptor),
+                         sort_keys=True, separators=(",", ":"))
+    return operation + "\x00" + payload
+
+
+# -- single-flight coalescing + short-lived result cache --------------------
+
+class _Flight:
+    """One in-flight leader others may attach to. ``result`` is the frozen
+    response tuple to replay, or ``None`` once done to mean 're-run' (the leader
+    produced a non-answer that must not be shared)."""
+
+    def __init__(self, lock):
+        self.cond = threading.Condition(lock)
+        self.done = False
+        self.result = None
+
+
+class ComputeCoalescer:
+    """Collapse identical concurrent compute calls onto one execution and replay
+    a just-completed identical answer for a short TTL.
+
+    Identical calls sharing a canonical key elect one leader that runs the
+    solver; the rest attach as followers and receive the leader's frozen result
+    without taking a slot or re-running. A genuine answer is cached (bounded LRU,
+    TTL) so an immediate identical brief replays with no solver work. The clock
+    is injectable so tests can advance the TTL without waiting.
+    """
+
+    def __init__(self, ttl=RESULT_CACHE_TTL_SECONDS,
+                 max_entries=RESULT_CACHE_MAX_ENTRIES, clock=time.monotonic):
+        self._ttl = ttl
+        self._max_entries = max_entries
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._cache = collections.OrderedDict()  # key -> (expires_at, frozen)
+        self._inflight = {}                       # key -> _Flight
+
+    def execute(self, key, runner):
+        """Return the frozen ``(body, status, mimetype, outcome)`` for ``key``,
+        replaying a cached or coalesced result when possible, else running
+        ``runner`` (which acquires the slot and calls the view)."""
+        while True:
+            with self._lock:
+                cached = self._get_cached(key)
+                if cached is not None:
+                    return cached
+                flight = self._inflight.get(key)
+                if flight is None:
+                    flight = _Flight(self._lock)
+                    self._inflight[key] = flight
+                    leader = True
+                else:
+                    leader = False
+
+            if leader:
+                return self._lead(key, flight, runner)
+
+            with self._lock:
+                while not flight.done:
+                    flight.cond.wait()
+                if flight.result is not None:
+                    return flight.result
+            # Leader produced a non-answer: fall through and re-run.
+
+    def _lead(self, key, flight, runner):
+        cacheable = False
+        frozen = None
+        try:
+            frozen, cacheable = runner()
+        finally:
+            with self._lock:
+                if cacheable and frozen is not None:
+                    self._put_cached(key, frozen)
+                flight.result = frozen if cacheable else None
+                flight.done = True
+                if self._inflight.get(key) is flight:
+                    del self._inflight[key]
+                flight.cond.notify_all()
+        return frozen
+
+    def _get_cached(self, key):
+        entry = self._cache.get(key)
+        if entry is None:
+            return None
+        expires_at, frozen = entry
+        if self._clock() >= expires_at:
+            del self._cache[key]
+            return None
+        self._cache.move_to_end(key)
+        return frozen
+
+    def _put_cached(self, key, frozen):
+        self._cache[key] = (self._clock() + self._ttl, frozen)
+        self._cache.move_to_end(key)
+        while len(self._cache) > self._max_entries:
+            self._cache.popitem(last=False)
+
+
 # -- process-wide, monkeypatchable state ------------------------------------
 
 RATE_LIMITER = RateLimiter()
 SLOTS = threading.BoundedSemaphore(CONCURRENCY_LIMIT)
+COALESCER = ComputeCoalescer()
 
 
 def reset_state():
-    """Reset the limiter and the concurrency ceiling to a clean slate.
+    """Reset the limiter, concurrency ceiling, and coalescer to a clean slate.
 
-    Only for tests, which need each case to start from an empty bucket store and
-    two free slots regardless of what earlier cases did."""
-    global RATE_LIMITER, SLOTS
+    Only for tests, which need each case to start from an empty bucket store,
+    two free slots, and an empty cache/in-flight map regardless of what earlier
+    cases did."""
+    global RATE_LIMITER, SLOTS, COALESCER
     RATE_LIMITER = RateLimiter()
     SLOTS = threading.BoundedSemaphore(CONCURRENCY_LIMIT)
+    COALESCER = ComputeCoalescer()
 
 
 def client_address():
@@ -432,16 +597,40 @@ def _run(view, operation, contract, require_descriptor, args, kwargs):
     if contract.validate(data, require_descriptor=require_descriptor):
         return problem(422, "invalid")
 
-    # 5. per-visitor rate limit (one trusted hop)
+    # 5. per-visitor rate limit (one trusted hop) -- charged before any
+    #    coalescing or cache lookup, so a flood still spends its budget.
     if not RATE_LIMITER.allow(client_address()):
         return problem(429, "rate_limited")
 
-    # 6. two-slot, no-queue concurrency ceiling
-    if not SLOTS.acquire(blocking=False):
-        return problem(503, "busy")
-    try:
-        return view(data, *args, **kwargs)
-    except Exception:  # never leak an internal failure's shape
-        return problem(500, "internal")
-    finally:
-        SLOTS.release()
+    # 6. coalesce identical in-flight work and replay a recent identical answer,
+    #    taking a slot only for the leader's single execution.
+    key = canonical_key(operation, data, require_descriptor)
+
+    def runner():
+        # 6a. two-slot, no-queue concurrency ceiling -- the leader alone takes a
+        #     slot; followers ride its result without one.
+        if not SLOTS.acquire(blocking=False):
+            return _freeze(*problem(503, "busy")), False
+        try:
+            resp, outcome = view(data, *args, **kwargs)
+        except Exception:  # never leak an internal failure's shape
+            resp, outcome = problem(500, "internal")
+        finally:
+            SLOTS.release()
+        return _freeze(resp, outcome), outcome in _CACHEABLE_OUTCOMES
+
+    return _thaw(COALESCER.execute(key, runner))
+
+
+def _freeze(response, outcome):
+    """Reduce a `(response, outcome)` pair to a replayable, single-use-free
+    tuple. A Flask ``Response`` body reads once, so we hold the bytes and rebuild
+    a fresh ``Response`` per caller in :func:`_thaw`."""
+    return (response.get_data(), response.status_code, response.mimetype, outcome)
+
+
+def _thaw(frozen):
+    """Rebuild a fresh `(response, outcome)` from a frozen tuple so every caller
+    gets an independent, byte-identical response object."""
+    body, status, mimetype, outcome = frozen
+    return Response(body, status=status, mimetype=mimetype), outcome
