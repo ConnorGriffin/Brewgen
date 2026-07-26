@@ -75,6 +75,21 @@ export const OUTCOME_NOTICE = {
   }
 }
 
+/* The notice for an outcome, made timing-aware for the transient limits. When
+ * the compute limit returned a retry time, the busy/rate-limited notice says
+ * when the visitor can try again instead of a vague "in a moment". */
+export function outcomeNotice (outcome, retryAfter) {
+  const base = OUTCOME_NOTICE[outcome]
+  if (!base) return null
+  const transient = outcome === 'busy' || outcome === 'rate_limited'
+  if (transient && Number.isFinite(retryAfter) && retryAfter > 0) {
+    const s = Math.ceil(retryAfter)
+    const secs = `${s} second${s === 1 ? '' : 's'}`
+    return { ...base, message: `${base.message} You can try again in about ${secs}.` }
+  }
+  return base
+}
+
 /* ---- order-ticket brief readback --------------------------------------- */
 
 const FLAVOR_WORDS = {

@@ -144,6 +144,66 @@ describe('public brief editor', () => {
     expect(wrapper.find('.feas').text()).toContain('can meet this brief')
   })
 
+  it('honors the retry cooldown: no compute until it expires, brief preserved, then an intentional edit resumes', async () => {
+    vi.useFakeTimers()
+    const calls = []
+    // Feasibility answers busy with a three-second retry; ranges answer feasible.
+    global.fetch = vi.fn((url, init = {}) => {
+      const path = String(url).replace(/^https?:\/\/[^/]+/, '')
+      const method = (init.method || 'GET').toUpperCase()
+      const body = init.body ? JSON.parse(init.body) : null
+      calls.push({ path, method, body })
+      if (method === 'GET' && path === '/api/v1/styles') return json(apa.styles)
+      if (method === 'GET' && path.startsWith('/api/v1/styles/')) return json(apa.style)
+      if (path === '/api/v1/grains/sensory-range') return json(apa.sensoryRange(body.descriptor))
+      if (path === '/api/v1/grains/feasibility') {
+        return json({ status: 503, outcome: 'busy', retry_after: 3 }, 503)
+      }
+      return json({}, 404)
+    })
+
+    const wrapper = mount(BriefEditor)
+    await flushPromises() // styles + style detail
+    await vi.advanceTimersByTimeAsync(300) // debounced feasibility fires
+    await flushPromises()
+
+    // The busy answer put the editor into a countdown.
+    expect(wrapper.find('.feas').text()).toMatch(/try again in 3 seconds/)
+    const flavorsBefore = wrapper.findAll('.flavor-row').length
+    expect(flavorsBefore).toBeGreaterThan(0)
+
+    calls.length = 0 // measure only what happens during the cooldown
+
+    // Editing during cooldown updates the brief but fires no compute request.
+    const abv = wrapper.find('#abv')
+    abv.element.value = '5.7'
+    await abv.trigger('input')
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    await wrapper.findAll('.flavor-row')[0].findAll('.step')[3].trigger('click')
+    await flushPromises()
+
+    const computePaths = calls.filter((c) => c.path.startsWith('/api/v1/grains/'))
+    expect(computePaths).toHaveLength(0) // no hidden retry before the stated time
+    // The brief survived the cooldown: same flavor rows, the edited strength kept.
+    expect(wrapper.findAll('.flavor-row')).toHaveLength(flavorsBefore)
+    expect(wrapper.find('#abv').element.value).toBe('5.7')
+
+    // Let the countdown elapse, then an intentional edit resumes compute.
+    await vi.advanceTimersByTimeAsync(3000)
+    await flushPromises()
+    calls.length = 0
+    const srm = wrapper.find('#srm')
+    srm.element.value = String(Number(srm.element.value) + 1)
+    await srm.trigger('input')
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    expect(calls.filter((c) => c.path === '/api/v1/grains/feasibility').length)
+      .toBeGreaterThan(0)
+
+    vi.useRealTimers()
+  })
+
   it('shows the locked infeasible voice without leaking solver internals', async () => {
     installFetch()
     global.fetch = vi.fn((url, init = {}) => {

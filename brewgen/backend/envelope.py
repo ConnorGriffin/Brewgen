@@ -47,6 +47,7 @@ RATE_LIMIT_PER_MINUTE = 6         # sustained compute requests per visitor
 RATE_LIMIT_BURST = 2              # tokens a fresh visitor may spend at once
 RATE_IDLE_EXPIRY_SECONDS = 600    # drop a visitor's bucket after 10 idle minutes
 CONCURRENCY_LIMIT = 2             # active solver operations per container, no queue
+BUSY_RETRY_SECONDS = 1           # short retry for a busy shed (<=2 s end-to-end budget)
 LOG_RETENTION_DAYS = 7            # documented retention; enforced by the log sink
 RESULT_CACHE_TTL_SECONDS = 60     # replay window for a just-computed identical brief
 RESULT_CACHE_MAX_ENTRIES = 256    # bound the cache so distinct briefs can't grow it
@@ -78,19 +79,27 @@ logger = logging.getLogger("brewgen.compute")
 
 # -- problem+json / success responses --------------------------------------
 
-def problem(status, outcome):
+def problem(status, outcome, retry_after=None):
     """Build an ``application/problem+json`` failure `(response, outcome)`.
 
     The body carries only RFC 7807 members plus a stable machine ``outcome``
-    tag the frontend maps to a notice; it never echoes the request."""
+    tag the frontend maps to a notice; it never echoes the request. When
+    ``retry_after`` is given (seconds until the visitor may retry), it is
+    surfaced both as an integer ``Retry-After`` header (ceiled, per RFC 7231)
+    and as a ``retry_after`` body field the frontend renders as a countdown."""
     body = {
         "type": "about:blank",
         "title": _TITLES.get(outcome, "Request failed"),
         "status": status,
         "outcome": outcome,
     }
+    headers = {}
+    if retry_after is not None:
+        seconds = max(0, math.ceil(retry_after))
+        body["retry_after"] = seconds
+        headers["Retry-After"] = str(seconds)
     resp = Response(json.dumps(body), status=status,
-                    mimetype="application/problem+json")
+                    mimetype="application/problem+json", headers=headers)
     return resp, outcome
 
 
@@ -309,7 +318,12 @@ class RateLimiter:
         self._salt_day = int(day_clock() // 86_400)
 
     def allow(self, address):
-        """Charge one request to ``address``; return True if within budget."""
+        """Charge one request to ``address``.
+
+        Returns ``(allowed, retry_after)``: ``allowed`` is True when a token was
+        spent, and ``retry_after`` is the seconds until one token next refills,
+        computed from the *same* clock reading so it is exact under a frozen
+        clock (0.0 when the request is allowed)."""
         with self._lock:
             now = self._clock()
             self._rotate_salt_if_needed()
@@ -323,9 +337,28 @@ class RateLimiter:
                 tokens = self._capacity
             if tokens >= 1:
                 self._buckets[key] = (tokens - 1, now)
-                return True
+                return True, 0.0
             self._buckets[key] = (tokens, now)
-            return False
+            return False, (1 - tokens) / self._refill_per_second
+
+    def refund(self, address):
+        """Credit one token back to ``address`` (capped at capacity).
+
+        Undoes the charge :meth:`allow` made when a request is shed *after* the
+        rate check but before any solver work runs (a busy concurrency shed), so
+        the gate keeps its documented rate->concurrency order yet a busy
+        rejection costs the visitor no net token. At a frozen clock this exactly
+        restores the pre-request bucket."""
+        with self._lock:
+            now = self._clock()
+            key = self._hash(address)
+            if key in self._buckets:
+                tokens, last = self._buckets[key]
+                tokens = min(self._capacity,
+                             tokens + (now - last) * self._refill_per_second + 1)
+            else:
+                tokens = self._capacity
+            self._buckets[key] = (tokens, now)
 
     def _hash(self, address):
         digest = hashlib.sha256()
@@ -599,8 +632,10 @@ def _run(view, operation, contract, require_descriptor, args, kwargs):
 
     # 5. per-visitor rate limit (one trusted hop) -- charged before any
     #    coalescing or cache lookup, so a flood still spends its budget.
-    if not RATE_LIMITER.allow(client_address()):
-        return problem(429, "rate_limited")
+    address = client_address()
+    allowed, retry_after = RATE_LIMITER.allow(address)
+    if not allowed:
+        return problem(429, "rate_limited", retry_after=retry_after)
 
     # 6. coalesce identical in-flight work and replay a recent identical answer,
     #    taking a slot only for the leader's single execution.
@@ -608,9 +643,14 @@ def _run(view, operation, contract, require_descriptor, args, kwargs):
 
     def runner():
         # 6a. two-slot, no-queue concurrency ceiling -- the leader alone takes a
-        #     slot; followers ride its result without one.
+        #     slot; followers ride its result without one. A busy shed never
+        #     reaches solver work, so refund the token step 5 charged: the rate
+        #     check keeps its documented position, but a busy rejection costs
+        #     the visitor nothing and carries a short retry.
         if not SLOTS.acquire(blocking=False):
-            return _freeze(*problem(503, "busy")), False
+            RATE_LIMITER.refund(address)
+            shed = problem(503, "busy", retry_after=BUSY_RETRY_SECONDS)
+            return _freeze(*shed), False
         try:
             resp, outcome = view(data, *args, **kwargs)
         except Exception:  # never leak an internal failure's shape
@@ -622,15 +662,26 @@ def _run(view, operation, contract, require_descriptor, args, kwargs):
     return _thaw(COALESCER.execute(key, runner))
 
 
+# Headers that must survive the freeze/replay round trip. Content type and
+# length are rebuilt from the frozen body and mimetype, so only the retry hint
+# has to be carried across.
+_REPLAYED_HEADERS = ("Retry-After",)
+
+
 def _freeze(response, outcome):
     """Reduce a `(response, outcome)` pair to a replayable, single-use-free
-    tuple. A Flask ``Response`` body reads once, so we hold the bytes and rebuild
-    a fresh ``Response`` per caller in :func:`_thaw`."""
-    return (response.get_data(), response.status_code, response.mimetype, outcome)
+    tuple. A Flask ``Response`` body reads once, so we hold the bytes (plus the
+    retry hint, which lives in a header) and rebuild a fresh ``Response`` per
+    caller in :func:`_thaw`."""
+    headers = tuple((name, response.headers[name])
+                    for name in _REPLAYED_HEADERS if name in response.headers)
+    return (response.get_data(), response.status_code, response.mimetype,
+            headers, outcome)
 
 
 def _thaw(frozen):
     """Rebuild a fresh `(response, outcome)` from a frozen tuple so every caller
     gets an independent, byte-identical response object."""
-    body, status, mimetype, outcome = frozen
-    return Response(body, status=status, mimetype=mimetype), outcome
+    body, status, mimetype, headers, outcome = frozen
+    return (Response(body, status=status, mimetype=mimetype,
+                     headers=list(headers)), outcome)

@@ -30,10 +30,27 @@ async function readOutcome (res) {
   let body = {}
   try { body = await res.json() } catch { body = {} }
   if (res.ok) return { ok: true, body }
-  if (body && body.outcome) return { ok: false, outcome: body.outcome }
-  if (res.status === 429) return { ok: false, outcome: 'rate_limited' }
-  if (res.status === 503) return { ok: false, outcome: 'busy' }
-  return { ok: false, outcome: 'invalid' }
+  const retryAfter = retrySeconds(res, body)
+  if (body && body.outcome) return { ok: false, outcome: body.outcome, retryAfter }
+  if (res.status === 429) return { ok: false, outcome: 'rate_limited', retryAfter }
+  if (res.status === 503) return { ok: false, outcome: 'busy', retryAfter }
+  return { ok: false, outcome: 'invalid', retryAfter }
+}
+
+/* Seconds until a rejected visitor may retry, taken from the problem+json
+ * `retry_after` body field and falling back to the `Retry-After` header. Null
+ * when neither is present, so callers can tell "no timing" from "retry now". */
+function retrySeconds (res, body) {
+  if (body && Number.isFinite(body.retry_after)) return body.retry_after
+  const header = res.headers && res.headers.get ? res.headers.get('Retry-After') : null
+  const n = header != null ? Number(header) : NaN
+  return Number.isFinite(n) ? n : null
+}
+
+/* Attach the retry timing only when we actually have it, so a failure with no
+ * timing keeps its bare {status}/{outcome} shape. */
+function withRetry (obj, retryAfter) {
+  return retryAfter == null ? obj : { ...obj, retryAfter }
 }
 
 async function postJson (path, body, signal) {
@@ -44,10 +61,11 @@ async function postJson (path, body, signal) {
     signal
   })
   // A 200 carries the solver body ({status:"feasible", …}); a failure is
-  // reduced to {status:"<outcome>"} so callers surface a limit/overload
-  // honestly instead of treating the problem+json body as solver data.
+  // reduced to {status:"<outcome>"} (with retry timing when the limit returned
+  // it) so callers surface a limit/overload honestly instead of treating the
+  // problem+json body as solver data.
   const r = await readOutcome(res)
-  return r.ok ? r.body : { status: r.outcome }
+  return r.ok ? r.body : withRetry({ status: r.outcome }, r.retryAfter)
 }
 
 export const listStyles = () => getJson('/api/v1/styles')
@@ -94,5 +112,5 @@ export async function fetchRecipes (payload, signal) {
   }
   const r = await readOutcome(res)
   if (r.ok) return r.body
-  return { outcome: SHELF_OUTCOME[r.outcome] || 'malformed' }
+  return withRetry({ outcome: SHELF_OUTCOME[r.outcome] || 'malformed' }, r.retryAfter)
 }
