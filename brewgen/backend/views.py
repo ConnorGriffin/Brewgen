@@ -419,4 +419,3 @@ def get_fermentable_list_recipes(data):
         'status': result.status.value,
         'alternatives': alternatives,
     }, outcome=result.status.value)
-
