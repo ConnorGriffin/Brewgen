@@ -47,7 +47,7 @@ RATE_LIMIT_PER_MINUTE = 6         # sustained compute requests per visitor
 RATE_LIMIT_BURST = 2              # tokens a fresh visitor may spend at once
 RATE_IDLE_EXPIRY_SECONDS = 600    # drop a visitor's bucket after 10 idle minutes
 CONCURRENCY_LIMIT = 2             # active solver operations per container, no queue
-BUSY_RETRY_SECONDS = 1           # short retry for a busy shed (<=2 s end-to-end budget)
+BUSY_RETRY_SECONDS = 1            # short retry for a busy shed (<=2 s end-to-end budget)
 LOG_RETENTION_DAYS = 7            # documented retention; enforced by the log sink
 RESULT_CACHE_TTL_SECONDS = 60     # replay window for a just-computed identical brief
 RESULT_CACHE_MAX_ENTRIES = 256    # bound the cache so distinct briefs can't grow it
@@ -475,7 +475,7 @@ class ComputeCoalescer:
         self._inflight = {}                       # key -> _Flight
 
     def execute(self, key, runner):
-        """Return the frozen ``(body, status, mimetype, outcome)`` for ``key``,
+        """Return the frozen ``(body, status, mimetype, headers, outcome)`` for ``key``,
         replaying a cached or coalesced result when possible, else running
         ``runner`` (which acquires the slot and calls the view)."""
         while True:

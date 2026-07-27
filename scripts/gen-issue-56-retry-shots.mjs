@@ -28,12 +28,38 @@ const reads = {
   '/api/v1/styles': apa.styles
 }
 
+/*
+ * A refusal exactly as the server sends it: problem+json with the real status
+ * code, the `retry_after` body field, and the `Retry-After` header. Driving the
+ * shots through this shape (rather than a 200 carrying a made-up field) is the
+ * point — it is the wiring these screenshots are evidence for.
+ *
+ * The two waits below are the only ones a visitor can actually be quoted: a
+ * busy shed is always one second, and a spent burst refills in ten.
+ */
+const refusal = (status, outcome, retryAfter) => ({
+  $response: {
+    status,
+    headers: { 'Retry-After': String(retryAfter) },
+    body: {
+      type: 'about:blank',
+      title: outcome === 'busy' ? 'Service busy' : 'Too many requests',
+      status,
+      outcome,
+      retry_after: retryAfter
+    }
+  }
+})
+
+const RATE_LIMITED = refusal(429, 'rate_limited', 10)
+const BUSY = refusal(503, 'busy', 1)
+
 // The editor's automatic feasibility check comes back rate-limited, which is
 // what puts the brief editor into its cooldown.
 const editorStub = {
   ...reads,
   '/api/v1/grains/sensory-range': { status: 'feasible', min: 0.1, max: 2.6 },
-  '/api/v1/grains/feasibility': { status: 'rate_limited', retryAfter: 12 }
+  '/api/v1/grains/feasibility': RATE_LIMITED
 }
 
 // The shelf shots need a feasible brief (so Generate is live) and a refused
@@ -42,7 +68,7 @@ const shelfStub = (outcome) => ({
   ...reads,
   '/api/v1/grains/sensory-range': { status: 'feasible', min: 0.1, max: 2.6 },
   '/api/v1/grains/feasibility': { status: 'feasible' },
-  '/api/v1/grains/recipes': { outcome, retryAfter: outcome === 'busy' ? 8 : 20 }
+  '/api/v1/grains/recipes': outcome === 'busy' ? BUSY : RATE_LIMITED
 })
 
 const screens = [

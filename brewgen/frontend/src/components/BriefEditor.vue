@@ -40,6 +40,12 @@ function enterCooldown (outcome, retryAfter) {
   cooldown.outcome = outcome
   cooldown.remaining = secs
   feas.checking = false
+  // A focused range can trip the limit while a debounced feasibility check is
+  // already armed. Disarm it, or that queued request would fire mid-cooldown.
+  if (feasTimer) {
+    clearTimeout(feasTimer)
+    feasTimer = null
+  }
   if (cooldownTimer) clearInterval(cooldownTimer)
   cooldownTimer = setInterval(() => {
     cooldown.remaining -= 1
@@ -153,7 +159,9 @@ function scheduleFeasibility () {
 }
 
 async function runFeasibility () {
-  if (!style.value) return
+  // Guarded at the seam that actually issues the request, not only at the
+  // scheduler, so nothing already in flight toward a send survives a cooldown.
+  if (!style.value || inCooldown()) return
   const seq = ++feasSeq
   if (feasAbort) feasAbort.abort()
   const ctrl = new AbortController()

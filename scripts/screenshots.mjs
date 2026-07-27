@@ -22,6 +22,15 @@
  *     ]
  *   }
  *
+ * A stub value is normally the JSON body, answered as 200 application/json. To
+ * reproduce a real failure response (status code, content type, headers such as
+ * Retry-After), give the sentinel form instead — needed because a plain body may
+ * itself contain a "status" field:
+ *
+ *   "<url-substr>": { "$response": { "status": 429,
+ *                                    "headers": { "Retry-After": "10" },
+ *                                    "body": { ... } } }
+ *
  * Sandbox recipe baked in (agentflow memory: playwright-screenshots-in-sandbox):
  *   - --no-sandbox --disable-setuid-sandbox --single-process --allow-file-access-from-files
  *   - ONE context for ALL shots: --single-process browser dies on context.close()
@@ -105,9 +114,18 @@ function buildFetchInitScript(shots) {
     var s = String(url);
     for (var i = 0; i < keys.length; i++) {
       if (s.indexOf(keys[i]) !== -1) {
-        return Promise.resolve(new Response(JSON.stringify(stubs[keys[i]]), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
+        // Either the bare body (200 application/json) or the {$response:{...}}
+        // sentinel carrying a real status code and headers.
+        var stub = stubs[keys[i]];
+        var spec = stub && stub.$response ? stub.$response : { body: stub };
+        var status = spec.status || 200;
+        var headers = { 'Content-Type': status >= 400
+          ? 'application/problem+json'
+          : 'application/json' };
+        for (var h in (spec.headers || {})) headers[h] = spec.headers[h];
+        return Promise.resolve(new Response(JSON.stringify(spec.body), {
+          status: status,
+          headers: headers
         }));
       }
     }

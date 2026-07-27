@@ -23,6 +23,16 @@ generation. The read-only GET endpoints and the SPA catch-all stay outside it.
 6. **Concurrency** — at most **two** solver operations run at once, with **no
    queue**; a third concurrent request is **503 busy** immediately.
 
+Only then does the operation run under the solver's own shared **1.8 s solver /
+2.0 s end-to-end budget**. `partial` results return honestly as **200**;
+`deadline_exceeded` and a no-slot refusal are **503**; `infeasible` is **422**.
+
+All failures use `application/problem+json` with a stable machine `outcome` tag
+and **no echoed input**. Every request emits exactly one aggregate log line
+carrying only `{timestamp, request_id, operation, outcome, status, duration}`,
+retained for seven days — never the brief, the address, the hash, headers,
+cookies, user agents, referrers, or query strings.
+
 ## Retry timing and the busy refund
 
 Both transient refusals tell the visitor when to try again, so the client can
@@ -39,20 +49,10 @@ RFC 7231) and a `retry_after` body field the frontend renders. Nothing else is
 added to the problem+json body.
 
 A request shed as **busy never reaches solver work**, so it must not spend the
-visitor's allowance. The gate keeps its documented rate → concurrency order, but
-when the concurrency check sheds a request the token the rate check just charged
-is **refunded**, leaving the visitor's bucket unchanged. Net effect: a busy shed
-costs the visitor nothing.
-
-Only then does the operation run under the solver's own shared **1.8 s solver /
-2.0 s end-to-end budget**. `partial` results return honestly as **200**;
-`deadline_exceeded` and a no-slot refusal are **503**; `infeasible` is **422**.
-
-All failures use `application/problem+json` with a stable machine `outcome` tag
-and **no echoed input**. Every request emits exactly one aggregate log line
-carrying only `{timestamp, request_id, operation, outcome, status, duration}`,
-retained for seven days — never the brief, the address, the hash, headers,
-cookies, user agents, referrers, or query strings.
+visitor's allowance. The gate keeps its documented rate → concurrency order
+(step 5, then step 6), but when the concurrency check sheds a request the token
+the rate check just charged is **refunded**, leaving the visitor's bucket
+unchanged. Net effect: a busy shed costs the visitor nothing.
 
 ## Deployment requirements (#11/#12/#16)
 

@@ -204,6 +204,43 @@ describe('public brief editor', () => {
     vi.useRealTimers()
   })
 
+  it('cancels an already-queued check when a flavour edit is the thing that hits the limit', async () => {
+    vi.useFakeTimers()
+    const calls = []
+    // The focused range refuses; the whole-brief check would happily answer. A
+    // single flavour edit fires both, so the refusal has to stop the queued one.
+    global.fetch = vi.fn((url, init = {}) => {
+      const path = String(url).replace(/^https?:\/\/[^/]+/, '')
+      const method = (init.method || 'GET').toUpperCase()
+      calls.push({ path, method })
+      if (method === 'GET' && path === '/api/v1/styles') return json(apa.styles)
+      if (method === 'GET' && path.startsWith('/api/v1/styles/')) return json(apa.style)
+      if (path === '/api/v1/grains/sensory-range') {
+        return json({ status: 429, outcome: 'rate_limited', retry_after: 10 }, 429)
+      }
+      if (path === '/api/v1/grains/feasibility') return json(apa.feasibility)
+      return json({}, 404)
+    })
+
+    const wrapper = mount(BriefEditor)
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(300) // the initial debounced check answers
+    await flushPromises()
+    calls.length = 0
+
+    // One flavour edit: the focused range goes out immediately and comes back
+    // rate-limited, while the whole-brief check sits on its 300 ms debounce.
+    await wrapper.findAll('.flavor-row')[0].findAll('.step')[3].trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.feas').text()).toMatch(/10 seconds/)
+
+    await vi.advanceTimersByTimeAsync(300) // the debounce would have fired here
+    await flushPromises()
+    expect(calls.filter((c) => c.path === '/api/v1/grains/feasibility')).toHaveLength(0)
+
+    vi.useRealTimers()
+  })
+
   it('shows the locked infeasible voice without leaking solver internals', async () => {
     installFetch()
     global.fetch = vi.fn((url, init = {}) => {
