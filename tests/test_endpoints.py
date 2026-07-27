@@ -50,10 +50,11 @@ def _body(min_srm=3, max_srm=20):
     }
 
 
-def test_validity_endpoint_returns_boolean(client):
+def test_grain_model_valid_route_removed(client):
+    # The catch-all GET route causes 405 (not 404) for POST to an unknown path;
+    # both confirm the handler is gone and no solver compute is spent.
     resp = client.post("/api/v1/helpers/grain-model-valid", json=_body())
-    assert resp.status_code == 200
-    assert resp.get_json() is True
+    assert resp.status_code in (404, 405)
 
 
 def test_recipes_endpoint_returns_unranked_alternatives(client):

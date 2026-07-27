@@ -420,34 +420,3 @@ def get_fermentable_list_recipes(data):
         'alternatives': alternatives,
     }, outcome=result.status.value)
 
-
-@app.route('/api/v1/helpers/grain-model-valid', methods=['POST'])
-def is_grain_model_valid():
-    """Returns whether or not a grain model is mathematically valid
-    POST format:
-    {
-        max_unique_fermentables: int,
-        category_model: [
-            {
-                name: str,
-                min_percent: int,
-                max_percent: int
-            }, {
-                etc.
-            }
-        ]
-        fermentable_list: [
-            {
-                slug: str,
-                min_percent: int,
-                max_percent: int
-            }, {
-                etc.
-            }
-        ]
-    ]
-    """
-
-    data = request.json
-    result = _build_fermentable_solver(data).is_valid()
-    return jsonify(result), 200
