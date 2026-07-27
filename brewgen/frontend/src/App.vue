@@ -44,5 +44,12 @@ function editBrief () {
       :loading="generating"
       @edit="editBrief"
     />
+    <a
+      class="support-link"
+      href="https://github.com/sponsors/ConnorGriffin"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Support this project on GitHub Sponsors (opens in a new tab)"
+    >Support this project</a>
   </div>
 </template>

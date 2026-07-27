@@ -206,6 +206,17 @@ details.advanced p { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 .notice .generate { margin-top: 18px; }
 .notice-loading .notice-msg { font-style: italic; color: var(--faint); }
 
+.support-link {
+  position: fixed; bottom: 18px; right: 20px;
+  font-family: var(--sans); font-size: 12px;
+  color: var(--muted); text-decoration: none;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 5px 10px;
+  opacity: 0.75; transition: opacity 0.15s;
+  z-index: 10;
+}
+.support-link:hover, .support-link:focus { opacity: 1; outline-offset: 2px; }
+
 @media (max-width: 640px) {
   h1 { font-size: 26px; }
   .page { max-width: 100%; padding: 14px 12px 48px; }
@@ -226,4 +237,5 @@ details.advanced p { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
   .open-body { flex-direction: column; gap: 12px; }
   .open-left { flex: none; }
   .card.open .stack { height: 130px !important; }
+  .support-link { bottom: 8px; right: 10px; font-size: 11px; padding: 4px 8px; }
 }
