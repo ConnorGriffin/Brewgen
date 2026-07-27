@@ -65,8 +65,10 @@ jobs:
           cache-dependency-path: brewgen/frontend/package-lock.json
       - run: npm ci
         working-directory: brewgen/frontend
-      # JS dependency audit: block on high-or-worse advisories.
-      - run: npm audit --audit-level=high
+      # JS dependency audit: block on high-or-worse advisories in shipped (production) dependencies only.
+      # --omit=dev matches the pip-audit scope: audit what the container ships, not the CI toolchain.
+      # The shipped image is independently trivy-scanned for CRITICAL/HIGH regardless.
+      - run: npm audit --audit-level=high --omit=dev
         working-directory: brewgen/frontend
 
   code-scan:
