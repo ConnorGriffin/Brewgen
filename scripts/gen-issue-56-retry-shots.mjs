@@ -15,6 +15,7 @@
 import { writeFileSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import * as apa from '../brewgen/frontend/tests/fixtures/apa.js'
 
@@ -94,8 +95,7 @@ for (const [stage, url] of [['before', beforeIndex], ['after', afterIndex]]) {
   }
 }
 
-const configPath = join(repoRoot, '.shots-tmp', 'issue-56-retry-shots-config.json')
-execFileSync('mkdir', ['-p', dirname(configPath)])
+const configPath = join(tmpdir(), `issue-56-retry-shots-${Date.now()}.json`)
 writeFileSync(configPath, JSON.stringify({ shots }, null, 2))
 
 execFileSync('node', [join(repoRoot, 'scripts/screenshots.mjs'), configPath], { stdio: 'inherit' })
