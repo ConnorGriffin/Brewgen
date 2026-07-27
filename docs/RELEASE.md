@@ -29,7 +29,10 @@ before anything is published:
 
 1. Backend suite (`pytest tests`) on Python 3.11 and 3.14.
 2. Frontend suite and production build (`npm test` + `npm run build`).
-3. Dependency audit — Python (`pip-audit`) and JavaScript (`npm audit`).
+3. Dependency audit — Python (`pip-audit`) and JavaScript (`npm audit --omit=dev`).
+   Both audits cover shipped/runtime dependencies only; dev and test tooling is
+   excluded. The shipped container image is independently trivy-scanned for
+   CRITICAL/HIGH findings regardless.
 4. Code scanning — CodeQL for Python and JavaScript/TypeScript.
 5. Container scan — the exact `linux/amd64` image is built and scanned; any
    **critical or high** finding fails the job and blocks publication.
