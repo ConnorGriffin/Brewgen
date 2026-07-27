@@ -41,6 +41,17 @@ def test_ci_runs_dependency_audit_and_code_scanning():
     assert "language: [python, javascript-typescript]" in ci
 
 
+def test_js_audit_is_scoped_to_shipped_dependencies():
+    """The JS audit must stay scoped to what the container ships.
+
+    Auditing dev/test tooling flags advisories that never reach the image and
+    reds out `main`, which skips the whole image build/scan/publish job. The
+    shipped artifact is covered by the blocking trivy scan instead.
+    """
+    ci = _read("ci.yml")
+    assert "npm audit --audit-level=high --omit=dev" in ci
+
+
 def test_container_scan_blocks_on_critical_high():
     ci = _read("ci.yml")
     assert "trivy image" in ci
