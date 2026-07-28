@@ -23,7 +23,7 @@ FROM cgr.dev/chainguard/python:latest-dev@sha256:3be081f6cae8f1678609f6ae00b1dfe
 WORKDIR /app
 RUN python -m venv --without-pip /app/venv
 COPY requirements.lock ./
-RUN pip install --python /app/venv/bin/python --no-cache-dir --require-hashes -r requirements.lock
+RUN pip --python /app/venv/bin/python install --no-cache-dir --require-hashes -r requirements.lock
 
 # ── Stage 3: Minimal Python runtime ───────────────────────────────────────────
 # Wolfi supplies glibc for PuLP's bundled CBC binary without carrying a Debian
