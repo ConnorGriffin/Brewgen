@@ -144,6 +144,15 @@ jobs:
         if: steps.detect.outputs.present == 'true'
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          # Surface the full findings table in the run summary so the next scan
+          # failure is read straight from CI, not reproduced offline. This is
+          # informational only (no --exit-code); the blocking gate is unchanged.
+          {
+            echo '### Container scan (CRITICAL/HIGH)'
+            echo '```'
+            trivy image --severity CRITICAL,HIGH "$IMAGE:${{ github.sha }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
           trivy image --severity CRITICAL,HIGH --exit-code 1 "$IMAGE:${{ github.sha }}"
       # Publish only from a real push to the canonical repo. Skipped on every
       # pull_request and on any fork, so PRs prove the gate without registry writes.

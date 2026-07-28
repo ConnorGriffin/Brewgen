@@ -13,17 +13,25 @@ COPY brewgen/frontend/ ./
 RUN npm run build
 
 # ── Stage 2: Install Python dependencies ─────────────────────────────────────
-# The dev variant supplies pip; none of that tooling reaches production.
-FROM cgr.dev/chainguard/python:latest-dev@sha256:51ebf3d0a5f932c684fa5e27ba8c53161c2b2c6b6dba84f8dc1f8db7fd8aa2e1 AS python-builder
+# The dev variant supplies pip. Build the venv WITHOUT pip and install into it
+# with the builder's own pip (--python), so the shipped venv holds only the
+# hash-checked runtime closure. Keeping pip out of /app/venv closes a blind spot:
+# pip-audit only sees the declared project dependencies, so a pip/setuptools/wheel
+# advisory would escape that audit yet be flagged by the image scan. See #70.
+# Digest pinned 2026-07-28 (== :latest-dev, ships python 3.14.6-r4); see docs/RELEASE.md.
+FROM cgr.dev/chainguard/python:latest-dev@sha256:3be081f6cae8f1678609f6ae00b1dfebd6819c3ce75b7c574663af84afe99cc4 AS python-builder
 WORKDIR /app
-RUN python -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
+RUN python -m venv --without-pip /app/venv
 COPY requirements.lock ./
-RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+RUN pip --python /app/venv/bin/python install --no-cache-dir --require-hashes -r requirements.lock
 
 # ── Stage 3: Minimal Python runtime ───────────────────────────────────────────
 # Wolfi supplies glibc for PuLP's bundled CBC binary without carrying a Debian
 # userland, shell, package manager, or build tools into production.
+# Digest pinned 2026-07-28 (== :latest, ships python 3.14.6-r4, which fixes
+# CVE-2026-15308); see docs/RELEASE.md. The free tier serves only :latest, so
+# refresh this pin when the scan flags an aged base rather than expecting an
+# older digest to keep pulling.
 FROM cgr.dev/chainguard/python:latest@sha256:b3d3fbb8b9fe48950bab73d49bffa7496ff6f8a46ba570b302fc366f1396011a AS runtime
 ARG GIT_COMMIT
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}" \
