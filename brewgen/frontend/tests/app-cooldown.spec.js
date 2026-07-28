@@ -40,8 +40,6 @@ function installFetch (recipes) {
 async function mountReadyToGenerate () {
   const wrapper = mount(App, { attachTo: document.body })
   await flushPromises() // styles list + style detail
-  await vi.advanceTimersByTimeAsync(300) // initial debounced feasibility → feasible
-  await flushPromises()
   return wrapper
 }
 
@@ -58,8 +56,8 @@ describe('generation refusal carries its wait back to the brief editor', () => {
       () => json({ status: 429, outcome: 'rate_limited', retry_after: 10 }, 429))
     const wrapper = await mountReadyToGenerate()
 
-    // Brief screen is feasible and Generate is live.
-    expect(briefFeas(wrapper).text()).toContain('can meet this brief')
+    // Style data alone makes Generate live; initial load spends no compute.
+    expect(computeCalls(calls)).toHaveLength(0)
     expect(briefGenerate(wrapper).attributes('disabled')).toBeUndefined()
 
     // Generate → results screen → refused, quoting a ten-second wait.
@@ -102,7 +100,9 @@ describe('generation refusal carries its wait back to the brief editor', () => {
     const srm = wrapper.find('#srm')
     srm.element.value = String(Number(srm.element.value) + 1)
     await srm.trigger('input')
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(59999)
+    expect(calls.filter((c) => c.path === '/api/v1/grains/feasibility')).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(1)
     await flushPromises()
     expect(calls.filter((c) => c.path === '/api/v1/grains/feasibility').length)
       .toBeGreaterThan(0)

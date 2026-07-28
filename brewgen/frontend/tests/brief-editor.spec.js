@@ -3,12 +3,19 @@ import { mount, flushPromises } from '@vue/test-utils'
 import BriefEditor from '@/components/BriefEditor.vue'
 import * as apa from './fixtures/apa.js'
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+const QUIET_MS = 60000
+
+const jsonValue = (data, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  json: () => Promise.resolve(data)
+})
+const json = (data, status = 200) => Promise.resolve(jsonValue(data, status))
 
 /*
- * A recording fetch stub. Every request is logged so a test can prove which
- * endpoints the screen touched. Feasibility responses can be deferred and
- * resolved out of order to exercise the stale-response guard.
+ * Public HTTP recorder for the rendered editor. Feasibility can be deferred so
+ * tests can resolve old and new answers out of order; focused ranges can be
+ * narrowed so invalidation is visible through the row's reachable-step classes.
  */
 function installFetch (opts = {}) {
   const calls = []
@@ -22,7 +29,10 @@ function installFetch (opts = {}) {
     if (method === 'GET' && path === '/api/v1/styles') return json(apa.styles)
     if (method === 'GET' && path.startsWith('/api/v1/styles/')) return json(apa.style)
     if (method === 'POST' && path === '/api/v1/grains/sensory-range') {
-      return json(apa.sensoryRange(body.descriptor))
+      const answer = opts.rangeAnswer
+        ? opts.rangeAnswer(body.descriptor)
+        : apa.sensoryRange(body.descriptor)
+      return json(answer)
     }
     if (method === 'POST' && path === '/api/v1/grains/feasibility') {
       if (opts.deferFeasibility) {
@@ -30,6 +40,7 @@ function installFetch (opts = {}) {
           feasQueue.push((status) => resolve(jsonValue({ status })))
         })
       }
+      if (opts.feasibilityResponse) return opts.feasibilityResponse()
       return json(apa.feasibility)
     }
     return json({}, 404)
@@ -37,43 +48,60 @@ function installFetch (opts = {}) {
   return { calls, feasQueue }
 }
 
-const jsonValue = (data, status = 200) => ({
-  ok: status >= 200 && status < 300,
-  status,
-  json: () => Promise.resolve(data)
-})
-const json = (data, status = 200) => Promise.resolve(jsonValue(data, status))
-
 async function mountLoaded () {
   const wrapper = mount(BriefEditor)
   await flushPromises() // styles list + style detail
-  await wait(350) // initial debounced feasibility
-  await flushPromises()
   return wrapper
 }
 
-const paths = (calls, path) => calls.filter((c) => c.path === path)
+const paths = (calls, path) => calls.filter((call) => call.path === path)
+const computeCalls = (calls) => calls.filter((call) =>
+  call.path.startsWith('/api/v1/grains/'))
 
-beforeEach(() => { vi.restoreAllMocks() })
-afterEach(() => { delete global.fetch })
+async function setRange (wrapper, selector, value) {
+  const input = wrapper.find(selector)
+  input.element.value = String(value)
+  await input.trigger('input')
+  await flushPromises()
+}
 
-describe('public brief editor', () => {
-  it('sends only the version-one choice brief for range, feasibility, and generation', async () => {
+beforeEach(() => {
+  vi.restoreAllMocks()
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+  delete global.fetch
+})
+
+describe('public brief editor compute policy', () => {
+  it('loads silently, enables Generate from style data, and emits one current version-one brief', async () => {
     const { calls } = installFetch()
     const wrapper = await mountLoaded()
 
+    expect(computeCalls(calls)).toHaveLength(0)
+    expect(wrapper.find('.generate').attributes('disabled')).toBeUndefined()
+
+    await wrapper.find('.generate').trigger('click')
+    expect(wrapper.emitted('generate')).toHaveLength(1)
+    const generated = wrapper.emitted('generate')[0][0].payload
     const expectedKeys = [
       'color_srm', 'equipment', 'fermentables', 'sensory', 'style', 'version'
     ]
+    expect(Object.keys(generated).sort()).toEqual(expectedKeys)
+    expect(generated.version).toBe(1)
+    expect(Object.keys(generated.style).sort()).toEqual(
+      ['original_gravity', 'slug'])
+    expect(Object.keys(generated.equipment).sort()).toEqual(
+      ['batch_volume_gallons', 'mash_efficiency_percent'])
+    expect(Object.keys(generated.fermentables).sort()).toEqual(
+      ['allowed_slugs', 'bounds', 'maximum_count'])
+
+    await setRange(wrapper, '#abv', 5.1)
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    await flushPromises()
     const feasibility = paths(calls, '/api/v1/grains/feasibility').at(-1)
     expect(Object.keys(feasibility.body).sort()).toEqual(expectedKeys)
-    expect(feasibility.body.version).toBe(1)
-    expect(Object.keys(feasibility.body.style).sort()).toEqual(
-      ['original_gravity', 'slug'])
-    expect(Object.keys(feasibility.body.equipment).sort()).toEqual(
-      ['batch_volume_gallons', 'mash_efficiency_percent'])
-    expect(Object.keys(feasibility.body.fermentables).sort()).toEqual(
-      ['allowed_slugs', 'bounds', 'maximum_count'])
     expect(Object.keys(feasibility.body.fermentables.bounds[0]).sort()).toEqual(
       ['maximum_percent', 'minimum_percent', 'slug'])
     expect(Object.keys(feasibility.body.sensory[0]).sort()).toEqual(
@@ -85,174 +113,238 @@ describe('public brief editor', () => {
         Number.isInteger(bound.maximum_percent)
     )).toBe(true)
 
-    await wrapper.find('.generate').trigger('click')
-    const generated = wrapper.emitted('generate').at(-1)[0].payload
-    expect(Object.keys(generated).sort()).toEqual(expectedKeys)
-
-    calls.length = 0
-    await wrapper.findAll('.flavor-row')[0].findAll('.step')[3].trigger('click')
+    const selected = wrapper.findAll('.flavor-row')[0].findAll('.step').find(
+      (step) => step.attributes('aria-checked') === 'true')
+    await selected.trigger('click')
     await flushPromises()
-    const range = paths(calls, '/api/v1/grains/sensory-range')[0]
+    const range = paths(calls, '/api/v1/grains/sensory-range').at(-1)
     expect(Object.keys(range.body).sort()).toEqual(
       [...expectedKeys, 'descriptor'].sort())
     expect(range.body.descriptor).toBe('malty')
 
-    const serialized = JSON.stringify([feasibility.body, generated, range.body])
-    expect(serialized).not.toMatch(
+    expect(JSON.stringify([generated, feasibility.body, range.body])).not.toMatch(
       /fermentable_list|category_model|sensory_model|max_unique_fermentables|equipment_profile|beer_profile/)
+
+    wrapper.unmount()
   })
 
-  it('seeds style-mentioned flavors and renders the SRM gradient clipped to the style range', async () => {
+  it('seeds the locked style flavors and keeps the SRM gradient clipped to its range', async () => {
     installFetch()
     const wrapper = await mountLoaded()
 
-    const names = wrapper.findAll('.flavor-name').map((n) => n.text())
-    expect(names).toEqual(['malty', 'bready', 'caramel']) // the BJCP-mentioned set
+    expect(wrapper.findAll('.flavor-name').map((node) => node.text()))
+      .toEqual(['malty', 'bready', 'caramel'])
 
     const track = wrapper.find('.srm-track').attributes('style')
-    // Clipped to [5,14]: gold-through-copper stops, not the full 1..40 chart.
     expect(track).toContain('linear-gradient')
     expect(track).toContain('#fbb123') // 5 SRM
     expect(track).toContain('#c35900') // 14 SRM
-    expect(track).not.toContain('#ffe699') // 1 SRM — below the clip
+    expect(track).not.toContain('#ffe699') // below the style's range
+
+    wrapper.unmount()
   })
 
-  it('a single flavor edit fires exactly one focused range request and never the all-descriptor sweep', async () => {
-    const { calls } = installFetch()
-    const wrapper = await mountLoaded()
-    calls.length = 0 // ignore load traffic; measure only the edit
-
-    // Click "bold" on the first flavor row (malty).
-    await wrapper.findAll('.flavor-row')[0].findAll('.step')[3].trigger('click')
-    await flushPromises()
-
-    const range = paths(calls, '/api/v1/grains/sensory-range')
-    expect(range).toHaveLength(1) // one flavor, one request — no 48-range fan-out
-    expect(range[0].body.descriptor).toBe('malty')
-
-    // The forbidden plural path is never touched, here or anywhere.
-    expect(paths(calls, '/api/v1/grains/sensory-profiles')).toHaveLength(0)
-    expect(calls.every((c) => !c.path.includes('sensory-profiles'))).toBe(true)
-  })
-
-  it('adding a flavor asks only for that one descriptor and enforces the five-row cap', async () => {
+  it('waits for exactly 60 seconds of quiet, restarts on edits, and ignores no-op input', async () => {
     const { calls } = installFetch()
     const wrapper = await mountLoaded()
     calls.length = 0
 
-    // Add "toast" via a suggestion button.
-    const suggByName = () => wrapper.findAll('.sugg').find((b) => b.text() === 'toast')
-    await suggByName().trigger('click')
+    const initialAbv = wrapper.find('#abv').element.value
+    await setRange(wrapper, '#abv', initialAbv) // same value: no real edit
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(0)
+
+    await setRange(wrapper, '#abv', 5.0)
+    await vi.advanceTimersByTimeAsync(QUIET_MS - 1)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(0)
+
+    await setRange(wrapper, '#abv', 5.1) // restart the trailing clock
+    await vi.advanceTimersByTimeAsync(QUIET_MS - 1)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(1)
     await flushPromises()
 
-    const range = paths(calls, '/api/v1/grains/sensory-range')
-    expect(range).toHaveLength(1)
-    expect(range[0].body.descriptor).toBe('toast')
+    const previews = paths(calls, '/api/v1/grains/feasibility')
+    expect(previews).toHaveLength(1)
+    expect(previews[0].body.style.original_gravity).toBeGreaterThan(1)
 
-    // Seeded 3 + toast = 4; add one more to hit the cap of 5.
+    await setRange(wrapper, '#abv', 5.1) // unchanged brief never resubmits
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(1)
+
+    wrapper.unmount()
+  })
+
+  it('Generate cancels a queued or active preview and no hidden preview appears later', async () => {
+    const { calls, feasQueue } = installFetch({ deferFeasibility: true })
+    const wrapper = await mountLoaded()
+
+    await setRange(wrapper, '#abv', 5.0)
+    await vi.advanceTimersByTimeAsync(QUIET_MS - 1)
+    await wrapper.find('.generate').trigger('click')
+    await vi.advanceTimersByTimeAsync(QUIET_MS + 1)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(0)
+    expect(wrapper.emitted('generate')).toHaveLength(1)
+
+    await setRange(wrapper, '#abv', 5.1)
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(1)
+    expect(feasQueue).toHaveLength(1)
+
+    await wrapper.find('.generate').trigger('click')
+    expect(wrapper.emitted('generate')).toHaveLength(2)
+    feasQueue[0]('infeasible') // an aborted stub may still resolve; it must lose
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(QUIET_MS * 2)
+
+    expect(wrapper.find('.feas').text()).not.toContain('No grain bill')
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(1)
+
+    wrapper.unmount()
+  })
+
+  it('reuses a flavor range across its own level changes and lazily refreshes stale hints', async () => {
+    const { calls } = installFetch({
+      rangeAnswer: (descriptor) => ({
+        status: 'feasible', name: descriptor, min: 1.5, max: 1.5
+      })
+    })
+    const wrapper = await mountLoaded()
+    calls.length = 0
+
+    const malty = () => wrapper.findAll('.flavor-row')[0]
+    const selected = malty().findAll('.step').find(
+      (step) => step.attributes('aria-checked') === 'true')
+
+    // A no-op click is still the first real engagement and fetches one hint.
+    await selected.trigger('click')
+    await flushPromises()
+    expect(paths(calls, '/api/v1/grains/sensory-range')).toHaveLength(1)
+    expect(malty().findAll('.unreachable').length).toBeGreaterThan(0)
+
+    // Only the target's own bound changes; the server ignores it for this range.
+    await malty().findAll('.step')[1].trigger('click')
+    await malty().findAll('.step')[2].trigger('click')
+    await flushPromises()
+    expect(paths(calls, '/api/v1/grains/sensory-range')).toHaveLength(1)
+
+    // Strength genuinely changes every range, so exact hints clear immediately
+    // without a fan-out; engaging malty later refreshes only malty.
+    await setRange(wrapper, '#abv', 5.7)
+    expect(malty().findAll('.unreachable')).toHaveLength(0)
+    expect(paths(calls, '/api/v1/grains/sensory-range')).toHaveLength(1)
+
+    await malty().findAll('.step')[3].trigger('click')
+    await flushPromises()
+    const ranges = paths(calls, '/api/v1/grains/sensory-range')
+    expect(ranges).toHaveLength(2)
+    expect(ranges.map((call) => call.body.descriptor)).toEqual(['malty', 'malty'])
+    expect(paths(calls, '/api/v1/grains/sensory-profiles')).toHaveLength(0)
+
+    wrapper.unmount()
+  })
+
+  it('adding one flavor requests only that descriptor and invalidates no row eagerly', async () => {
+    const { calls } = installFetch()
+    const wrapper = await mountLoaded()
+    calls.length = 0
+
+    const toast = wrapper.findAll('.sugg').find((button) => button.text() === 'toast')
+    await toast.trigger('click')
+    await flushPromises()
+
+    const ranges = paths(calls, '/api/v1/grains/sensory-range')
+    expect(ranges).toHaveLength(1)
+    expect(ranges[0].body.descriptor).toBe('toast')
+    expect(paths(calls, '/api/v1/grains/sensory-profiles')).toHaveLength(0)
+
     await wrapper.findAll('.sugg')[0].trigger('click')
     await flushPromises()
     expect(wrapper.findAll('.flavor-row')).toHaveLength(5)
-    // At the cap the add control disappears and the limit note shows.
     expect(wrapper.find('.flavor-search').exists()).toBe(false)
     expect(wrapper.find('.max-note').exists()).toBe(true)
+
+    wrapper.unmount()
   })
 
-  it('discards a stale feasibility response so it cannot overwrite newer state', async () => {
+  it('drops an old active preview when a later brief wins', async () => {
     const { feasQueue } = installFetch({ deferFeasibility: true })
-    const wrapper = await mountLoaded() // initial feasibility now pending in the queue
+    const wrapper = await mountLoaded()
 
-    // First edit dispatches another feasibility request (kept pending).
-    const abv = wrapper.find('#abv')
-    abv.element.value = '5.0'
-    await abv.trigger('input')
-    await wait(350)
-    await flushPromises()
+    await setRange(wrapper, '#abv', 5.0)
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    expect(feasQueue).toHaveLength(1)
 
-    // Second edit dispatches the newest feasibility request (kept pending).
-    abv.element.value = '6.0'
-    await abv.trigger('input')
-    await wait(350)
-    await flushPromises()
+    await setRange(wrapper, '#abv', 6.0) // abort/drop first, queue latest
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    expect(feasQueue).toHaveLength(2)
 
-    // Several requests are now in flight; the last enqueued is the newest brief.
-    expect(feasQueue.length).toBeGreaterThanOrEqual(2)
-    // The newest resolves first as feasible…
-    feasQueue[feasQueue.length - 1]('feasible')
+    feasQueue[1]('feasible')
     await flushPromises()
-    // …then an older, stale request resolves infeasible and must be ignored.
     feasQueue[0]('infeasible')
     await flushPromises()
 
     expect(wrapper.find('.feas').classes()).toContain('ok')
     expect(wrapper.find('.feas').text()).toContain('can meet this brief')
+
+    wrapper.unmount()
   })
 
-  it('honors the retry cooldown: no compute until it expires, brief preserved, then an intentional edit resumes', async () => {
-    vi.useFakeTimers()
-    const calls = []
-    // Feasibility answers busy with a three-second retry; ranges answer feasible.
-    global.fetch = vi.fn((url, init = {}) => {
-      const path = String(url).replace(/^https?:\/\/[^/]+/, '')
-      const method = (init.method || 'GET').toUpperCase()
-      const body = init.body ? JSON.parse(init.body) : null
-      calls.push({ path, method, body })
-      if (method === 'GET' && path === '/api/v1/styles') return json(apa.styles)
-      if (method === 'GET' && path.startsWith('/api/v1/styles/')) return json(apa.style)
-      if (path === '/api/v1/grains/sensory-range') return json(apa.sensoryRange(body.descriptor))
-      if (path === '/api/v1/grains/feasibility') {
-        return json({ status: 503, outcome: 'busy', retry_after: 3 }, 503)
-      }
-      return json({}, 404)
+  it('keeps every preview outcome advisory rather than gating Generate', async () => {
+    const { calls } = installFetch({
+      feasibilityResponse: () => json({ status: 'infeasible' })
     })
+    const wrapper = await mountLoaded()
 
-    const wrapper = mount(BriefEditor)
-    await flushPromises() // styles + style detail
-    await vi.advanceTimersByTimeAsync(300) // debounced feasibility fires
+    await setRange(wrapper, '#srm', 12)
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
     await flushPromises()
 
-    // The busy answer put the editor into a countdown.
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(1)
+    expect(wrapper.find('.feas').classes()).toContain('no')
+    expect(wrapper.find('.feas').text()).toContain('No grain bill fits this brief')
+    expect(wrapper.find('.feas').text()).not.toMatch(/infeasible|solver|400|status/i)
+    expect(wrapper.find('.generate').attributes('disabled')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
+  it('preserves cooldown suppression and resumes only after expiry plus a later edit', async () => {
+    const { calls } = installFetch({
+      feasibilityResponse: () =>
+        json({ status: 503, outcome: 'busy', retry_after: 3 }, 503)
+    })
+    const wrapper = await mountLoaded()
+
+    await setRange(wrapper, '#abv', 5.0)
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    await flushPromises()
     expect(wrapper.find('.feas').text()).toMatch(/try again in 3 seconds/)
-    const flavorsBefore = wrapper.findAll('.flavor-row').length
-    expect(flavorsBefore).toBeGreaterThan(0)
+    expect(wrapper.find('.generate').attributes('disabled')).toBeDefined()
 
-    calls.length = 0 // measure only what happens during the cooldown
-
-    // Editing during cooldown updates the brief but fires no compute request.
-    const abv = wrapper.find('#abv')
-    abv.element.value = '5.7'
-    await abv.trigger('input')
-    await vi.advanceTimersByTimeAsync(300)
-    await flushPromises()
+    calls.length = 0
+    await setRange(wrapper, '#abv', 5.7)
     await wrapper.findAll('.flavor-row')[0].findAll('.step')[3].trigger('click')
-    await flushPromises()
-
-    const computePaths = calls.filter((c) => c.path.startsWith('/api/v1/grains/'))
-    expect(computePaths).toHaveLength(0) // no hidden retry before the stated time
-    // The brief survived the cooldown: same flavor rows, the edited strength kept.
-    expect(wrapper.findAll('.flavor-row')).toHaveLength(flavorsBefore)
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    expect(computeCalls(calls)).toHaveLength(0)
     expect(wrapper.find('#abv').element.value).toBe('5.7')
 
-    // Let the countdown elapse, then an intentional edit resumes compute.
     await vi.advanceTimersByTimeAsync(3000)
-    await flushPromises()
-    calls.length = 0
-    const srm = wrapper.find('#srm')
-    srm.element.value = String(Number(srm.element.value) + 1)
-    await srm.trigger('input')
-    await vi.advanceTimersByTimeAsync(300)
-    await flushPromises()
-    expect(calls.filter((c) => c.path === '/api/v1/grains/feasibility').length)
-      .toBeGreaterThan(0)
+    expect(wrapper.find('.generate').attributes('disabled')).toBeUndefined()
+    expect(computeCalls(calls)).toHaveLength(0)
 
-    vi.useRealTimers()
+    await setRange(wrapper, '#srm', 12)
+    await vi.advanceTimersByTimeAsync(QUIET_MS - 1)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(1)
+    await flushPromises()
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(1)
+
+    wrapper.unmount()
   })
 
-  it('cancels an already-queued check when a flavour edit is the thing that hits the limit', async () => {
-    vi.useFakeTimers()
+  it('a focused-range refusal cancels the queued preview for the whole cooldown', async () => {
     const calls = []
-    // The focused range refuses; the whole-brief check would happily answer. A
-    // single flavour edit fires both, so the refusal has to stop the queued one.
     global.fetch = vi.fn((url, init = {}) => {
       const path = String(url).replace(/^https?:\/\/[^/]+/, '')
       const method = (init.method || 'GET').toUpperCase()
@@ -265,44 +357,16 @@ describe('public brief editor', () => {
       if (path === '/api/v1/grains/feasibility') return json(apa.feasibility)
       return json({}, 404)
     })
-
-    const wrapper = mount(BriefEditor)
-    await flushPromises()
-    await vi.advanceTimersByTimeAsync(300) // the initial debounced check answers
-    await flushPromises()
+    const wrapper = await mountLoaded()
     calls.length = 0
 
-    // One flavour edit: the focused range goes out immediately and comes back
-    // rate-limited, while the whole-brief check sits on its 300 ms debounce.
     await wrapper.findAll('.flavor-row')[0].findAll('.step')[3].trigger('click')
     await flushPromises()
     expect(wrapper.find('.feas').text()).toMatch(/10 seconds/)
 
-    await vi.advanceTimersByTimeAsync(300) // the debounce would have fired here
-    await flushPromises()
-    expect(calls.filter((c) => c.path === '/api/v1/grains/feasibility')).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(QUIET_MS)
+    expect(paths(calls, '/api/v1/grains/feasibility')).toHaveLength(0)
 
-    vi.useRealTimers()
-  })
-
-  it('shows the locked infeasible voice without leaking solver internals', async () => {
-    installFetch()
-    global.fetch = vi.fn((url, init = {}) => {
-      const path = String(url).replace(/^https?:\/\/[^/]+/, '')
-      const method = (init.method || 'GET').toUpperCase()
-      if (method === 'GET' && path === '/api/v1/styles') return json(apa.styles)
-      if (method === 'GET' && path.startsWith('/api/v1/styles/')) return json(apa.style)
-      if (path === '/api/v1/grains/sensory-range') {
-        return json({ status: 'infeasible', name: JSON.parse(init.body).descriptor })
-      }
-      return json({ status: 'infeasible' })
-    })
-    const wrapper = await mountLoaded()
-
-    const feas = wrapper.find('.feas')
-    expect(feas.classes()).toContain('no')
-    expect(feas.text()).toContain('No grain bill fits this brief')
-    // No status codes, endpoint names, or solver jargon leak into the copy.
-    expect(feas.text()).not.toMatch(/infeasible|solver|400|status/i)
+    wrapper.unmount()
   })
 })

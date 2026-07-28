@@ -3,12 +3,14 @@ import { reactive, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import FlavorRow from './FlavorRow.vue'
 import { listStyles, getStyle, fetchSensoryRange, fetchFeasibility } from '@/api.js'
 import { srmGradient, srmWord } from '@/srm.js'
-import { seedLevel, buildBrief, humanize } from '@/brief.js'
+import {
+  seedLevel, buildBrief, briefKey, focusedRangeKey, humanize
+} from '@/brief.js'
 
 const emit = defineEmits(['generate'])
 
 const MAX_ROWS = 5
-const DEBOUNCE_MS = 300
+const QUIET_MS = 60000
 
 const styles = ref([])
 const style = ref(null)
@@ -39,13 +41,10 @@ function enterCooldown (outcome, retryAfter) {
     : (DEFAULT_RETRY[outcome] || 1)
   cooldown.outcome = outcome
   cooldown.remaining = secs
-  feas.checking = false
-  // A focused range can trip the limit while a debounced feasibility check is
-  // already armed. Disarm it, or that queued request would fire mid-cooldown.
-  if (feasTimer) {
-    clearTimeout(feasTimer)
-    feasTimer = null
-  }
+  // A refusal from either advisory path spends the shared allowance. Stop every
+  // other queued or active editor check; expiry alone never starts a replacement.
+  cancelFeasibility()
+  cancelRangeRequests()
   if (cooldownTimer) clearInterval(cooldownTimer)
   cooldownTimer = setInterval(() => {
     cooldown.remaining -= 1
@@ -57,7 +56,11 @@ function enterCooldown (outcome, retryAfter) {
   }, 1000)
 }
 
-onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
+onBeforeUnmount(() => {
+  if (cooldownTimer) clearInterval(cooldownTimer)
+  cancelFeasibility()
+  cancelRangeRequests()
+})
 
 /* A refused Generate is answered on the results screen, but the wait it quotes
  * belongs here too: App hands the refusal back across the mount so the same
@@ -70,8 +73,9 @@ defineExpose({ enterCooldown })
 let feasSeq = 0
 let feasTimer = null
 let feasAbort = null
+let lastFeasKey = null
 const rangeSeq = {}
-const rangeAbort = {}
+const rangePending = {}
 
 /* ---- style / brief seeding --------------------------------------------- */
 
@@ -84,10 +88,13 @@ onMounted(async () => {
   }
   const preferred = styles.value.find((s) => s.slug === 'american-pale-ale')
   const first = preferred || styles.value[0]
-  if (first) await loadStyle(first.slug)
+  if (first) await loadStyle(first.slug, false)
 })
 
-async function loadStyle (slug) {
+async function loadStyle (slug, edited = true) {
+  if (edited && slug === selectedSlug.value) return
+  cancelFeasibility()
+  cancelRangeRequests()
   selectedSlug.value = slug
   let data
   try {
@@ -109,7 +116,9 @@ async function loadStyle (slug) {
   brief.srm = Math.round((srm.low + srm.high) / 2)
 
   brief.flavors = seedFlavors(data)
-  scheduleFeasibility()
+  // Initial style data is enough to Generate; only a visitor's later style
+  // change earns a lazy advisory preview.
+  if (edited) scheduleFeasibility()
 }
 
 /* Style-mentioned flavours arrive pre-set (BJCP descriptors), seeded to a level
@@ -123,7 +132,14 @@ function seedFlavors (data) {
     .slice(0, MAX_ROWS)
     .map((name) => {
       const sd = byName.get(name)
-      return { name, level: seedLevel(sd.mean), styleMin: sd.min, styleMax: sd.max, range: null }
+      return {
+        name,
+        level: seedLevel(sd.mean),
+        styleMin: sd.min,
+        styleMax: sd.max,
+        range: null,
+        rangeKey: null
+      }
     })
 }
 
@@ -132,20 +148,29 @@ function seedFlavors (data) {
 async function refreshRange (flavor) {
   if (!style.value || inCooldown()) return
   const name = flavor.name
+  const key = focusedRangeKey(style.value, brief, name)
+  if (flavor.rangeKey === key || rangePending[name]?.key === key) return
+
   const seq = (rangeSeq[name] || 0) + 1
   rangeSeq[name] = seq
-  if (rangeAbort[name]) rangeAbort[name].abort()
+  cancelRangeRequest(name, false)
   const ctrl = new AbortController()
-  rangeAbort[name] = ctrl
+  rangePending[name] = { key, ctrl }
 
   const payload = { ...buildBrief(style.value, brief), descriptor: name }
   let result
   try {
     result = await fetchSensoryRange(payload, ctrl.signal)
   } catch {
+    if (rangePending[name]?.key === key) delete rangePending[name]
     return // aborted or network error — leave the prior range untouched
   }
-  if (seq !== rangeSeq[name]) return // a newer edit to this flavour won
+  if (seq !== rangeSeq[name] ||
+      rangePending[name]?.key !== key ||
+      focusedRangeKey(style.value, brief, name) !== key) {
+    return // a newer engagement or relevant constraint change won
+  }
+  delete rangePending[name]
   if (result && (result.status === 'busy' || result.status === 'rate_limited')) {
     enterCooldown(result.status, result.retryAfter)
     return // leave the prior range untouched; the allowance is spent
@@ -153,33 +178,83 @@ async function refreshRange (flavor) {
   flavor.range = result && result.status === 'feasible'
     ? { min: result.min, max: result.max }
     : null
+  // Cache an honest "no exact hint" result too; repeating the same request
+  // cannot improve it until another relevant constraint changes.
+  flavor.rangeKey = key
 }
 
-/* ---- debounced whole-brief feasibility ---------------------------------- */
+function cancelRangeRequest (name, invalidate = true) {
+  if (rangePending[name]) {
+    rangePending[name].ctrl.abort()
+    delete rangePending[name]
+  }
+  if (invalidate) rangeSeq[name] = (rangeSeq[name] || 0) + 1
+}
+
+function cancelRangeRequests () {
+  for (const name of Object.keys(rangePending)) cancelRangeRequest(name)
+}
+
+function invalidateRanges (exceptName = null) {
+  for (const flavor of brief.flavors) {
+    if (flavor.name === exceptName) continue
+    flavor.range = null
+    flavor.rangeKey = null
+    cancelRangeRequest(flavor.name)
+  }
+}
+
+/* ---- lazy whole-brief feasibility --------------------------------------- */
 
 function scheduleFeasibility () {
   if (inCooldown()) return // allowance spent — no automatic request until it clears
-  feas.checking = true
-  if (feasTimer) clearTimeout(feasTimer)
-  feasTimer = setTimeout(runFeasibility, DEBOUNCE_MS)
+  cancelFeasibility()
+  // The preview is advisory. A changed brief clears its stale answer; show
+  // "Checking" only once the quiet period ends and a request actually starts.
+  feas.status = 'idle'
+  feasTimer = setTimeout(runFeasibility, QUIET_MS)
+}
+
+function cancelFeasibility () {
+  if (feasTimer) {
+    clearTimeout(feasTimer)
+    feasTimer = null
+  }
+  ++feasSeq // any response already in flight is now stale
+  if (feasAbort) {
+    feasAbort.abort()
+    feasAbort = null
+  }
+  feas.checking = false
 }
 
 async function runFeasibility () {
   // Guarded at the seam that actually issues the request, not only at the
   // scheduler, so nothing already in flight toward a send survives a cooldown.
+  feasTimer = null
   if (!style.value || inCooldown()) return
+  const payload = buildBrief(style.value, brief)
+  const key = briefKey(style.value, brief)
+  if (key === lastFeasKey) return
+
   const seq = ++feasSeq
-  if (feasAbort) feasAbort.abort()
   const ctrl = new AbortController()
   feasAbort = ctrl
+  feas.checking = true
 
   let result
   try {
-    result = await fetchFeasibility(buildBrief(style.value, brief), ctrl.signal)
+    result = await fetchFeasibility(payload, ctrl.signal)
   } catch {
+    if (seq === feasSeq) {
+      feasAbort = null
+      feas.checking = false
+    }
     return // aborted by a newer request, or transient failure
   }
   if (seq !== feasSeq) return // a newer brief already dispatched — drop this one
+  feasAbort = null
+  lastFeasKey = key
   feas.checking = false
   const status = (result && result.status) || 'invalid'
   feas.status = status
@@ -191,29 +266,43 @@ async function runFeasibility () {
 /* ---- visitor interactions ----------------------------------------------- */
 
 function onStyleChange (event) {
-  loadStyle(event.target.value)
+  loadStyle(event.target.value, true)
 }
 
 function onAbv (event) {
-  brief.abv = Number(event.target.value)
+  const value = Number(event.target.value)
+  if (value === brief.abv) return
+  brief.abv = value
+  invalidateRanges()
   scheduleFeasibility()
 }
 
 function onSrm (event) {
-  brief.srm = Number(event.target.value)
+  const value = Number(event.target.value)
+  if (value === brief.srm) return
+  brief.srm = value
+  invalidateRanges()
   scheduleFeasibility()
 }
 
-/* A flavour edit: exactly one focused range request for that one descriptor,
- * plus the debounced whole-brief check. Never the all-descriptor sweep. */
+/* First engagement fetches one missing/stale hint. The target flavor's own
+ * level is absent from its cache key, so later changes reuse that answer; those
+ * changes only invalidate the other rows whose ranges they genuinely affect. */
 function setFlavor (i, level) {
-  brief.flavors[i].level = level
-  refreshRange(brief.flavors[i])
-  scheduleFeasibility()
+  const flavor = brief.flavors[i]
+  const changed = flavor.level !== level
+  if (changed) {
+    flavor.level = level
+    invalidateRanges(flavor.name)
+    scheduleFeasibility()
+  }
+  refreshRange(flavor)
 }
 
 function removeFlavor (i) {
-  brief.flavors.splice(i, 1)
+  const [removed] = brief.flavors.splice(i, 1)
+  if (removed) cancelRangeRequest(removed.name)
+  invalidateRanges()
   scheduleFeasibility()
 }
 
@@ -225,8 +314,10 @@ function addFlavor (name) {
     level: 2,
     styleMin: sd ? sd.min : 0,
     styleMax: sd ? sd.max : 2,
-    range: null
+    range: null,
+    rangeKey: null
   })
+  invalidateRanges()
   brief.flavors.push(flavor)
   search.value = ''
   refreshRange(flavor)
@@ -271,12 +362,16 @@ const feasLine = computed(() => {
   }
 })
 
-const canGenerate = computed(() => feas.status === 'feasible' && !inCooldown())
+const canGenerate = computed(() => Boolean(style.value) && !inCooldown())
 
 /* Hand the results shelf both the solver payload and a display context: the
  * brief read back in its own terms (style, strength, colour, flavour steps). */
 function onGenerate () {
   if (!canGenerate.value || !style.value) return
+  // Generate owns the allowance. No queued preview, in-flight advisory answer,
+  // or range hint may arrive after this explicit request without another edit.
+  cancelFeasibility()
+  cancelRangeRequests()
   emit('generate', {
     payload: buildBrief(style.value, brief),
     context: {
