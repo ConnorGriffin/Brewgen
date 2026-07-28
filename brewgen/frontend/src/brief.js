@@ -131,3 +131,21 @@ export function buildBrief (style, brief) {
     }
   }
 }
+
+/* Stable keys for the editor's advisory compute. Whole-brief previews key the
+ * exact version-one request. A focused range deliberately ignores its target
+ * descriptor's own bound, matching the server's range semantics: changing only
+ * that flavor therefore keeps its cached answer fresh, while strength, color,
+ * style, fermentables, or any other flavor invalidate it. */
+export function briefKey (style, brief) {
+  return JSON.stringify(buildBrief(style, brief))
+}
+
+export function focusedRangeKey (style, brief, descriptor) {
+  const payload = buildBrief(style, brief)
+  return JSON.stringify({
+    ...payload,
+    sensory: payload.sensory.filter((bound) => bound.name !== descriptor),
+    descriptor
+  })
+}

@@ -2,8 +2,9 @@
  * Real-browser regression guard for the retired 48-range fan-out.
  *
  * Drives the actual built public brief editor in a real (headless Chromium)
- * browser and proves that ONE flavor edit produces exactly ONE focused
- * single-descriptor range request — never the all-descriptor sweep. Run with:
+ * browser and proves that initial load spends no compute, first flavor
+ * engagement produces one focused range request, and later changes to that
+ * flavor reuse it — never the all-descriptor sweep. Run with:
  *   npm run test:browser        (builds the offline bundle, then this script)
  *
  * Sandbox recipe (Chromium args, file:// navigation, fetch stubbed via
@@ -40,6 +41,7 @@ function initScript (fixture) {
   return `(function () {
     var f = ${JSON.stringify(fixture)};
     window.__range = [];
+    window.__feas = 0;
     window.__plural = 0;
     window.fetch = function (url, init) {
       var s = String(url);
@@ -47,7 +49,7 @@ function initScript (fixture) {
       var data = {};
       if (s.indexOf('/grains/sensory-range') !== -1) { window.__range.push(body && body.descriptor); data = { status: 'feasible', name: body && body.descriptor, min: 0.1, max: 2.6 }; }
       else if (s.indexOf('/grains/sensory-profiles') !== -1) { window.__plural++; data = {}; }
-      else if (s.indexOf('/grains/feasibility') !== -1) { data = { status: 'feasible' }; }
+      else if (s.indexOf('/grains/feasibility') !== -1) { window.__feas++; data = { status: 'feasible' }; }
       else if (s.indexOf('/styles/') !== -1) { data = f.style; }
       else if (s.indexOf('/styles') !== -1) { data = f.styles; }
       return Promise.resolve(new Response(JSON.stringify(data), {
@@ -76,20 +78,33 @@ try {
   await page.goto('file://' + indexHtml, { waitUntil: 'networkidle' })
   await page.waitForSelector('.flavor-row')
 
-  // Pre-set flavors must not trigger any focused range request on load.
-  const onLoad = await page.evaluate(() => window.__range.length)
-  if (onLoad !== 0) fail(`expected 0 range requests on load, saw ${onLoad}`)
+  // Style data alone enables Generate; initial load spends no solver allowance.
+  const onLoad = await page.evaluate(() => ({
+    range: window.__range.length,
+    feasibility: window.__feas,
+    generateDisabled: document.querySelector('.generate').disabled
+  }))
+  if (onLoad.range !== 0 || onLoad.feasibility !== 0) {
+    fail(`expected 0 compute requests on load, saw range=${onLoad.range}, feasibility=${onLoad.feasibility}`)
+  }
+  if (onLoad.generateDisabled) fail('Generate should be enabled as soon as style data is ready')
 
   // One flavor edit: click "bold" on the first flavor row.
   await page.locator('.flavor-row').first().locator('.step').nth(3).click()
   await page.waitForTimeout(500)
 
-  const range = await page.evaluate(() => window.__range)
+  let range = await page.evaluate(() => window.__range)
+  if (range.length !== 1) fail(`first flavor engagement should make exactly one focused range request, saw ${range.length} (${range})`)
+
+  // The target's own level does not affect its range; a second change reuses it.
+  await page.locator('.flavor-row').first().locator('.step').nth(2).click()
+  await page.waitForTimeout(500)
+  range = await page.evaluate(() => window.__range)
   const plural = await page.evaluate(() => window.__plural)
-  if (range.length !== 1) fail(`one flavor edit should make exactly one focused range request, saw ${range.length} (${range})`)
+  if (range.length !== 1) fail(`later changes to the same flavor should reuse one range, saw ${range.length} (${range})`)
   if (plural !== 0) fail(`the all-descriptor sweep must never be called, saw ${plural}`)
 
-  console.log(`PASS: one flavor edit -> one focused range request for "${range[0]}", zero all-descriptor calls`)
+  console.log(`PASS: initial load -> zero compute; repeated "${range[0]}" edits -> one focused range, zero all-descriptor calls`)
 } finally {
   await browser.close()
 }
