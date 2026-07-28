@@ -47,39 +47,6 @@ def _build_fermentable_solver(brief):
     )
 
 
-def _build_legacy_fermentable_solver(data):
-    """Adapt the retired model-valid helper's historical request shape."""
-    grains = []
-    for item in data.get('fermentable_list', []):
-        matched = all_grains.get_grain_by_slug(item['slug'])
-        grains.append(grain.Grain(
-            name=matched.name,
-            brand=matched.brand,
-            potential=matched.potential,
-            color=matched.color,
-            category=matched.category,
-            sensory_data=matched.sensory_data,
-            min_percent=item['min_percent'],
-            max_percent=item['max_percent'],
-        ).get_grain_data())
-
-    categories = [{
-        'name': cat['name'],
-        'unique_fermentable_count': cat.get('unique_fermentable_count'),
-        'min_percent': cat['min_percent'],
-        'max_percent': cat['max_percent'],
-    } for cat in data.get('category_model', [])]
-
-    return FermentableSolver(
-        grains,
-        categories,
-        max_unique_grains=data.get('max_unique_fermentables', 4),
-        sensory_keywords=all_grains.get_sensory_keywords(),
-        sensory_bounds=data.get('sensory_model'),
-        config=SOLVER_CONFIG,
-    )
-
-
 def _color_context(brief):
     """Build the gravity, equipment, and SRM context from a derived brief."""
     return ColorContext(
