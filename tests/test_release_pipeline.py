@@ -7,10 +7,51 @@ drops the publish guard, breaks the shared concurrency group that serializes the
 mutable `release` tag, or weakens the blocking container scan.
 """
 
+import datetime
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 WORKFLOWS = REPO / ".github" / "workflows"
+
+# A committed trivy suppression (`.trivyignore`, auto-loaded by the scan) must
+# never silently or permanently hollow out the gate. Every advisory line carries
+# an `exp:YYYY-MM-DD` expiry in the future and a rationale on the comment line
+# directly above it. See docs/RELEASE.md, "Recording an unfixable finding".
+_ADVISORY = re.compile(r"^(?P<id>(?:CVE-\d{4}-\d+|GHSA-[0-9a-z]+(?:-[0-9a-z]+)+))\b")
+_EXPIRY = re.compile(r"\bexp:(\d{4}-\d{2}-\d{2})\b")
+
+
+def _trivyignore_violations(text: str, today: datetime.date) -> list[str]:
+    """Return one message per unguarded/stale suppression; empty == clean."""
+    problems: list[str] = []
+    rationale = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            rationale = None
+            continue
+        if line.startswith("#"):
+            body = line.lstrip("#").strip()
+            rationale = body or None
+            continue
+        match = _ADVISORY.match(line)
+        ident = match.group("id") if match else line.split()[0]
+        expiry = _EXPIRY.search(line)
+        if not expiry:
+            problems.append(f"{ident}: missing exp:YYYY-MM-DD expiry")
+        else:
+            try:
+                when = datetime.date.fromisoformat(expiry.group(1))
+            except ValueError:
+                problems.append(f"{ident}: unparseable expiry {expiry.group(1)!r}")
+            else:
+                if when < today:
+                    problems.append(f"{ident}: expiry {when.isoformat()} already passed")
+        if not rationale:
+            problems.append(f"{ident}: missing rationale on the preceding comment line")
+        rationale = None
+    return problems
 
 
 def _read(name: str) -> str:
@@ -108,3 +149,37 @@ def test_release_documentation_exists():
     doc = (REPO / "docs" / "RELEASE.md").read_text(encoding="utf-8")
     for topic in ("Image identity", "publication", "Rollback", "Verifying"):
         assert topic in doc
+
+
+def test_no_unguarded_or_expired_scan_suppressions():
+    """Any committed scan suppression must be justified and still in date.
+
+    The blocking scan only stays meaningful if a suppression cannot quietly
+    linger. A silent (`.trivyignore.yaml` is not auto-guarded here) or
+    metadata-poor suppression turns the suite red rather than hollowing out the
+    gate. Passes today because no suppression is needed — the flagged advisory
+    was fixed by refreshing the base image.
+    """
+    today = datetime.date.today()
+    plain = REPO / ".trivyignore"
+    if plain.exists():
+        problems = _trivyignore_violations(plain.read_text(encoding="utf-8"), today)
+        assert not problems, f".trivyignore: {problems}"
+    # A YAML ignore file is not auto-guarded by the plain-format check above, so
+    # disallow it outright: suppressions belong in the guarded `.trivyignore`.
+    assert not (REPO / ".trivyignore.yaml").exists(), (
+        "Use .trivyignore (rationale + exp: date) so suppressions stay guarded."
+    )
+
+
+def test_trivyignore_guard_rejects_silent_or_stale_suppressions():
+    """The guard itself: a fixed date proves each failure mode is caught."""
+    today = datetime.date(2026, 7, 28)
+    good = "# unreachable: brewgen parses no untrusted HTML\nCVE-2026-15308 exp:2026-10-01\n"
+    assert _trivyignore_violations(good, today) == []
+    # No rationale above the advisory.
+    assert _trivyignore_violations("CVE-2026-15308 exp:2026-10-01\n", today)
+    # No expiry date.
+    assert _trivyignore_violations("# reason\nCVE-2026-15308\n", today)
+    # Expiry already in the past.
+    assert _trivyignore_violations("# reason\nCVE-2026-15308 exp:2020-01-01\n", today)

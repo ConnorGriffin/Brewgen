@@ -43,6 +43,52 @@ built and scanned in that run is pushed under its immutable commit tag, and
 gate — including the container scan — but the login and push steps are skipped,
 so they perform zero registry writes.
 
+### Base image pins and scan freshness
+
+The container is built from three digest-pinned base images in `Dockerfile`. The
+digest is a snapshot of that base at a moment in time; the container scan can
+start failing days later — with the pins untouched — because a new advisory
+lands against a package already inside a pinned base. When that happens the first
+question is **how old is the pin**, so we record the pin date here:
+
+- **Runtime base** `cgr.dev/chainguard/python:latest` — pinned **2026-07-28**.
+  Ships Python `3.14.6-r4`, which carries the fix for `CVE-2026-15308` (the
+  HTML-parser CPU denial-of-service that failed the scan on the pre-refresh
+  image).
+- **Python builder** `cgr.dev/chainguard/python:latest-dev` — pinned
+  **2026-07-28**. Supplies pip for the dependency install only; it never reaches
+  the shipped image.
+- **Frontend builder** `node:20-slim` — compiles the SPA; only the built static
+  files are copied out, so it is not part of the scanned image.
+
+Chainguard's free tier serves only `:latest` / `:latest-dev` and
+garbage-collects older digests, so an aged pin can stop pulling entirely. When
+the scan flags an aged base, refresh the relevant pin to the current `:latest`
+digest and update the date above — do not reach for an exception first.
+
+The scan prints its full findings table to the run summary before the blocking
+check, so the offending package and advisory can be read straight from CI.
+
+### Recording an unfixable finding
+
+If — and only if — the scan flags a CRITICAL/HIGH advisory that has **no fix
+available** in any current base, record it in a committed trivy ignore file
+(`.trivyignore` at the repo root) rather than weakening the gate. Each entry
+must carry, on the line above the advisory ID, a one-line rationale for why it is
+not exploitable in this image, and the advisory line itself must carry an
+`exp:YYYY-MM-DD` expiry date in the future:
+
+```
+# CBC solver DoS is unreachable: /tmp is the only writable path and no untrusted
+# input reaches the solver's file parser. Re-check when Wolfi ships a fix.
+CVE-0000-00000 exp:2026-10-01
+```
+
+The release-pipeline guardrails fail the build if an ignore entry lacks a
+rationale or an expiry, or if its expiry date has already passed — a suppression
+can never silently outlive its review date. Severity downgrades and blanket
+suppressions are not allowed.
+
 ## Running the image locally
 
 The image needs no secrets and no persistent volumes. The only writable path
