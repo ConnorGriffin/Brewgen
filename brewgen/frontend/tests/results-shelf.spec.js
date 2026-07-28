@@ -185,6 +185,23 @@ describe('public results shelf', () => {
     leakless(wrapper.find('.notice').text())
   })
 
+  it('says when to try again once a refusal carried a retry time', async () => {
+    // One second is the only busy wait a visitor can ever be quoted, so the
+    // singular has to read naturally; the too-fast wait tops out at ten.
+    const busy = await mountShelf({ outcome: 'busy', retryAfter: 1 })
+    expect(busy.find('.notice-msg').text()).toContain('try again in about 1 second.')
+    leakless(busy.find('.notice').text())
+
+    const limited = await mountShelf({ outcome: 'rate_limited', retryAfter: 10 })
+    expect(limited.find('.notice-msg').text()).toContain('try again in about 10 seconds.')
+    leakless(limited.find('.notice').text())
+  })
+
+  it('keeps the plain wording when a refusal carried no retry time', async () => {
+    const wrapper = await mountShelf({ outcome: 'busy' })
+    expect(wrapper.find('.notice-msg').text()).not.toContain('try again in about')
+  })
+
   it('renders the empty state when no brief was submitted', async () => {
     const wrapper = await mountShelf(null, { context: null })
     expect(wrapper.find('.notice-empty').exists()).toBe(true)

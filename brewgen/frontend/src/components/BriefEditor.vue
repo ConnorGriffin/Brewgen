@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import FlavorRow from './FlavorRow.vue'
 import { listStyles, getStyle, fetchSensoryRange, fetchFeasibility } from '@/api.js'
 import { srmGradient, srmWord } from '@/srm.js'
@@ -21,6 +21,43 @@ const srmBounds = reactive({ min: 0, max: 0 })
 
 const feas = reactive({ status: 'idle', checking: false })
 const search = ref('')
+
+/* Compute cooldown. When a check comes back rate-limited or busy the visitor's
+ * shared allowance is spent, so every automatic request (debounced feasibility
+ * and per-flavour ranges) is suppressed until `remaining` counts down to zero.
+ * The visitor keeps editing the brief; the next intentional edit after the
+ * countdown expires is the only thing that fires compute again. */
+const cooldown = reactive({ outcome: null, remaining: 0 })
+let cooldownTimer = null
+const DEFAULT_RETRY = { busy: 1, rate_limited: 10 }
+
+function inCooldown () { return cooldown.remaining > 0 }
+
+function enterCooldown (outcome, retryAfter) {
+  const secs = Number.isFinite(retryAfter) && retryAfter > 0
+    ? Math.ceil(retryAfter)
+    : (DEFAULT_RETRY[outcome] || 1)
+  cooldown.outcome = outcome
+  cooldown.remaining = secs
+  feas.checking = false
+  // A focused range can trip the limit while a debounced feasibility check is
+  // already armed. Disarm it, or that queued request would fire mid-cooldown.
+  if (feasTimer) {
+    clearTimeout(feasTimer)
+    feasTimer = null
+  }
+  if (cooldownTimer) clearInterval(cooldownTimer)
+  cooldownTimer = setInterval(() => {
+    cooldown.remaining -= 1
+    if (cooldown.remaining <= 0) {
+      cooldown.remaining = 0
+      clearInterval(cooldownTimer)
+      cooldownTimer = null
+    }
+  }, 1000)
+}
+
+onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 
 /* Monotonic keys so out-of-order async answers can be dropped. One counter for
  * the whole-brief feasibility check; one per descriptor for focused ranges. */
@@ -87,7 +124,7 @@ function seedFlavors (data) {
 /* ---- focused single-descriptor range ------------------------------------ */
 
 async function refreshRange (flavor) {
-  if (!style.value) return
+  if (!style.value || inCooldown()) return
   const name = flavor.name
   const seq = (rangeSeq[name] || 0) + 1
   rangeSeq[name] = seq
@@ -103,6 +140,10 @@ async function refreshRange (flavor) {
     return // aborted or network error — leave the prior range untouched
   }
   if (seq !== rangeSeq[name]) return // a newer edit to this flavour won
+  if (result && (result.status === 'busy' || result.status === 'rate_limited')) {
+    enterCooldown(result.status, result.retryAfter)
+    return // leave the prior range untouched; the allowance is spent
+  }
   flavor.range = result && result.status === 'feasible'
     ? { min: result.min, max: result.max }
     : null
@@ -111,13 +152,16 @@ async function refreshRange (flavor) {
 /* ---- debounced whole-brief feasibility ---------------------------------- */
 
 function scheduleFeasibility () {
+  if (inCooldown()) return // allowance spent — no automatic request until it clears
   feas.checking = true
   if (feasTimer) clearTimeout(feasTimer)
   feasTimer = setTimeout(runFeasibility, DEBOUNCE_MS)
 }
 
 async function runFeasibility () {
-  if (!style.value) return
+  // Guarded at the seam that actually issues the request, not only at the
+  // scheduler, so nothing already in flight toward a send survives a cooldown.
+  if (!style.value || inCooldown()) return
   const seq = ++feasSeq
   if (feasAbort) feasAbort.abort()
   const ctrl = new AbortController()
@@ -131,7 +175,11 @@ async function runFeasibility () {
   }
   if (seq !== feasSeq) return // a newer brief already dispatched — drop this one
   feas.checking = false
-  feas.status = (result && result.status) || 'invalid'
+  const status = (result && result.status) || 'invalid'
+  feas.status = status
+  if (status === 'busy' || status === 'rate_limited') {
+    enterCooldown(status, result && result.retryAfter)
+  }
 }
 
 /* ---- visitor interactions ----------------------------------------------- */
@@ -197,6 +245,13 @@ const atMax = computed(() => brief.flavors.length >= MAX_ROWS)
 
 const feasLine = computed(() => {
   if (loadError.value) return { cls: 'no', text: '' }
+  if (inCooldown()) {
+    const s = cooldown.remaining
+    const secs = `${s} second${s === 1 ? '' : 's'}`
+    return cooldown.outcome === 'busy'
+      ? { cls: 'checking', text: `Brewgen is busy right now — try again in ${secs}.` }
+      : { cls: 'checking', text: `Checking a lot right now — pause a moment, edit again in ${secs}.` }
+  }
   if (feas.checking) return { cls: 'checking', text: 'Checking this brief…' }
   switch (feas.status) {
     case 'feasible': return { cls: 'ok', text: 'A grain bill can meet this brief.' }

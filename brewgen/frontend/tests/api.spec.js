@@ -65,6 +65,19 @@ describe('focused endpoints surface limits honestly', () => {
     expect(await fetchFeasibility({})).toEqual({ status: 'rate_limited' })
   })
 
+  it('surfaces the retry seconds from the problem+json body', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => respond(429, { status: 429, outcome: 'rate_limited', retry_after: 10 })))
+    expect(await fetchFeasibility({})).toEqual({ status: 'rate_limited', retryAfter: 10 })
+  })
+
+  it('falls back to the Retry-After header when the body omits it', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(
+      JSON.stringify({ status: 503, outcome: 'busy' }),
+      { status: 503, headers: { 'Content-Type': 'application/problem+json', 'Retry-After': '1' } }
+    ))))
+    expect(await fetchFeasibility({})).toEqual({ status: 'busy', retryAfter: 1 })
+  })
+
   it('never reports feasible from a problem+json failure body', async () => {
     vi.stubGlobal('fetch', vi.fn(() => respond(422, { title: 'x', status: 422, outcome: 'infeasible' })))
     const result = await fetchFeasibility({})

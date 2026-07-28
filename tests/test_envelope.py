@@ -192,6 +192,77 @@ def test_rate_limit_refills_at_six_per_minute(client, monkeypatch):
     assert client.post("/api/v1/grains/feasibility", json=body).status_code == 429
 
 
+def test_rate_limited_carries_exact_retry_after(client, monkeypatch):
+    # Right after the burst the frozen bucket sits at zero tokens, so one refills
+    # in exactly (1 - 0) / 0.1 = 10 s. The refusal must state that, both as the
+    # RFC 7231 header and as the body field the frontend renders.
+    _frozen_limiter(monkeypatch)
+    body = _brief("/api/v1/grains/feasibility")
+    client.post("/api/v1/grains/feasibility", json=body)
+    client.post("/api/v1/grains/feasibility", json=body)
+    third = client.post("/api/v1/grains/feasibility", json=body)
+    assert third.status_code == 429
+    assert third.headers["Retry-After"] == "10"
+    assert third.get_json()["retry_after"] == 10
+
+
+def test_busy_shed_does_not_charge_the_visitor(client, monkeypatch):
+    # Regression guard for the charge bug: a request shed as busy never reaches
+    # solver work, so it must leave the visitor's allowance untouched. Against
+    # the old gate (charge, then refuse) the second post below would already be
+    # 429; with the busy refund the full burst of two survives the shed.
+    _frozen_limiter(monkeypatch)
+    body = _brief("/api/v1/grains/feasibility")
+
+    assert envelope.SLOTS.acquire(blocking=False) is True
+    assert envelope.SLOTS.acquire(blocking=False) is True
+    try:
+        busy = client.post("/api/v1/grains/feasibility", json=body)
+        assert busy.status_code == 503
+        assert busy.get_json()["outcome"] == "busy"
+        assert busy.headers["Retry-After"] == "1"
+        assert busy.get_json()["retry_after"] == 1
+    finally:
+        envelope.SLOTS.release()
+        envelope.SLOTS.release()
+
+    # The visitor still has both burst tokens: two allowed, then 429.
+    assert client.post("/api/v1/grains/feasibility", json=body).status_code != 429
+    assert client.post("/api/v1/grains/feasibility", json=body).status_code != 429
+    assert client.post("/api/v1/grains/feasibility", json=body).status_code == 429
+
+
+def test_allow_retry_timing_is_exact_under_an_injected_clock():
+    # The limiter's retry seconds come from the same clock reading as the
+    # decision, so they are exact without any wall-clock waiting.
+    now = {"t": 0.0}
+    limiter = envelope.RateLimiter(clock=lambda: now["t"])
+    addr = "203.0.113.5"
+    assert limiter.allow(addr) == (True, 0.0)
+    assert limiter.allow(addr) == (True, 0.0)
+    allowed, retry = limiter.allow(addr)
+    assert allowed is False
+    assert retry == 10.0                       # empty bucket -> a full ten seconds
+    now["t"] = 5.0                             # half a token has refilled
+    allowed, retry = limiter.allow(addr)
+    assert allowed is False
+    assert retry == pytest.approx(5.0)
+
+
+def test_busy_refund_restores_the_bucket_at_a_frozen_clock():
+    # refund credits exactly one token back (capped at capacity) at the same
+    # clock instant, so the busy path can undo its own charge.
+    now = {"t": 0.0}
+    limiter = envelope.RateLimiter(clock=lambda: now["t"])
+    addr = "203.0.113.6"
+    assert limiter.allow(addr)[0] is True
+    assert limiter.allow(addr)[0] is True
+    assert limiter.allow(addr)[0] is False     # burst spent
+    limiter.refund(addr)
+    assert limiter.allow(addr)[0] is True       # the refunded token is spendable
+    assert limiter.allow(addr)[0] is False
+
+
 def test_rate_limit_is_keyed_per_visitor_via_one_trusted_hop(client, monkeypatch):
     _frozen_limiter(monkeypatch)
     body = _brief("/api/v1/grains/feasibility")

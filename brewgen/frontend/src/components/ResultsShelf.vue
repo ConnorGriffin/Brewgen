@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import BillCard from './BillCard.vue'
 import {
-  withLetters, resolveOutcome, OUTCOME_NOTICE,
+  withLetters, resolveOutcome, outcomeNotice,
   briefSentence, differentiators
 } from '@/results.js'
 
@@ -77,7 +77,8 @@ const partialNote = computed(() =>
     : '')
 const canShowAll = computed(() => !isMobile.value && !!openLetter.value)
 
-const notice = computed(() => OUTCOME_NOTICE[outcome.value] || null)
+const notice = computed(() =>
+  outcomeNotice(outcome.value, props.result && props.result.retryAfter))
 </script>
 
 <template>

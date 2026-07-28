@@ -33,6 +33,27 @@ carrying only `{timestamp, request_id, operation, outcome, status, duration}`,
 retained for seven days — never the brief, the address, the hash, headers,
 cookies, user agents, referrers, or query strings.
 
+## Retry timing and the busy refund
+
+Both transient refusals tell the visitor when to try again, so the client can
+show a countdown instead of guessing:
+
+- A **429 rate-limited** response carries an accurate retry time — the seconds
+  until one token next refills, `(1 − tokens) / 0.1`. Immediately after a fresh
+  burst of two is spent this is exactly **ten seconds**.
+- A **503 busy** response carries a **short one-second** retry, grounded in the
+  ≤ 2 s end-to-end budget, since a held slot frees quickly.
+
+The timing is surfaced two ways: an integer `Retry-After` header (ceiled, per
+RFC 7231) and a `retry_after` body field the frontend renders. Nothing else is
+added to the problem+json body.
+
+A request shed as **busy never reaches solver work**, so it must not spend the
+visitor's allowance. The gate keeps its documented rate → concurrency order
+(step 5, then step 6), but when the concurrency check sheds a request the token
+the rate check just charged is **refunded**, leaving the visitor's bucket
+unchanged. Net effect: a busy shed costs the visitor nothing.
+
 ## Deployment requirements (#11/#12/#16)
 
 The limits above are **per container** and correct only under the runtime shape
