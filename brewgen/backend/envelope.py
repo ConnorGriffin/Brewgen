@@ -39,6 +39,7 @@ from datetime import datetime, timezone
 from functools import wraps
 
 from flask import Response, request
+from .brief import BriefError
 
 # -- locked envelope constants ---------------------------------------------
 
@@ -79,11 +80,11 @@ logger = logging.getLogger("brewgen.compute")
 
 # -- problem+json / success responses --------------------------------------
 
-def problem(status, outcome, retry_after=None):
+def problem(status, outcome, errors=None, retry_after=None):
     """Build an ``application/problem+json`` failure `(response, outcome)`.
 
-    The body carries only RFC 7807 members plus a stable machine ``outcome``
-    tag the frontend maps to a notice; it never echoes the request. When
+    The body carries RFC 7807 members, a stable machine ``outcome`` tag, and
+    optional path-only validation errors; it never echoes the request. When
     ``retry_after`` is given (seconds until the visitor may retry), it is
     surfaced both as an integer ``Retry-After`` header (ceiled, per RFC 7231)
     and as a ``retry_after`` body field the frontend renders as a countdown."""
@@ -94,6 +95,8 @@ def problem(status, outcome, retry_after=None):
         "outcome": outcome,
     }
     headers = {}
+    if errors:
+        body["errors"] = errors
     if retry_after is not None:
         seconds = max(0, math.ceil(retry_after))
         body["retry_after"] = seconds
@@ -107,185 +110,6 @@ def ok_json(body, outcome, status=200):
     """Build a successful ``application/json`` `(response, outcome)`."""
     resp = Response(json.dumps(body), status=status, mimetype="application/json")
     return resp, outcome
-
-
-# -- brief contract ---------------------------------------------------------
-
-# The one supported contract version. A body may omit it (the frontend does),
-# but if present it must match -- a future breaking shape ships a new version.
-BRIEF_VERSION = 1
-
-_FERMENTABLE_KEYS = {"slug", "min_percent", "max_percent"}
-_CATEGORY_KEYS = {"name", "min_percent", "max_percent", "unique_fermentable_count"}
-_SENSORY_KEYS = {"name", "min", "max"}
-_EQUIPMENT_KEYS = {"target_volume_gallons", "mash_efficiency"}
-_BEER_KEYS = {"original_sg", "min_color_srm", "max_color_srm"}
-_TOP_KEYS = {
-    "version", "fermentable_list", "category_model", "sensory_model",
-    "max_unique_fermentables", "equipment_profile", "beer_profile",
-}
-
-
-def _finite_number(value):
-    """True for a real, finite JSON number (rejecting NaN/Infinity and bools)."""
-    return isinstance(value, (int, float)) and not isinstance(value, bool) \
-        and math.isfinite(value)
-
-
-class BriefContract:
-    """The versioned grain-bill brief validator.
-
-    Holds the catalog (known slugs, categories, sensory keywords) so it can
-    reject unknown or duplicate values and cap every list at catalog
-    cardinality. :meth:`validate` returns ``None`` when the brief is acceptable
-    or a machine outcome tag (always ``"invalid"``) when it is not -- coarse on
-    purpose, so a rejection never echoes which value was wrong.
-    """
-
-    def __init__(self, slugs, categories, sensory_keywords):
-        self.slugs = set(slugs)
-        self.categories = set(categories)
-        self.sensory_keywords = set(sensory_keywords)
-
-    @classmethod
-    def from_grain_list(cls, grain_list):
-        return cls(
-            grain_list.get_grain_slugs(),
-            grain_list.get_all_categories(),
-            grain_list.get_sensory_keywords(),
-        )
-
-    def validate(self, data, *, require_descriptor=False):
-        """Return ``None`` if ``data`` is a valid brief, else ``"invalid"``."""
-        if not isinstance(data, dict):
-            return "invalid"
-
-        allowed = set(_TOP_KEYS)
-        if require_descriptor:
-            allowed.add("descriptor")
-        if set(data) - allowed:
-            return "invalid"
-
-        if "version" in data and data["version"] != BRIEF_VERSION:
-            return "invalid"
-
-        if require_descriptor:
-            descriptor = data.get("descriptor")
-            if not isinstance(descriptor, str) or descriptor not in self.sensory_keywords:
-                return "invalid"
-
-        if self._bad_fermentables(data.get("fermentable_list")):
-            return "invalid"
-        if self._bad_categories(data.get("category_model")):
-            return "invalid"
-        if self._bad_sensory(data.get("sensory_model")):
-            return "invalid"
-        if self._bad_max_unique(data.get("max_unique_fermentables")):
-            return "invalid"
-        if self._bad_equipment(data.get("equipment_profile")):
-            return "invalid"
-        if self._bad_beer(data.get("beer_profile")):
-            return "invalid"
-        return None
-
-    def _bad_range(self, item, keys, lo=None, hi=None, low_key="min_percent",
-                   high_key="max_percent"):
-        """True if a min/max pair on ``item`` is missing, non-finite, out of the
-        optional [lo, hi] band, or inverted."""
-        for key in (low_key, high_key):
-            value = item.get(key)
-            if not _finite_number(value):
-                return True
-            if lo is not None and value < lo:
-                return True
-            if hi is not None and value > hi:
-                return True
-        return item[low_key] > item[high_key]
-
-    def _bad_fermentables(self, fermentables):
-        # At least one grain, capped at catalog cardinality, unique known slugs.
-        if not isinstance(fermentables, list) or not fermentables:
-            return True
-        if len(fermentables) > len(self.slugs):
-            return True
-        seen = set()
-        for item in fermentables:
-            if not isinstance(item, dict) or set(item) - _FERMENTABLE_KEYS:
-                return True
-            slug = item.get("slug")
-            if slug not in self.slugs or slug in seen:
-                return True
-            seen.add(slug)
-            if self._bad_range(item, _FERMENTABLE_KEYS, lo=0, hi=100):
-                return True
-        return False
-
-    def _bad_categories(self, categories):
-        if categories is None:
-            return False  # optional
-        if not isinstance(categories, list) or len(categories) > len(self.categories):
-            return True
-        seen = set()
-        for item in categories:
-            if not isinstance(item, dict) or set(item) - _CATEGORY_KEYS:
-                return True
-            name = item.get("name")
-            if name not in self.categories or name in seen:
-                return True
-            seen.add(name)
-            if self._bad_range(item, _CATEGORY_KEYS, lo=0, hi=100):
-                return True
-            cap = item.get("unique_fermentable_count")
-            if cap is not None and not _finite_number(cap):
-                return True
-        return False
-
-    def _bad_sensory(self, sensory):
-        if sensory is None:
-            return False  # optional
-        if not isinstance(sensory, list) or len(sensory) > len(self.sensory_keywords):
-            return True
-        seen = set()
-        for item in sensory:
-            if not isinstance(item, dict) or set(item) - _SENSORY_KEYS:
-                return True
-            name = item.get("name")
-            if name not in self.sensory_keywords or name in seen:
-                return True
-            seen.add(name)
-            if self._bad_range(item, _SENSORY_KEYS, low_key="min", high_key="max"):
-                return True
-        return False
-
-    def _bad_max_unique(self, value):
-        if value is None:
-            return False  # optional, the solver defaults it
-        return not _finite_number(value) or value < 1
-
-    def _bad_equipment(self, equipment):
-        if equipment is None:
-            return False  # optional, the endpoints default it
-        if not isinstance(equipment, dict) or set(equipment) - _EQUIPMENT_KEYS:
-            return True
-        for key in _EQUIPMENT_KEYS:
-            if key in equipment and (not _finite_number(equipment[key])
-                                     or equipment[key] <= 0):
-                return True
-        return False
-
-    def _bad_beer(self, beer_profile):
-        if beer_profile is None:
-            return False  # optional, the endpoints default it
-        if not isinstance(beer_profile, dict) or set(beer_profile) - _BEER_KEYS:
-            return True
-        for key in _BEER_KEYS:
-            if key in beer_profile and not _finite_number(beer_profile[key]):
-                return True
-        lo = beer_profile.get("min_color_srm")
-        hi = beer_profile.get("max_color_srm")
-        if lo is not None and hi is not None and lo > hi:
-            return True
-        return False
 
 
 # -- rate limiter -----------------------------------------------------------
@@ -387,49 +211,36 @@ def _normalize_brief(data, require_descriptor):
     """Canonicalize a validated brief into a shape that is stable across
     equivalent-but-differently-written requests.
 
-    Applies the same field defaults the endpoints apply so an omitted field and
-    its default collide, sorts each list by its identity key so ordering is
-    irrelevant, and drops an omitted-vs-present ``version``. For a focused
-    ``sensory_range``, the queried descriptor's own ``sensory_model`` entry is
+    Sorts each choice list by its identity key so ordering is irrelevant. For
+    a focused ``sensory_range``, the queried descriptor's own sensory entry is
     dropped because that endpoint computes the descriptor's full editable span
     independently of its current bound.
     """
+    fermentables = data["fermentables"]
     norm = {
-        "fermentable_list": sorted(data.get("fermentable_list", []),
-                                   key=lambda item: item["slug"]),
-        "max_unique_fermentables": data.get("max_unique_fermentables", 4),
+        "style": data["style"],
+        "equipment": data["equipment"],
+        "fermentables": {
+            "allowed_slugs": sorted(fermentables["allowed_slugs"]),
+            "bounds": sorted(
+                fermentables.get("bounds", []),
+                key=lambda item: item["slug"],
+            ),
+            "maximum_count": fermentables["maximum_count"],
+        },
+        "color_srm": data["color_srm"],
     }
 
-    categories = data.get("category_model")
-    if categories is not None:
-        norm["category_model"] = sorted(categories, key=lambda item: item["name"])
-
-    sensory = data.get("sensory_model")
-    if sensory is not None:
-        entries = sensory
-        if require_descriptor:
-            descriptor = data.get("descriptor")
-            entries = [item for item in entries if item.get("name") != descriptor]
-        norm["sensory_model"] = sorted(entries, key=lambda item: item["name"])
-
-    # The color context is applied unconditionally by feasibility/recipes but
-    # only when a brief actually pins a color band for sensory_range (see
-    # views.py); mirror that so an absent band never collides with a default one.
-    if not require_descriptor or data.get("beer_profile"):
-        equipment = data.get("equipment_profile", {})
-        beer = data.get("beer_profile", {})
-        norm["equipment_profile"] = {
-            "target_volume_gallons": equipment.get("target_volume_gallons", 5.5),
-            "mash_efficiency": equipment.get("mash_efficiency", 75),
-        }
-        norm["beer_profile"] = {
-            "original_sg": beer.get("original_sg", 1.05),
-            "min_color_srm": beer.get("min_color_srm", 0),
-            "max_color_srm": beer.get("max_color_srm", 255),
-        }
+    sensory = data["sensory"]
+    if require_descriptor:
+        sensory = [
+            item for item in sensory
+            if item["name"] != data["descriptor"]
+        ]
+    norm["sensory"] = sorted(sensory, key=lambda item: item["name"])
 
     if require_descriptor:
-        norm["descriptor"] = data.get("descriptor")
+        norm["descriptor"] = data["descriptor"]
 
     return norm
 
@@ -584,8 +395,8 @@ def _emit_log(request_id, operation, outcome, status, duration):
 def compute_endpoint(operation, contract, require_descriptor=False):
     """Wrap a public compute view in the full envelope.
 
-    The wrapped function receives the already-parsed, already-validated brief
-    dict and returns a ``(response, outcome)`` pair (use :func:`ok_json` /
+    The wrapped function receives the validated, server-derived brief and
+    returns a ``(response, outcome)`` pair (use :func:`ok_json` /
     :func:`problem`). Everything before it -- media type, size, JSON, contract,
     rate limit, concurrency -- and the single aggregate log line are handled
     here, once, so ordering and the failure shape are defined in one place.
@@ -627,8 +438,10 @@ def _run(view, operation, contract, require_descriptor, args, kwargs):
         return problem(400, "malformed_json")
 
     # 4. versioned brief contract
-    if contract.validate(data, require_descriptor=require_descriptor):
-        return problem(422, "invalid")
+    try:
+        brief = contract.parse(data, require_descriptor=require_descriptor)
+    except BriefError as error:
+        return problem(422, "invalid", errors=error.errors)
 
     # 5. per-visitor rate limit (one trusted hop) -- charged before any
     #    coalescing or cache lookup, so a flood still spends its budget.
@@ -652,7 +465,7 @@ def _run(view, operation, contract, require_descriptor, args, kwargs):
             shed = problem(503, "busy", retry_after=BUSY_RETRY_SECONDS)
             return _freeze(*shed), False
         try:
-            resp, outcome = view(data, *args, **kwargs)
+            resp, outcome = view(brief, *args, **kwargs)
         except Exception:  # never leak an internal failure's shape
             resp, outcome = problem(500, "internal")
         finally:

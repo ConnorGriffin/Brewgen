@@ -1,7 +1,7 @@
 /*
  * Brief model helpers: the locked none/hint/present/bold word steps and the
- * translation from a visitor's brief into the payloads the two focused #36
- * solver endpoints consume. Nothing here ever asks for the all-descriptor set.
+ * translation from a visitor's brief into the one versioned choice brief every
+ * compute route accepts. Nothing here ever asks for the all-descriptor set.
  */
 
 /* Word-step levels. Index 0 ("none") doubles as the rosewood avoid state. */
@@ -68,53 +68,66 @@ export function reachableLevels (styleMin, styleMax, range) {
   })
 }
 
-/* ---- solver payloads ---------------------------------------------------- */
+/* ---- versioned public brief -------------------------------------------- */
 
-export function fermentableList (style) {
-  return (style.grain_usage || []).map((g) => ({
-    slug: g.slug,
-    min_percent: g.min_percent,
-    max_percent: g.max_percent
-  }))
+const clamp = (value, low, high) => Math.min(high, Math.max(low, value))
+const wholePercent = (value, fallback) => {
+  const number = Number(value)
+  return clamp(Math.round(Number.isFinite(number) ? number : fallback), 0, 100)
 }
 
-export function categoryModel (style) {
-  // The style endpoint already returns the category shape the solver reads.
-  return style.category_usage || []
+/* The browser sends ingredient choices and optional whole-percent bounds. The
+ * server resolves the grain catalog and the style's category constraints. */
+export function allowedFermentables (style) {
+  const usage = style.grain_usage || []
+  const allowedSlugs = usage.map((grain) => grain.slug)
+  const maximumCount = clamp(
+    Math.round(Number(style.unique_fermentable_count) || 4),
+    1,
+    Math.min(allowedSlugs.length, 7)
+  )
+  return {
+    allowed_slugs: allowedSlugs,
+    bounds: usage.map((grain) => ({
+      slug: grain.slug,
+      minimum_percent: wholePercent(grain.min_percent, 0),
+      maximum_percent: wholePercent(grain.max_percent, 100)
+    })),
+    maximum_count: maximumCount
+  }
 }
 
-export function sensoryModel (flavors) {
-  return flavors.map((f) => {
-    const band = levelBand(f.level, f.styleMin, f.styleMax)
-    return { name: f.name, min: band.min, max: band.max }
+export function sensoryBounds (flavors) {
+  return flavors.map((flavor) => {
+    const band = levelBand(flavor.level, flavor.styleMin, flavor.styleMax)
+    const minimum = clamp(band.min, 0, 5)
+    return {
+      name: flavor.name,
+      minimum,
+      maximum: clamp(Math.max(band.max, minimum), 0, 5)
+    }
   })
 }
 
-export function beerProfile (brief) {
+/* Every compute route accepts this same choice brief. A focused range request
+ * adds only its sibling `descriptor` field. */
+export function buildBrief (style, brief) {
   const half = SRM_TOLERANCE
   return {
-    original_sg: Number(abvToOg(brief.abv).toFixed(4)),
-    min_color_srm: Math.max(0, brief.srm - half),
-    max_color_srm: brief.srm + half
-  }
-}
-
-export function equipmentProfile () {
-  return {
-    target_volume_gallons: BATCH_GALLONS,
-    mash_efficiency: MASH_EFFICIENCY
-  }
-}
-
-/* The shared body both focused endpoints accept. `descriptor` is added by the
- * single-flavour range caller; feasibility omits it. */
-export function briefPayload (style, brief) {
-  return {
-    fermentable_list: fermentableList(style),
-    category_model: categoryModel(style),
-    sensory_model: sensoryModel(brief.flavors),
-    max_unique_fermentables: style.unique_fermentable_count || 4,
-    equipment_profile: equipmentProfile(),
-    beer_profile: beerProfile(brief)
+    version: 1,
+    style: {
+      slug: style.slug,
+      original_gravity: clamp(Number(abvToOg(brief.abv).toFixed(4)), 1, 1.2)
+    },
+    equipment: {
+      batch_volume_gallons: BATCH_GALLONS,
+      mash_efficiency_percent: MASH_EFFICIENCY
+    },
+    fermentables: allowedFermentables(style),
+    sensory: sensoryBounds(brief.flavors),
+    color_srm: {
+      minimum: clamp(brief.srm - half, 0, 255),
+      maximum: clamp(brief.srm + half, 0, 255)
+    }
   }
 }

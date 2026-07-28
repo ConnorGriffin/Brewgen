@@ -4,6 +4,7 @@ deadline-exceeded requests are all exercised."""
 
 import pytest
 
+from conftest import make_choice_brief
 from brewgen.backend import views
 from brewgen.backend.solver.fermentables import SolverConfig
 
@@ -26,28 +27,8 @@ def test_healthz_returns_ok_without_solver(client, monkeypatch):
 
 
 def _body(min_srm=3, max_srm=20):
-    grains = views.all_grains.get_grain_list()
-    by_cat = {}
-    for g in grains:
-        by_cat.setdefault(g["category"], []).append(g["slug"])
-    fermentables = [
-        {"slug": s, "min_percent": 0, "max_percent": 100} for s in by_cat["base"][:2]
-    ] + [
-        {"slug": s, "min_percent": 0, "max_percent": 25} for s in by_cat["crystal"][:2]
-    ]
-    return {
-        "fermentable_list": fermentables,
-        "category_model": [
-            {"name": "base", "min_percent": 60, "max_percent": 100,
-             "unique_fermentable_count": 2},
-            {"name": "crystal", "min_percent": 0, "max_percent": 25,
-             "unique_fermentable_count": 2},
-        ],
-        "max_unique_fermentables": 4,
-        "equipment_profile": {"target_volume_gallons": 5.5, "mash_efficiency": 75},
-        "beer_profile": {"min_color_srm": min_srm, "max_color_srm": max_srm,
-                         "original_sg": 1.055},
-    }
+    style = views.all_styles.get_style_by_slug("american-pale-ale")
+    return make_choice_brief(style, min_srm=min_srm, max_srm=max_srm)
 
 
 def test_grain_model_valid_route_removed(client):

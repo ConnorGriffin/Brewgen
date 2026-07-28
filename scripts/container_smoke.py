@@ -56,31 +56,32 @@ def wait_until_ready(port: int) -> None:
     raise RuntimeError("container did not become healthy within 30 seconds")
 
 
-def generation_brief(grains: list[dict[str, object]]) -> dict[str, object]:
-    by_category: dict[str, list[str]] = {}
-    for grain in grains:
-        by_category.setdefault(str(grain["category"]), []).append(str(grain["slug"]))
-
-    fermentables = [
-        {"slug": slug, "min_percent": 0, "max_percent": 100}
-        for slug in by_category["base"][:2]
-    ] + [
-        {"slug": slug, "min_percent": 0, "max_percent": 25}
-        for slug in by_category["crystal"][:2]
-    ]
+def generation_brief(style: dict[str, object]) -> dict[str, object]:
+    usage = style["grain_usage"]
+    assert isinstance(usage, list)
+    allowed = [str(grain["slug"]) for grain in usage]
     return {
-        "fermentable_list": fermentables,
-        "category_model": [
-            {"name": "base", "min_percent": 60, "max_percent": 100,
-             "unique_fermentable_count": 2},
-            {"name": "crystal", "min_percent": 0, "max_percent": 25,
-             "unique_fermentable_count": 2},
-        ],
-        "max_unique_fermentables": 4,
-        "equipment_profile": {"target_volume_gallons": 5.5,
-                              "mash_efficiency": 75},
-        "beer_profile": {"min_color_srm": 3, "max_color_srm": 20,
-                         "original_sg": 1.055},
+        "version": 1,
+        "style": {
+            "slug": style["slug"],
+            "original_gravity": 1.055,
+        },
+        "equipment": {
+            "batch_volume_gallons": 5.5,
+            "mash_efficiency_percent": 75,
+        },
+        "fermentables": {
+            "allowed_slugs": allowed,
+            "bounds": [{
+                "slug": grain["slug"],
+                "minimum_percent": int(grain["min_percent"]),
+                "maximum_percent": int(grain["max_percent"]),
+            } for grain in usage],
+            "maximum_count": min(
+                int(style["unique_fermentable_count"]), len(allowed), 7),
+        },
+        "sensory": [],
+        "color_srm": {"minimum": 3, "maximum": 20},
     }
 
 
@@ -98,8 +99,12 @@ def smoke_http(port: int) -> None:
     assert status == 200 and isinstance(grains, list) and grains
     assert headers.get("Access-Control-Allow-Origin") is None
 
+    status, style, _ = request(
+        port, "/api/v1/styles/american-pale-ale")
+    assert status == 200 and isinstance(style, dict)
+
     status, result, _ = request(
-        port, "/api/v1/grains/recipes", generation_brief(grains), timeout=15)
+        port, "/api/v1/grains/recipes", generation_brief(style), timeout=15)
     assert status == 200 and isinstance(result, dict)
     assert result.get("status") in {"complete", "partial"}
     assert result.get("alternatives")

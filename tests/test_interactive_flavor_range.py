@@ -14,6 +14,7 @@ import time
 
 import pytest
 
+from conftest import make_choice_brief
 from brewgen.backend import views, envelope
 from brewgen.backend.models import grain, style
 from brewgen.backend.solver.fermentables import SolverConfig
@@ -36,16 +37,9 @@ def client(monkeypatch):
 
 
 def _feasible_body(**overrides):
-    """A small, known-feasible brief: a few grains, no other constraints."""
-    body = {
-        "fermentable_list": [
-            {"slug": slug, "min_percent": 0, "max_percent": 100}
-            for slug in SLUGS[:6]
-        ],
-        "category_model": [],
-        "sensory_model": [],
-        "max_unique_fermentables": 4,
-    }
+    """A known-feasible public choice brief for one shipped style."""
+    body = make_choice_brief(
+        STYLES.get_style_by_slug("american-pale-ale"))
     body.update(overrides)
     return body
 
@@ -54,12 +48,7 @@ def _style_body(style_object):
     """A representative brief drawn from a committed style, with the style's
     own grain and category usage but no sensory bounds (so the full sweep and
     the focused path see an identical model)."""
-    return {
-        "fermentable_list": style_object.get_grain_usage(),
-        "category_model": style_object.get_category_usage(),
-        "sensory_model": [],
-        "max_unique_fermentables": style_object.unique_fermentable_count or 4,
-    }
+    return make_choice_brief(style_object)
 
 
 # -- focused range: exact results --------------------------------------------
@@ -74,8 +63,10 @@ def test_sensory_range_returns_exact_min_max(client):
     assert data["min"] <= data["max"]
 
     # The HTTP answer is exactly what the solver computes directly.
-    solver = views._build_fermentable_solver(body)
-    result = solver.sensory_range(KEYWORDS[0])
+    derived = views.CONTRACT.parse(body, require_descriptor=True)
+    solver = views._build_fermentable_solver(derived)
+    result = solver.sensory_range(
+        KEYWORDS[0], color_context=views._color_context(derived))
     assert data["min"] == result.minimum
     assert data["max"] == result.maximum
 
@@ -92,7 +83,11 @@ def test_sensory_range_excludes_targets_own_bound(client):
     midpoint = (unbounded["min"] + unbounded["max"]) / 2
     pinned = _feasible_body(
         descriptor=descriptor,
-        sensory_model=[{"name": descriptor, "min": midpoint, "max": midpoint}],
+        sensory=[{
+            "name": descriptor,
+            "minimum": midpoint,
+            "maximum": midpoint,
+        }],
     )
     reopened = client.post("/api/v1/grains/sensory-range", json=pinned).get_json()
 
@@ -119,8 +114,8 @@ def test_sensory_range_respects_other_configured_bounds(client):
     # but must remain within the unconstrained span.
     constrained = _feasible_body(
         descriptor=target,
-        sensory_model=[{"name": other, "min": other_span["min"],
-                        "max": other_span["min"]}],
+        sensory=[{"name": other, "minimum": other_span["min"],
+                  "maximum": other_span["min"]}],
     )
     narrowed = client.post(
         "/api/v1/grains/sensory-range", json=constrained).get_json()
@@ -147,11 +142,8 @@ def test_sensory_range_missing_descriptor_is_invalid(client):
 
 
 def test_sensory_range_unknown_slug_is_invalid(client):
-    body = _feasible_body(
-        descriptor=KEYWORDS[0],
-        fermentable_list=[{"slug": "no-such-grain",
-                           "min_percent": 0, "max_percent": 100}],
-    )
+    body = _feasible_body(descriptor=KEYWORDS[0])
+    body["fermentables"]["allowed_slugs"][0] = "no-such-grain"
     resp = client.post("/api/v1/grains/sensory-range", json=body)
     assert resp.status_code == 422
     assert resp.get_json()["outcome"] == "invalid"
@@ -169,9 +161,7 @@ def test_feasibility_infeasible_on_impossible_color(client):
     # Only pale-ish grains, but demand a near-black beer: color rules it out,
     # proving the color band is part of the feasibility check.
     body = _feasible_body(
-        beer_profile={"min_color_srm": 200, "max_color_srm": 255,
-                      "original_sg": 1.05},
-        equipment_profile={"target_volume_gallons": 5.5, "mash_efficiency": 75},
+        color_srm={"minimum": 200, "maximum": 255},
     )
     resp = client.post("/api/v1/grains/feasibility", json=body)
     assert resp.status_code == 422
@@ -186,8 +176,9 @@ def test_feasibility_infeasible_on_contradictory_sensory(client):
     ).get_json()
     # Demand more of the descriptor than any bill can deliver.
     body = _feasible_body(
-        sensory_model=[{"name": descriptor,
-                        "min": span["max"] + 1.0, "max": span["max"] + 2.0}],
+        sensory=[{"name": descriptor,
+                  "minimum": span["max"] + 0.1,
+                  "maximum": min(span["max"] + 1.0, 5)}],
     )
     resp = client.post("/api/v1/grains/feasibility", json=body)
     assert resp.status_code == 422
@@ -238,7 +229,8 @@ def test_focused_range_matches_full_sweep(style_slug):
     """Each focused range equals the old full-sweep value for the same
     descriptor, across representative committed styles."""
     style_object = STYLES.get_style_by_slug(style_slug)
-    solver = views._build_fermentable_solver(_style_body(style_object))
+    derived = views.CONTRACT.parse(_style_body(style_object))
+    solver = views._build_fermentable_solver(derived)
     # This is a semantic-equivalence test, not the performance gate below.
     # Remove production timing from the assertion so a loaded CI runner cannot
     # turn an otherwise-correct solve into DEADLINE_EXCEEDED.
@@ -261,7 +253,8 @@ def test_focused_range_matches_full_sweep(style_slug):
 
 def test_focused_range_and_feasibility_under_one_second():
     style_object = STYLES.style_list[0]
-    solver = views._build_fermentable_solver(_style_body(style_object))
+    derived = views.CONTRACT.parse(_style_body(style_object))
+    solver = views._build_fermentable_solver(derived)
 
     start = time.monotonic()
     solver.sensory_range(KEYWORDS[0])

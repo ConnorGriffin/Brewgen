@@ -44,6 +44,42 @@ def make_category(name, min_percent=0, max_percent=100,
     }
 
 
+def make_choice_brief(style_object, *, sensory=None, min_srm=3,
+                      max_srm=20):
+    """Build the public ``version: 1`` brief for a shipped style."""
+    usage = style_object.get_grain_usage()
+    allowed = [item["slug"] for item in usage]
+    return {
+        "version": 1,
+        "style": {
+            "slug": style_object.slug,
+            "original_gravity": 1.055,
+        },
+        "equipment": {
+            "batch_volume_gallons": 5.5,
+            "mash_efficiency_percent": 75,
+        },
+        "fermentables": {
+            "allowed_slugs": allowed,
+            "bounds": [
+                {
+                    "slug": item["slug"],
+                    "minimum_percent": int(item["min_percent"]),
+                    "maximum_percent": int(item["max_percent"]),
+                }
+                for item in usage
+            ],
+            "maximum_count": min(
+                style_object.unique_fermentable_count or 4,
+                len(allowed),
+                7,
+            ),
+        },
+        "sensory": sensory if sensory is not None else [],
+        "color_srm": {"minimum": min_srm, "maximum": max_srm},
+    }
+
+
 @pytest.fixture(autouse=True)
 def _reset_compute_envelope():
     """Reset the anonymous-compute envelope's process-wide state before each test.
