@@ -29,9 +29,18 @@ KEYWORDS = sorted(GRAINS.get_sensory_keywords())
 def client(monkeypatch):
     # These are solver-semantics tests, not envelope tests: several make more
     # than the burst of two rapid calls, so install a non-throttling limiter and
-    # let test_envelope own the real rate-limit contract.
+    # non-binding deadlines. Dedicated tests below own deadline handling and
+    # real performance; test_envelope owns the real rate-limit contract.
     monkeypatch.setattr(envelope, "RATE_LIMITER",
                         envelope.RateLimiter(per_minute=6000, burst=1000))
+    monkeypatch.setattr(
+        views,
+        "SOLVER_CONFIG",
+        SolverConfig(
+            solver_time_limit_seconds=float("inf"),
+            request_deadline_seconds=float("inf"),
+        ),
+    )
     views.app.testing = True
     return views.app.test_client()
 
