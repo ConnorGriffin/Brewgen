@@ -135,6 +135,9 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=https://github.com/ConnorGriffin/brewgen
+      - name: Prove constrained overload admission
+        if: steps.detect.outputs.present == 'true'
+        run: python3 scripts/container_smoke.py --image "$IMAGE:${{ github.sha }}"
       # Blocking container scan: any critical/high finding fails the job and so
       # blocks publication of that exact image.
       - name: Scan image for critical/high vulnerabilities

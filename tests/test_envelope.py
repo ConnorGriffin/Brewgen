@@ -3,7 +3,7 @@ the public HTTP surface of the three compute endpoints.
 
 Proves, in one place: the media-type/size/JSON gates, the versioned brief
 contract, the per-visitor rate limit (burst then refill, keyed per trusted
-hop), the two-slot no-queue concurrency ceiling, the deadline->503 mapping, the
+hop), the one-slot no-queue concurrency ceiling, the deadline->503 mapping, the
 stable problem+json failure contract with no echoed input, and the
 aggregate-only privacy log. The size cap carries a regression guard: an
 oversized body must be rejected before the solver is ever built."""
@@ -12,6 +12,7 @@ import json
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 
 import pytest
@@ -450,7 +451,6 @@ def test_busy_shed_does_not_charge_the_visitor(client, monkeypatch):
     body = _brief("/api/v1/grains/feasibility")
 
     assert envelope.SLOTS.acquire(blocking=False) is True
-    assert envelope.SLOTS.acquire(blocking=False) is True
     try:
         busy = client.post("/api/v1/grains/feasibility", json=body)
         assert busy.status_code == 503
@@ -458,7 +458,6 @@ def test_busy_shed_does_not_charge_the_visitor(client, monkeypatch):
         assert busy.headers["Retry-After"] == "1"
         assert busy.get_json()["retry_after"] == 1
     finally:
-        envelope.SLOTS.release()
         envelope.SLOTS.release()
 
     # The visitor still has both burst tokens: two allowed, then 429.
@@ -515,22 +514,10 @@ def test_rate_limit_is_keyed_per_visitor_via_one_trusted_hop(client, monkeypatch
     assert post("203.0.113.9").status_code != 429
 
 
-# -- two-slot, no-queue concurrency ----------------------------------------
+# -- one-slot, no-queue concurrency ----------------------------------------
 
-def test_two_solver_slots_are_available(client):
-    # Holding one slot leaves the second free, so a request still runs.
-    assert envelope.SLOTS.acquire(blocking=False) is True
-    try:
-        resp = client.post("/api/v1/grains/recipes", json=_brief())
-        assert resp.status_code != 503
-    finally:
-        envelope.SLOTS.release()
-
-
-def test_third_concurrent_request_is_busy_503(client):
-    # Both slots held (two solves in flight): the next request is immediately
-    # busy, no queue, no wait.
-    assert envelope.SLOTS.acquire(blocking=False) is True
+def test_occupied_solver_slot_is_busy_503(client):
+    # One solve in flight means the next request is immediately busy, no queue.
     assert envelope.SLOTS.acquire(blocking=False) is True
     try:
         resp = client.post("/api/v1/grains/recipes", json=_brief())
@@ -539,7 +526,58 @@ def test_third_concurrent_request_is_busy_503(client):
         assert resp.get_json()["outcome"] == "busy"
     finally:
         envelope.SLOTS.release()
-        envelope.SLOTS.release()
+
+
+def test_burst_admits_one_distinct_solve_and_sheds_the_rest(monkeypatch):
+    """Distinct concurrent briefs reach the guard: one runs, the rest are busy."""
+    entered = threading.Event()
+    release = threading.Event()
+    lock = threading.Lock()
+    concurrency = {"active": 0, "peak": 0}
+    build_solver = views._build_fermentable_solver
+
+    def holding_build(data):
+        with lock:
+            concurrency["active"] += 1
+            concurrency["peak"] = max(
+                concurrency["peak"], concurrency["active"])
+        entered.set()
+        try:
+            release.wait(10)
+            return build_solver(data)
+        finally:
+            with lock:
+                concurrency["active"] -= 1
+
+    monkeypatch.setattr(views, "_build_fermentable_solver", holding_build)
+    results = []
+
+    def post(index):
+        brief = _brief("/api/v1/grains/recipes")
+        brief["equipment"]["batch_volume_gallons"] += index / 100
+        resp = views.app.test_client().post(
+            "/api/v1/grains/recipes", json=brief,
+            headers={"X-Forwarded-For": "198.51.100.%d" % (index + 1)})
+        results.append((resp.status_code, resp.mimetype, resp.get_json()))
+
+    holder = threading.Thread(target=post, args=(0,))
+    holder.start()
+    assert entered.wait(5), "the first request never reached the solver"
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(post, range(1, 9)))
+
+    assert concurrency["peak"] == 1, "more than one solve ran at once"
+    assert len(results) == 8, "busy answers waited for the held solve"
+    assert all(status == 503 for status, _, _ in results)
+    assert all(mimetype == "application/problem+json"
+               for _, mimetype, _ in results)
+    assert all(body["outcome"] == "busy" for _, _, body in results)
+
+    release.set()
+    holder.join(10)
+    assert not holder.is_alive()
+    assert results[-1][0] == 200
 
 
 # -- deadline -> 503 --------------------------------------------------------
@@ -639,7 +677,7 @@ def _post_from(client_endpoint, brief, ip):
 def test_concurrent_identical_briefs_run_the_solver_once(monkeypatch):
     # N byte-identical valid briefs racing one endpoint must cause exactly one
     # solver execution; every caller gets the same 200 body, and no follower is
-    # turned away busy even though N exceeds the two-slot ceiling. Distinct
+    # turned away busy even though N exceeds the one-slot ceiling. Distinct
     # forwarded hops keep the per-visitor rate limit out of the way -- the
     # canonical key is the brief, not the address.
     gate = threading.Event()

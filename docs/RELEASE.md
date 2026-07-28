@@ -64,13 +64,15 @@ docker run --rm \
 
 Resource bounds:
 
-- **Workers:** 1 gunicorn worker. Matches the single-trusted-hop assumption and
-  keeps the CBC solver's temp-file footprint bounded.
+- **Workers:** 1 gunicorn worker with 24 request threads. The one worker keeps
+  process-local admission and visitor budgets correct; the threads let a burst
+  reach the one-slot no-queue guard.
 - **CPU:** `--cpus 1` — one virtual CPU. The solver is CPU-bound; this is the
   expected ceiling for normal requests.
 - **Memory:** `--memory 512m` — covers the solver's ILP working set plus the
   JSON data files loaded at startup.
-- **Processes:** `--pids-limit 64` — one gunicorn master + one worker, with
+- **Processes:** `--pids-limit 64` — one gunicorn master + one worker. The
+  worker's 24 request threads count against this same task budget, leaving
   headroom for CBC child processes.
 - **Logs:** written to stdout/stderr (gunicorn `--access-logfile -`);
   capped at 10 MB × 3 files via the `local` log driver so the host disk is
@@ -87,8 +89,8 @@ docker build --platform linux/amd64 \
 ```
 
 To build the Linux image and exercise the SPA, API, source label, same-origin
-boundary, health check, and grain-bill generation under the documented runtime
-limits:
+boundary, health check, grain-bill generation, and a measured 24-request
+overload burst under the documented runtime limits:
 
 ```sh
 python3 scripts/container_smoke.py

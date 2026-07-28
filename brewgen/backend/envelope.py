@@ -21,7 +21,7 @@ brief, the client address, or the address hash.
 Deployment assumption (see decision-map #10 and the public-launch map #12/#16):
 the API runs as a **single worker process** behind **exactly one trusted proxy
 hop**. The client address is resolved with ``ProxyFix(x_for=1)`` in
-``views.py``; the in-memory rate limit and the two-slot ceiling are therefore
+``views.py``; the in-memory rate limit and the one-slot ceiling are therefore
 per-container and correct only under that shape. The deploy must forward exactly
 one hop.
 """
@@ -47,7 +47,7 @@ MAX_BODY_BYTES = 65_536            # 64 KiB body cap
 RATE_LIMIT_PER_MINUTE = 6         # sustained compute requests per visitor
 RATE_LIMIT_BURST = 2              # tokens a fresh visitor may spend at once
 RATE_IDLE_EXPIRY_SECONDS = 600    # drop a visitor's bucket after 10 idle minutes
-CONCURRENCY_LIMIT = 2             # active solver operations per container, no queue
+CONCURRENCY_LIMIT = 1             # active solver operation per container, no queue
 BUSY_RETRY_SECONDS = 1            # short retry for a busy shed (<=2 s end-to-end budget)
 LOG_RETENTION_DAYS = 7            # documented retention; enforced by the log sink
 RESULT_CACHE_TTL_SECONDS = 60     # replay window for a just-computed identical brief
@@ -357,7 +357,7 @@ def reset_state():
     """Reset the limiter, concurrency ceiling, and coalescer to a clean slate.
 
     Only for tests, which need each case to start from an empty bucket store,
-    two free slots, and an empty cache/in-flight map regardless of what earlier
+    one free slot, and an empty cache/in-flight map regardless of what earlier
     cases did."""
     global RATE_LIMITER, SLOTS, COALESCER
     RATE_LIMITER = RateLimiter()
@@ -455,7 +455,7 @@ def _run(view, operation, contract, require_descriptor, args, kwargs):
     key = canonical_key(operation, data, require_descriptor)
 
     def runner():
-        # 6a. two-slot, no-queue concurrency ceiling -- the leader alone takes a
+        # 6a. one-slot, no-queue concurrency ceiling -- the leader alone takes a
         #     slot; followers ride its result without one. A busy shed never
         #     reaches solver work, so refund the token step 5 charged: the rate
         #     check keeps its documented position, but a busy rejection costs

@@ -25,8 +25,8 @@ generation. The read-only GET endpoints and the SPA catch-all stay outside it.
    keyed by a daily-rotated in-memory hash of the client address with a
    ten-minute idle expiry. The seventh-in-a-burst is **429**. The key material
    is never logged or persisted.
-6. **Concurrency** — at most **two** solver operations run at once, with **no
-   queue**; a third concurrent request is **503 busy** immediately.
+6. **Concurrency** — at most **one** solver operation runs at once, with **no
+   queue**; an overlapping request is **503 busy** immediately.
 
 Only then does the operation run under the solver's own shared **1.8 s solver /
 2.0 s end-to-end budget**. `partial` results return honestly as **200**;
@@ -67,10 +67,12 @@ unchanged. Net effect: a busy shed costs the visitor nothing.
 The limits above are **per container** and correct only under the runtime shape
 the public-launch map locks:
 
-- **One worker process.** The two-slot ceiling and the in-memory rate-limit
-  store live in a single process. Do not run multiple workers behind one
-  container without moving to shared state (explicitly out of scope here) — two
-  workers would double the effective concurrency and split the rate-limit store.
+- **One worker process with 24 request threads.** The one-slot ceiling and the
+  in-memory rate-limit store live in a single process. The threads only carry
+  requests to the admission guard so a burst is answered instead of queued;
+  they add no solver capacity. Do not run multiple workers behind one container
+  without moving to shared state (explicitly out of scope here) — two workers
+  would double the effective concurrency and split the rate-limit store.
 - **Exactly one trusted proxy hop.** The client address is resolved with
   `ProxyFix(x_for=1)`; the deploy must place the API behind the single relay and
   forward exactly one `X-Forwarded-For` hop. More hops (or none) would either
@@ -87,7 +89,7 @@ harness. It starts the real app on a threaded loopback server (one process) and
 drives it directly — no production container or relay required — to show that:
 
 - each operation finishes within the end-to-end budget,
-- a burst far past the two-slot ceiling is shed immediately with 503s, no
+- a burst far past the one-slot ceiling is shed immediately with 503s, no
   request hangs past the deadline, the burst drains in a bounded time (no
   growing backlog), and peak memory stays bounded, and
 - a single visitor's rapid requests are allowed up to the burst of two and then
@@ -95,3 +97,9 @@ drives it directly — no production container or relay required — to show tha
 
 Run it with `python3 scripts/benchmark_envelope.py` (add `--json` for the raw
 report). Client-address keying is exercised with a simulated single trusted hop.
+
+The image CI separately runs `scripts/container_smoke.py` against the built
+production container with the published CPU, memory, and process limits. It
+holds one observed CBC child, sends 23 distinct overlapping briefs from
+distinct visitors, and proves every overflow response is prompt `503 busy`
+while the measured CBC count remains one.

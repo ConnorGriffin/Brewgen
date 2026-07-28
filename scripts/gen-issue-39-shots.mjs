@@ -1,7 +1,7 @@
 /*
  * Generate the issue #39 screenshot set via the canonical harness
  * (scripts/screenshots.mjs). Proves the two new public-compute outcome notices
- * — "busy" (a 503 from the two-slot ceiling) and "rate-limited" (a 429 from the
+ * — "busy" (a 503 from the one-slot ceiling) and "rate-limited" (a 429 from the
  * per-visitor budget) — render in the locked #42 single-notice treatment, in
  * both light and dark themes. Usage:
  *   cd brewgen/frontend && npm run build:offline

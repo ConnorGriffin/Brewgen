@@ -84,7 +84,7 @@ def make_choice_brief(style_object, *, sensory=None, min_srm=3,
 def _reset_compute_envelope():
     """Reset the anonymous-compute envelope's process-wide state before each test.
 
-    Keeps the burst-2 rate limiter and the two-slot concurrency ceiling from
+    Keeps the burst-2 rate limiter and the one-slot concurrency ceiling from
     leaking tokens or permits from one case into the next. A no-op when the
     Flask-dependent envelope module cannot be imported (e.g. a solver-only run
     without the web dependencies installed).

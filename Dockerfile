@@ -14,7 +14,7 @@ RUN npm run build
 
 # ── Stage 2: Install Python dependencies ─────────────────────────────────────
 # The dev variant supplies pip; none of that tooling reaches production.
-FROM cgr.dev/chainguard/python:latest-dev@sha256:5233e2961d13485e80cd9adc5515cf4242dc43d23045a6540466eee82764879b AS python-builder
+FROM cgr.dev/chainguard/python:latest-dev@sha256:51ebf3d0a5f932c684fa5e27ba8c53161c2b2c6b6dba84f8dc1f8db7fd8aa2e1 AS python-builder
 WORKDIR /app
 RUN python -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 # ── Stage 3: Minimal Python runtime ───────────────────────────────────────────
 # Wolfi supplies glibc for PuLP's bundled CBC binary without carrying a Debian
 # userland, shell, package manager, or build tools into production.
-FROM cgr.dev/chainguard/python:latest@sha256:2c6a2e8bdeb1336cd8545d3586d1c1e5b4f7564ef00924b0447ebfbe57a549ee AS runtime
+FROM cgr.dev/chainguard/python:latest@sha256:b3d3fbb8b9fe48950bab73d49bffa7496ff6f8a46ba570b302fc366f1396011a AS runtime
 ARG GIT_COMMIT
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}" \
       org.opencontainers.image.source="https://github.com/ConnorGriffin/brewgen"
@@ -58,8 +58,10 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["/app/venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/healthz').read()"]
 
 # Single worker matches the locked single-trusted-hop assumption documented in
-# the resource-bounds section of docs/RELEASE.md.
-ENV GUNICORN_CMD_ARGS="--workers 1 --bind 0.0.0.0:5000 --access-logfile - --error-logfile - --no-control-socket"
+# the resource-bounds section of docs/RELEASE.md. Its request threads only carry
+# a burst to the application's one-slot admission guard; they add no solver
+# capacity.
+ENV GUNICORN_CMD_ARGS="--workers 1 --worker-class gthread --threads 24 --bind 0.0.0.0:5000 --access-logfile - --error-logfile - --no-control-socket"
 ENTRYPOINT ["/app/venv/bin/gunicorn"]
 CMD ["brewgen.backend.views:app"]
 

@@ -187,7 +187,7 @@ try {
   await page.waitForSelector('.notice-empty')
   noLeak(await page.$eval('.notice', (e) => e.textContent))
 
-  // 8) Busy: a real 503 from the two-slot concurrency ceiling.
+  // 8) Busy: a real 503 from the one-slot concurrency ceiling.
   await backToBrief()
   await setProblem(503, 'busy')
   await generate()
