@@ -59,6 +59,12 @@ function enterCooldown (outcome, retryAfter) {
 
 onBeforeUnmount(() => { if (cooldownTimer) clearInterval(cooldownTimer) })
 
+/* A refused Generate is answered on the results screen, but the wait it quotes
+ * belongs here too: App hands the refusal back across the mount so the same
+ * cooldown starts now, while the visitor is still reading results. Same clock,
+ * same suppression, same countdown as a brief-screen refusal — not a second one. */
+defineExpose({ enterCooldown })
+
 /* Monotonic keys so out-of-order async answers can be dropped. One counter for
  * the whole-brief feasibility check; one per descriptor for focused ranges. */
 let feasSeq = 0
@@ -265,7 +271,7 @@ const feasLine = computed(() => {
   }
 })
 
-const canGenerate = computed(() => feas.status === 'feasible')
+const canGenerate = computed(() => feas.status === 'feasible' && !inCooldown())
 
 /* Hand the results shelf both the solver payload and a display context: the
  * brief read back in its own terms (style, strength, colour, flavour steps). */

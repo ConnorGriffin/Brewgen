@@ -11,6 +11,7 @@ const screen = ref('brief')
 const context = ref(null)
 const result = ref(null)
 const generating = ref(false)
+const editor = ref(null)
 let genAbort = null
 
 async function onGenerate ({ payload, context: ctx }) {
@@ -23,6 +24,13 @@ async function onGenerate ({ payload, context: ctx }) {
   const answer = await fetchRecipes(payload, genAbort.signal)
   result.value = answer
   generating.value = false
+  // A refused generation quotes a retry wait on the results notice. The brief
+  // editor is still mounted behind it, so hand the same wait back and start its
+  // cooldown now — the clock runs while results are read, and returning to the
+  // brief finds automatic checks and Generate already held for the remainder.
+  if (answer && (answer.outcome === 'busy' || answer.outcome === 'rate_limited')) {
+    editor.value?.enterCooldown(answer.outcome, answer.retryAfter)
+  }
 }
 
 function editBrief () {
@@ -36,7 +44,7 @@ function editBrief () {
       <span class="mark">▲</span>
       <span class="name">Brewgen</span>
     </div>
-    <BriefEditor v-show="screen === 'brief'" @generate="onGenerate" />
+    <BriefEditor ref="editor" v-show="screen === 'brief'" @generate="onGenerate" />
     <ResultsShelf
       v-if="screen === 'results'"
       :context="context"
