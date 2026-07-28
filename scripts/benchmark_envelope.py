@@ -14,7 +14,7 @@ It proves three things and exits non-zero if any fails:
 1. Budget -- a focused flavor-range check, a whole-brief feasibility check, and a
    grain-bill generation each finish within the end-to-end deadline (plus a
    little HTTP/process slack), so no operation runs unbounded.
-2. Non-saturation -- when far more than the two-slot ceiling of generation
+2. Non-saturation -- when far more than the one-slot ceiling of generation
    requests arrive at once, the overflow is refused *immediately* with 503
    (busy), no request hangs past the deadline, the whole burst drains in about
    one budget rather than growing without bound, and peak memory stays bounded.
@@ -52,7 +52,7 @@ from werkzeug.serving import make_server  # noqa: E402
 # overloaded one must still never exceed it by more than a small margin.
 END_TO_END_BUDGET = SolverConfig().request_deadline_seconds  # 2.0s
 LATENCY_CEILING = END_TO_END_BUDGET + 1.5
-# Peak RSS ceiling for the whole harness run. CBC is small and the two-slot cap
+# Peak RSS ceiling for the whole harness run. CBC is small and the one-slot cap
 # bounds concurrent solves, so a single worker must stay well under this.
 RSS_CEILING_MB = 512
 
@@ -154,7 +154,7 @@ def bench_budget(base, brief, range_brief, report):
 
 
 def bench_non_saturation(base, brief, report, overload):
-    """A burst far past the two-slot ceiling is shed immediately, not queued."""
+    """A burst far past the one-slot ceiling is shed immediately, not queued."""
     def fire(n):
         # Distinct visitors so the per-visitor limit never fires -- this isolates
         # the concurrency ceiling as the thing under test.
@@ -260,7 +260,7 @@ def _print_report(report):
               % (label, m["p50_seconds"], m["max_seconds"],
                  "OK" if m["within_budget"] else "FAIL"))
     s = report["non_saturation"]
-    print("\nNon-saturation (%d concurrent generations, 2-slot ceiling):"
+    print("\nNon-saturation (%d concurrent generations, 1-slot ceiling):"
           % s["concurrent_requests"])
     print("  served %d  busy(503) %d  other %d" % (s["served_200"], s["busy_503"], s["other"]))
     print("  max latency %.3fs  burst wall %.3fs" % (s["max_latency_seconds"], s["wall_seconds"]))
