@@ -170,6 +170,13 @@ class Style:
 class StyleModel:
     """Defines a Style Model, used to access data about styles in the style database."""
 
+    # "Clone Beer" is a corpus bucket, not a brewable style: seven of its eight
+    # grains are pinned to a fixed percentage, so the only colour it can reach is
+    # around 27 SRM while, carrying no BJCP stats, it advertises a 2-20 SRM
+    # slider. Nothing a visitor can pick there ever generates. Excluded here, in
+    # the one place the style list and the slug lookup both read.
+    EXCLUDED_STYLES = frozenset({'Clone Beer'})
+
     def __init__(self):
         self.style_list = []
 
@@ -186,6 +193,8 @@ class StyleModel:
             style_data = json.load(f)
 
         for style in style_data:
+            if style['style'] in self.EXCLUDED_STYLES:
+                continue
             bjcp_style = self.__bjcp_lookup(style['style'])
             bjcp_category = self.__bjcp_lookup(
                 style['style'], return_category=True)

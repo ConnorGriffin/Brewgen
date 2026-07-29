@@ -11,6 +11,7 @@ profile: reviewed
 - **Frontend tests:** `cd brewgen/frontend && npm test` (Vitest component tests). Real-browser guard: `npm run test:browser`.
 - **Frontend dev server:** `cd brewgen/frontend && npm run dev`.
 - **Backend dev server:** `FLASK_APP=brewgen.backend.views flask run` (Python dependencies are pinned in `pyproject.toml`, with a hash-pinned compile in `requirements.lock`).
+- **Style default briefs:** `python3 scripts/build_style_defaults.py` recomputes the committed, generation-proved default brief every style opens on (and the two American Pale Ale browser fixtures anchored on it). Run it after adding a style or changing a style's grain, category, or sensory model; `tests/test_style_defaults.py` fails while its output is stale.
 - **Screenshots:** `node scripts/screenshots.mjs <config.json>` (canonical harness; `--single-process` Chromium + `file://` + `addInitScript` fetch stubs survive the agent sandbox).
 - Source: `brewgen/backend/`, `brewgen/frontend/src/`, and `recipe_analyzer/`. The Python side's test suite lives under `tests/` (shared fixtures in root `conftest.py`); the frontend has Vitest component tests under `brewgen/frontend/tests/`.
 - **The live recipe scrapers have been retired.** The BeerSmith Recipes and Brewers Friend crawler scripts were removed; the per-style aggregate models they once produced are now a frozen legacy artifact (see `recipe_analyzer/PROVENANCE.md`). Do not reintroduce live crawlers of third-party recipe sites — they made thousands of requests and could trigger rate limits, blocks, or legal concern.

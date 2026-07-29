@@ -5,6 +5,7 @@ from .solver import color as grain_color
 from .solver.fermentables import (
     FermentableSolver, SolverConfig, ColorContext, CheckStatus, GenerationStatus)
 from . import envelope
+from . import style_defaults
 from .brief import BriefContract
 from .envelope import compute_endpoint, ok_json, problem
 from difflib import SequenceMatcher
@@ -125,6 +126,8 @@ def get_styles():
 def get_style_data(style_slug):
     """Data for a single style"""
     style_object = all_styles.get_style_by_slug(style_slug)
+    if style_object is None:
+        return jsonify({'error': 'unknown style'}), 404
 
     # Format the BJCP sensory data
     bjcp_sensory = style_object.get_bjcp_sensory_descriptors()
@@ -166,7 +169,10 @@ def get_style_data(style_slug):
         'hops': {
             'unique_hop_count': style_object.unique_hop_count
         },
-        'bjcp_sensory': bjcp_sensory_response
+        'bjcp_sensory': bjcp_sensory_response,
+        # The committed default the editor opens on. It rides along here rather
+        # than costing a second request, and nothing is computed to produce it.
+        'default': style_defaults.default_for(style_object.slug)
     }), 200
 
 

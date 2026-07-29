@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import BriefEditor from '@/components/BriefEditor.vue'
 import * as apa from './fixtures/apa.js'
+import provedBrief from './fixtures/apa-proved-brief.json'
 
 const QUIET_MS = 60000
 
@@ -120,7 +121,7 @@ describe('public brief editor compute policy', () => {
     const range = paths(calls, '/api/v1/grains/sensory-range').at(-1)
     expect(Object.keys(range.body).sort()).toEqual(
       [...expectedKeys, 'descriptor'].sort())
-    expect(range.body.descriptor).toBe('malty')
+    expect(range.body.descriptor).toBe('grainy')
 
     expect(JSON.stringify([generated, feasibility.body, range.body])).not.toMatch(
       /fermentable_list|category_model|sensory_model|max_unique_fermentables|equipment_profile|beer_profile/)
@@ -128,17 +129,71 @@ describe('public brief editor compute policy', () => {
     wrapper.unmount()
   })
 
-  it('seeds the locked style flavors and keeps the SRM gradient clipped to its range', async () => {
+  it('opens on the style’s proved default and sends exactly the brief that was proved', async () => {
     installFetch()
     const wrapper = await mountLoaded()
 
+    // Strength, colour, flavour names and word steps all come from the style's
+    // committed default — nothing is re-derived from midpoints or corpus means.
+    expect(wrapper.find('#abv').element.value).toBe('5.4')
+    expect(wrapper.find('#srm').element.value).toBe('8')
     expect(wrapper.findAll('.flavor-name').map((node) => node.text()))
-      .toEqual(['malty', 'bready', 'caramel'])
+      .toEqual(['grainy', 'biscuit', 'toast', 'bready', 'caramel'])
+    expect(wrapper.findAll('.flavor-row').map((row) => row.findAll('.step')
+      .findIndex((step) => step.attributes('aria-checked') === 'true')))
+      .toEqual([2, 2, 2, 1, 1])
+
+    // What is displayed is what generation proved: the untouched brief the
+    // editor submits must be the exact request the build step answered.
+    await wrapper.find('.generate').trigger('click')
+    expect(wrapper.emitted('generate')[0][0].payload).toEqual(provedBrief)
+
+    wrapper.unmount()
+  })
+
+  it('re-opens on the newly served default when the style changes, still spending no compute', async () => {
+    const stout = {
+      ...apa.style,
+      name: 'Irish Stout',
+      slug: 'irish-stout',
+      stats: { ...apa.style.stats, abv: { low: 4, high: 4.5 }, srm: { low: 25, high: 40 } },
+      default: { abv: 4.2, srm: 32, flavors: [{ name: 'roasted', level: 3 }] }
+    }
+    const calls = []
+    global.fetch = vi.fn((url) => {
+      const path = String(url).replace(/^https?:\/\/[^/]+/, '')
+      calls.push({ path })
+      if (path === '/api/v1/styles') return json(apa.styles)
+      if (path === '/api/v1/styles/irish-stout') return json(stout)
+      if (path.startsWith('/api/v1/styles/')) return json(apa.style)
+      return json({}, 404)
+    })
+    const wrapper = await mountLoaded()
+    calls.length = 0
+
+    const select = wrapper.find('#style')
+    select.element.value = 'irish-stout'
+    await select.trigger('change')
+    await flushPromises()
+
+    expect(wrapper.find('#abv').element.value).toBe('4.2')
+    expect(wrapper.find('#srm').element.value).toBe('32')
+    expect(wrapper.findAll('.flavor-name').map((node) => node.text()))
+      .toEqual(['roasted'])
+    expect(computeCalls(calls)).toHaveLength(0)
+    expect(wrapper.find('.generate').attributes('disabled')).toBeUndefined()
+
+    wrapper.unmount()
+  })
+
+  it('keeps the SRM gradient clipped to its range', async () => {
+    installFetch()
+    const wrapper = await mountLoaded()
 
     const track = wrapper.find('.srm-track').attributes('style')
     expect(track).toContain('linear-gradient')
     expect(track).toContain('#fbb123') // 5 SRM
-    expect(track).toContain('#c35900') // 14 SRM
+    expect(track).toContain('#de7c00') // 10 SRM
     expect(track).not.toContain('#ffe699') // below the style's range
 
     wrapper.unmount()
@@ -212,33 +267,33 @@ describe('public brief editor compute policy', () => {
     const wrapper = await mountLoaded()
     calls.length = 0
 
-    const malty = () => wrapper.findAll('.flavor-row')[0]
-    const selected = malty().findAll('.step').find(
+    const grainy = () => wrapper.findAll('.flavor-row')[0]
+    const selected = grainy().findAll('.step').find(
       (step) => step.attributes('aria-checked') === 'true')
 
     // A no-op click is still the first real engagement and fetches one hint.
     await selected.trigger('click')
     await flushPromises()
     expect(paths(calls, '/api/v1/grains/sensory-range')).toHaveLength(1)
-    expect(malty().findAll('.unreachable').length).toBeGreaterThan(0)
+    expect(grainy().findAll('.unreachable').length).toBeGreaterThan(0)
 
     // Only the target's own bound changes; the server ignores it for this range.
-    await malty().findAll('.step')[1].trigger('click')
-    await malty().findAll('.step')[2].trigger('click')
+    await grainy().findAll('.step')[1].trigger('click')
+    await grainy().findAll('.step')[2].trigger('click')
     await flushPromises()
     expect(paths(calls, '/api/v1/grains/sensory-range')).toHaveLength(1)
 
     // Strength genuinely changes every range, so exact hints clear immediately
-    // without a fan-out; engaging malty later refreshes only malty.
+    // without a fan-out; engaging grainy later refreshes only grainy.
     await setRange(wrapper, '#abv', 5.7)
-    expect(malty().findAll('.unreachable')).toHaveLength(0)
+    expect(grainy().findAll('.unreachable')).toHaveLength(0)
     expect(paths(calls, '/api/v1/grains/sensory-range')).toHaveLength(1)
 
-    await malty().findAll('.step')[3].trigger('click')
+    await grainy().findAll('.step')[3].trigger('click')
     await flushPromises()
     const ranges = paths(calls, '/api/v1/grains/sensory-range')
     expect(ranges).toHaveLength(2)
-    expect(ranges.map((call) => call.body.descriptor)).toEqual(['malty', 'malty'])
+    expect(ranges.map((call) => call.body.descriptor)).toEqual(['grainy', 'grainy'])
     expect(paths(calls, '/api/v1/grains/sensory-profiles')).toHaveLength(0)
 
     wrapper.unmount()
@@ -247,19 +302,22 @@ describe('public brief editor compute policy', () => {
   it('adding one flavor requests only that descriptor and invalidates no row eagerly', async () => {
     const { calls } = installFetch()
     const wrapper = await mountLoaded()
+
+    // The default already fills all five rows, so make room before adding.
+    expect(wrapper.find('.flavor-search').exists()).toBe(false)
+    expect(wrapper.find('.max-note').exists()).toBe(true)
+    await wrapper.findAll('.flavor-row')[4].find('.remove').trigger('click')
     calls.length = 0
 
-    const toast = wrapper.findAll('.sugg').find((button) => button.text() === 'toast')
-    await toast.trigger('click')
+    const honey = wrapper.findAll('.sugg').find((button) => button.text() === 'honey')
+    await honey.trigger('click')
     await flushPromises()
 
     const ranges = paths(calls, '/api/v1/grains/sensory-range')
     expect(ranges).toHaveLength(1)
-    expect(ranges[0].body.descriptor).toBe('toast')
+    expect(ranges[0].body.descriptor).toBe('honey')
     expect(paths(calls, '/api/v1/grains/sensory-profiles')).toHaveLength(0)
 
-    await wrapper.findAll('.sugg')[0].trigger('click')
-    await flushPromises()
     expect(wrapper.findAll('.flavor-row')).toHaveLength(5)
     expect(wrapper.find('.flavor-search').exists()).toBe(false)
     expect(wrapper.find('.max-note').exists()).toBe(true)
