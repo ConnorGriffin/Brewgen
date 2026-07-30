@@ -51,9 +51,18 @@ def default_for(slug):
     return _BY_SLUG.get(slug)
 
 
-def all_defaults():
-    """Return the whole committed table, keyed by style slug."""
-    return dict(_BY_SLUG)
+def seed_level(mean):
+    """The word step a flavour starts on, from its corpus mean.
+
+    Not part of the sent brief and not a browser rule: this is where the offline
+    search begins, before it turns levels down. The editor no longer seeds
+    anything itself -- it opens on whatever that search proved.
+    """
+    if mean >= 2:
+        return 3
+    if mean >= 0.8:
+        return 2
+    return 1
 
 
 # -- the browser's maths, mirrored -------------------------------------------
@@ -67,15 +76,6 @@ def js_round(value):
 def round1(value):
     """The editor's one-decimal rounding for a strength slider value."""
     return js_round(value * 10) / 10
-
-
-def seed_level(mean):
-    """The word step a style-mentioned flavour arrives at, from its corpus mean."""
-    if mean >= 2:
-        return 3
-    if mean >= 0.8:
-        return 2
-    return 1
 
 
 def level_band(level, style_min, style_max):
