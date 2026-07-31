@@ -1,0 +1,379 @@
+{
+  "version": 1,
+  "style": {
+    "slug": "american-pale-ale",
+    "original_gravity": 1.0549
+  },
+  "equipment": {
+    "batch_volume_gallons": 5.5,
+    "mash_efficiency_percent": 75
+  },
+  "fermentables": {
+    "allowed_slugs": [
+      "weyermann-melanoidin-malt",
+      "generic-brown-sugar-light",
+      "briess-munich-malt-10l",
+      "generic-golden-promise",
+      "weyermann-vienna-malt",
+      "briess-brewers-rye-flakes",
+      "generic-brown-malt",
+      "briess-roasted-barley",
+      "briess-caramel-malt-90l",
+      "weyermann-pilsner-malt",
+      "generic-amber-malt",
+      "briess-chocolate-malt",
+      "briess-victory-malt",
+      "briess-caramel-malt-30l",
+      "briess-pale-ale-malt",
+      "briess-black-malt",
+      "briess-pilsen-malt",
+      "generic-honey",
+      "weyermann-carahell",
+      "briess-caramel-malt-60l",
+      "briess-caramel-vienne-malt-20l",
+      "weyermann-munich-malt-i",
+      "weyermann-pale-wheat-malt",
+      "weyermann-munich-malt-ii",
+      "briess-brewers-barley-flakes",
+      "briess-brewers-red-wheat-flakes",
+      "weyermann-caraaroma",
+      "generic-sucrose-table-sugar",
+      "briess-caramel-malt-40l",
+      "generic-special-b",
+      "briess-caramel-malt-10l",
+      "briess-dark-chocolate-malt",
+      "generic-flaked-rice",
+      "briess-brewers-oat-flakes",
+      "briess-wheat-malt-red",
+      "generic-candi-sugar-clear",
+      "generic-pale-chocolate-malt",
+      "generic-brown-sugar-dark",
+      "weyermann-carapils",
+      "briess-goldpils-vienna-malt",
+      "briess-rye-malt",
+      "generic-6-row-brewers-malt",
+      "weyermann-caramunich-i",
+      "briess-caramel-malt-80l",
+      "briess-caramel-malt-20l",
+      "weyermann-caramunich-iii",
+      "briess-munich-malt-20l",
+      "briess-wheat-malt-white",
+      "gambrinus-honey-malt",
+      "generic-turbinado",
+      "briess-carapils-malt",
+      "briess-brewers-malt",
+      "weyermann-carared",
+      "generic-dextrose-corn-sugar",
+      "weyermann-caramunich-ii"
+    ],
+    "bounds": [
+      {
+        "slug": "weyermann-melanoidin-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 12
+      },
+      {
+        "slug": "generic-brown-sugar-light",
+        "minimum_percent": 0,
+        "maximum_percent": 21
+      },
+      {
+        "slug": "briess-munich-malt-10l",
+        "minimum_percent": 0,
+        "maximum_percent": 38
+      },
+      {
+        "slug": "generic-golden-promise",
+        "minimum_percent": 27,
+        "maximum_percent": 100
+      },
+      {
+        "slug": "weyermann-vienna-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 60
+      },
+      {
+        "slug": "briess-brewers-rye-flakes",
+        "minimum_percent": 1,
+        "maximum_percent": 17
+      },
+      {
+        "slug": "generic-brown-malt",
+        "minimum_percent": 2,
+        "maximum_percent": 2
+      },
+      {
+        "slug": "briess-roasted-barley",
+        "minimum_percent": 0,
+        "maximum_percent": 3
+      },
+      {
+        "slug": "briess-caramel-malt-90l",
+        "minimum_percent": 0,
+        "maximum_percent": 13
+      },
+      {
+        "slug": "weyermann-pilsner-malt",
+        "minimum_percent": 12,
+        "maximum_percent": 100
+      },
+      {
+        "slug": "generic-amber-malt",
+        "minimum_percent": 6,
+        "maximum_percent": 6
+      },
+      {
+        "slug": "briess-chocolate-malt",
+        "minimum_percent": 1,
+        "maximum_percent": 2
+      },
+      {
+        "slug": "briess-victory-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 32
+      },
+      {
+        "slug": "briess-caramel-malt-30l",
+        "minimum_percent": 1,
+        "maximum_percent": 14
+      },
+      {
+        "slug": "briess-pale-ale-malt",
+        "minimum_percent": 29,
+        "maximum_percent": 100
+      },
+      {
+        "slug": "briess-black-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 2
+      },
+      {
+        "slug": "briess-pilsen-malt",
+        "minimum_percent": 24,
+        "maximum_percent": 100
+      },
+      {
+        "slug": "generic-honey",
+        "minimum_percent": 1,
+        "maximum_percent": 12
+      },
+      {
+        "slug": "weyermann-carahell",
+        "minimum_percent": 0,
+        "maximum_percent": 16
+      },
+      {
+        "slug": "briess-caramel-malt-60l",
+        "minimum_percent": 1,
+        "maximum_percent": 12
+      },
+      {
+        "slug": "briess-caramel-vienne-malt-20l",
+        "minimum_percent": 1,
+        "maximum_percent": 10
+      },
+      {
+        "slug": "weyermann-munich-malt-i",
+        "minimum_percent": 0,
+        "maximum_percent": 49
+      },
+      {
+        "slug": "weyermann-pale-wheat-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 40
+      },
+      {
+        "slug": "weyermann-munich-malt-ii",
+        "minimum_percent": 0,
+        "maximum_percent": 54
+      },
+      {
+        "slug": "briess-brewers-barley-flakes",
+        "minimum_percent": 1,
+        "maximum_percent": 6
+      },
+      {
+        "slug": "briess-brewers-red-wheat-flakes",
+        "minimum_percent": 0,
+        "maximum_percent": 21
+      },
+      {
+        "slug": "weyermann-caraaroma",
+        "minimum_percent": 3,
+        "maximum_percent": 8
+      },
+      {
+        "slug": "generic-sucrose-table-sugar",
+        "minimum_percent": 0,
+        "maximum_percent": 13
+      },
+      {
+        "slug": "briess-caramel-malt-40l",
+        "minimum_percent": 1,
+        "maximum_percent": 13
+      },
+      {
+        "slug": "generic-special-b",
+        "minimum_percent": 1,
+        "maximum_percent": 5
+      },
+      {
+        "slug": "briess-caramel-malt-10l",
+        "minimum_percent": 1,
+        "maximum_percent": 16
+      },
+      {
+        "slug": "briess-dark-chocolate-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 0
+      },
+      {
+        "slug": "generic-flaked-rice",
+        "minimum_percent": 7,
+        "maximum_percent": 7
+      },
+      {
+        "slug": "briess-brewers-oat-flakes",
+        "minimum_percent": 0,
+        "maximum_percent": 23
+      },
+      {
+        "slug": "briess-wheat-malt-red",
+        "minimum_percent": 0,
+        "maximum_percent": 39
+      },
+      {
+        "slug": "generic-candi-sugar-clear",
+        "minimum_percent": 1,
+        "maximum_percent": 1
+      },
+      {
+        "slug": "generic-pale-chocolate-malt",
+        "minimum_percent": 1,
+        "maximum_percent": 3
+      },
+      {
+        "slug": "generic-brown-sugar-dark",
+        "minimum_percent": 7,
+        "maximum_percent": 7
+      },
+      {
+        "slug": "weyermann-carapils",
+        "minimum_percent": 0,
+        "maximum_percent": 11
+      },
+      {
+        "slug": "briess-goldpils-vienna-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 36
+      },
+      {
+        "slug": "briess-rye-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 32
+      },
+      {
+        "slug": "generic-6-row-brewers-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 89
+      },
+      {
+        "slug": "weyermann-caramunich-i",
+        "minimum_percent": 2,
+        "maximum_percent": 12
+      },
+      {
+        "slug": "briess-caramel-malt-80l",
+        "minimum_percent": 0,
+        "maximum_percent": 12
+      },
+      {
+        "slug": "briess-caramel-malt-20l",
+        "minimum_percent": 0,
+        "maximum_percent": 14
+      },
+      {
+        "slug": "weyermann-caramunich-iii",
+        "minimum_percent": 3,
+        "maximum_percent": 10
+      },
+      {
+        "slug": "briess-munich-malt-20l",
+        "minimum_percent": 0,
+        "maximum_percent": 20
+      },
+      {
+        "slug": "briess-wheat-malt-white",
+        "minimum_percent": 0,
+        "maximum_percent": 39
+      },
+      {
+        "slug": "gambrinus-honey-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 16
+      },
+      {
+        "slug": "generic-turbinado",
+        "minimum_percent": 8,
+        "maximum_percent": 8
+      },
+      {
+        "slug": "briess-carapils-malt",
+        "minimum_percent": 0,
+        "maximum_percent": 26
+      },
+      {
+        "slug": "briess-brewers-malt",
+        "minimum_percent": 39,
+        "maximum_percent": 100
+      },
+      {
+        "slug": "weyermann-carared",
+        "minimum_percent": 1,
+        "maximum_percent": 14
+      },
+      {
+        "slug": "generic-dextrose-corn-sugar",
+        "minimum_percent": 0,
+        "maximum_percent": 13
+      },
+      {
+        "slug": "weyermann-caramunich-ii",
+        "minimum_percent": 1,
+        "maximum_percent": 11
+      }
+    ],
+    "maximum_count": 3
+  },
+  "sensory": [
+    {
+      "name": "grainy",
+      "minimum": 0.9243333333333335,
+      "maximum": 1.6856666666666669
+    },
+    {
+      "name": "biscuit",
+      "minimum": 0.893,
+      "maximum": 1.065
+    },
+    {
+      "name": "toast",
+      "minimum": 0.6536666666666666,
+      "maximum": 1.0783333333333331
+    },
+    {
+      "name": "bready",
+      "minimum": 0,
+      "maximum": 0.7313333333333333
+    },
+    {
+      "name": "caramel",
+      "minimum": 0,
+      "maximum": 0.27
+    }
+  ],
+  "color_srm": {
+    "minimum": 7,
+    "maximum": 9
+  }
+}

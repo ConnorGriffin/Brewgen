@@ -37,15 +37,6 @@ export function levelBand (level, styleMin, styleMax) {
   }
 }
 
-/* The default level a style-mentioned flavour arrives at, from its style mean —
- * mirrors the locked mockup's seeding (mean>=2 bold, >=0.8 present, else hint). */
-export function seedLevel (mean) {
-  const m = Number(mean) || 0
-  if (m >= 2) return 3
-  if (m >= 0.8) return 2
-  return 1
-}
-
 /* Convert a target ABV into an original gravity using the fixed attenuation, so
  * the strength slider actually moves the brief the solver judges. */
 export function abvToOg (abv) {

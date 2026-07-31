@@ -1,0 +1,1481 @@
+{
+  "brief_version": 1,
+  "styles": {
+    "altbier": {
+      "abv": 4.9,
+      "srm": 14,
+      "flavors": [
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "nutty",
+          "level": 1
+        },
+        {
+          "name": "bread_crust",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        }
+      ]
+    },
+    "american-amber-ale": {
+      "abv": 5.4,
+      "srm": 14,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "american-barleywine": {
+      "abv": 10.0,
+      "srm": 15,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        }
+      ]
+    },
+    "american-brown-ale": {
+      "abv": 5.3,
+      "srm": 27,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "nutty",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "american-ipa": {
+      "abv": 6.5,
+      "srm": 10,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "american-lager": {
+      "abv": 4.8,
+      "srm": 3,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "bitter",
+          "level": 1
+        }
+      ]
+    },
+    "american-light-lager": {
+      "abv": 3.5,
+      "srm": 3,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "bitter",
+          "level": 1
+        }
+      ]
+    },
+    "american-pale-ale": {
+      "abv": 5.4,
+      "srm": 8,
+      "flavors": [
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "american-porter": {
+      "abv": 5.7,
+      "srm": 31,
+      "flavors": [
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "toffee",
+          "level": 1
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        }
+      ]
+    },
+    "american-stout": {
+      "abv": 6.0,
+      "srm": 35,
+      "flavors": [
+        {
+          "name": "coffee",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        },
+        {
+          "name": "dark_chocolate",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "burnt",
+          "level": 1
+        }
+      ]
+    },
+    "american-wheat-beer": {
+      "abv": 4.8,
+      "srm": 5,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "clove",
+          "level": 1
+        }
+      ]
+    },
+    "baltic-porter": {
+      "abv": 8.0,
+      "srm": 24,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "nutty",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "belgian-blond-ale": {
+      "abv": 6.8,
+      "srm": 6,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "honey",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "earthy",
+          "level": 1
+        }
+      ]
+    },
+    "belgian-dark-strong-ale": {
+      "abv": 10.0,
+      "srm": 17,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "raisin",
+          "level": 1
+        }
+      ]
+    },
+    "belgian-dubbel": {
+      "abv": 6.8,
+      "srm": 14,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "belgian-golden-strong-ale": {
+      "abv": 9.0,
+      "srm": 5,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "bitter",
+          "level": 1
+        }
+      ]
+    },
+    "belgian-pale-ale": {
+      "abv": 5.2,
+      "srm": 11,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "honey",
+          "level": 1
+        }
+      ]
+    },
+    "belgian-tripel": {
+      "abv": 8.5,
+      "srm": 6,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        }
+      ]
+    },
+    "berliner-weisse": {
+      "abv": 3.3,
+      "srm": 3,
+      "flavors": [
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "bread_dough",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        }
+      ]
+    },
+    "best-bitter": {
+      "abv": 4.2,
+      "srm": 12,
+      "flavors": [
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "biscuit",
+          "level": 1
+        }
+      ]
+    },
+    "black-ipa": {
+      "abv": 7.3,
+      "srm": 33,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 2
+        }
+      ]
+    },
+    "blonde-ale": {
+      "abv": 4.7,
+      "srm": 5,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 1
+        }
+      ]
+    },
+    "british-brown-ale": {
+      "abv": 4.8,
+      "srm": 17,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "nutty",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "british-strong-ale": {
+      "abv": 6.8,
+      "srm": 13,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "nutty",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "toffee",
+          "level": 1
+        }
+      ]
+    },
+    "california-common": {
+      "abv": 5.0,
+      "srm": 12,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        }
+      ]
+    },
+    "cream-ale": {
+      "abv": 4.9,
+      "srm": 4,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        }
+      ]
+    },
+    "czech-premium-pale-lager": {
+      "abv": 5.0,
+      "srm": 5,
+      "flavors": [
+        {
+          "name": "bready",
+          "level": 1
+        }
+      ]
+    },
+    "dark-mild": {
+      "abv": 3.4,
+      "srm": 19,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "nutty",
+          "level": 2
+        }
+      ]
+    },
+    "doppelbock": {
+      "abv": 8.5,
+      "srm": 16,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "caramel",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        }
+      ]
+    },
+    "double-ipa": {
+      "abv": 8.8,
+      "srm": 10,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "dunkles-bock": {
+      "abv": 6.8,
+      "srm": 18,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        }
+      ]
+    },
+    "english-barleywine": {
+      "abv": 10.0,
+      "srm": 15,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "malty",
+          "level": 1
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "biscuit",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        }
+      ]
+    },
+    "english-ipa": {
+      "abv": 6.3,
+      "srm": 7,
+      "flavors": [
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 1
+        }
+      ]
+    },
+    "experimental-beer": {
+      "abv": 5.0,
+      "srm": 11,
+      "flavors": []
+    },
+    "flanders-red-ale": {
+      "abv": 5.6,
+      "srm": 13,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "vanilla",
+          "level": 1
+        },
+        {
+          "name": "sour",
+          "level": 1
+        }
+      ]
+    },
+    "foreign-extra-stout": {
+      "abv": 7.2,
+      "srm": 35,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        },
+        {
+          "name": "burnt",
+          "level": 1
+        },
+        {
+          "name": "dried_fruit",
+          "level": 1
+        }
+      ]
+    },
+    "fruit-beer": {
+      "abv": 5.0,
+      "srm": 11,
+      "flavors": []
+    },
+    "fruit-lambic": {
+      "abv": 6.0,
+      "srm": 5,
+      "flavors": [
+        {
+          "name": "sour",
+          "level": 1
+        },
+        {
+          "name": "vanilla",
+          "level": 1
+        },
+        {
+          "name": "earthy",
+          "level": 1
+        },
+        {
+          "name": "tart",
+          "level": 1
+        }
+      ]
+    },
+    "german-pils": {
+      "abv": 4.8,
+      "srm": 4,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "honey",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "bitter",
+          "level": 1
+        }
+      ]
+    },
+    "gueuze": {
+      "abv": 6.5,
+      "srm": 5,
+      "flavors": [
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "honey",
+          "level": 1
+        }
+      ]
+    },
+    "helles-bock": {
+      "abv": 6.9,
+      "srm": 9,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        }
+      ]
+    },
+    "imperial-stout": {
+      "abv": 10.0,
+      "srm": 35,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        }
+      ]
+    },
+    "international-dark-lager": {
+      "abv": 5.1,
+      "srm": 18,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        },
+        {
+          "name": "burnt",
+          "level": 1
+        }
+      ]
+    },
+    "irish-red-ale": {
+      "abv": 4.4,
+      "srm": 12,
+      "flavors": [
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "toffee",
+          "level": 1
+        }
+      ]
+    },
+    "irish-stout": {
+      "abv": 4.3,
+      "srm": 33,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        },
+        {
+          "name": "dark_chocolate",
+          "level": 1
+        },
+        {
+          "name": "cocoa",
+          "level": 1
+        }
+      ]
+    },
+    "kolsch": {
+      "abv": 4.8,
+      "srm": 4,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "honey",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        }
+      ]
+    },
+    "marzen": {
+      "abv": 6.1,
+      "srm": 13,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 1
+        }
+      ]
+    },
+    "munich-dunkel": {
+      "abv": 5.1,
+      "srm": 21,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "toffee",
+          "level": 1
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        }
+      ]
+    },
+    "munich-helles": {
+      "abv": 5.1,
+      "srm": 4,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        }
+      ]
+    },
+    "oatmeal-stout": {
+      "abv": 5.1,
+      "srm": 31,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "nutty",
+          "level": 2
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        }
+      ]
+    },
+    "old-ale": {
+      "abv": 7.3,
+      "srm": 16,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "nutty",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "toffee",
+          "level": 1
+        }
+      ]
+    },
+    "ordinary-bitter": {
+      "abv": 3.5,
+      "srm": 9,
+      "flavors": [
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "toffee",
+          "level": 1
+        }
+      ]
+    },
+    "pre-prohibition-lager": {
+      "abv": 5.3,
+      "srm": 5,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        }
+      ]
+    },
+    "red-ipa": {
+      "abv": 6.5,
+      "srm": 18,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "toast",
+          "level": 1
+        }
+      ]
+    },
+    "saison": {
+      "abv": 4.3,
+      "srm": 8,
+      "flavors": [
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "schwarzbier": {
+      "abv": 4.9,
+      "srm": 24,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "dark_chocolate",
+          "level": 1
+        },
+        {
+          "name": "bitter",
+          "level": 1
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        }
+      ]
+    },
+    "scottish-export": {
+      "abv": 5.0,
+      "srm": 18,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 1
+        },
+        {
+          "name": "bready",
+          "level": 1
+        },
+        {
+          "name": "biscuit",
+          "level": 1
+        },
+        {
+          "name": "toast",
+          "level": 1
+        }
+      ]
+    },
+    "specialty-smoked-beer": {
+      "abv": 5.0,
+      "srm": 11,
+      "flavors": [
+        {
+          "name": "sour",
+          "level": 1
+        },
+        {
+          "name": "bitter",
+          "level": 1
+        },
+        {
+          "name": "burnt",
+          "level": 1
+        },
+        {
+          "name": "woody",
+          "level": 1
+        }
+      ]
+    },
+    "spice-herb-or-vegetable-beer": {
+      "abv": 5.0,
+      "srm": 11,
+      "flavors": [
+        {
+          "name": "bitter",
+          "level": 1
+        }
+      ]
+    },
+    "strong-bitter": {
+      "abv": 5.4,
+      "srm": 13,
+      "flavors": [
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "biscuit",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "nutty",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "sweet-stout": {
+      "abv": 5.0,
+      "srm": 35,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        },
+        {
+          "name": "earthy",
+          "level": 1
+        }
+      ]
+    },
+    "vienna-lager": {
+      "abv": 5.1,
+      "srm": 12,
+      "flavors": [
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "caramel",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 1
+        },
+        {
+          "name": "roasted",
+          "level": 1
+        }
+      ]
+    },
+    "wee-heavy": {
+      "abv": 8.3,
+      "srm": 20,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 1
+        },
+        {
+          "name": "nutty",
+          "level": 1
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        }
+      ]
+    },
+    "weissbier": {
+      "abv": 4.9,
+      "srm": 4,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 2
+        },
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        },
+        {
+          "name": "vanilla",
+          "level": 1
+        },
+        {
+          "name": "clove",
+          "level": 1
+        }
+      ]
+    },
+    "winter-seasonal-beer": {
+      "abv": 5.0,
+      "srm": 11,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 2
+        },
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "nutty",
+          "level": 1
+        },
+        {
+          "name": "honey",
+          "level": 1
+        }
+      ]
+    },
+    "witbier": {
+      "abv": 5.0,
+      "srm": 3,
+      "flavors": [
+        {
+          "name": "sweet",
+          "level": 3
+        },
+        {
+          "name": "malty",
+          "level": 3
+        },
+        {
+          "name": "bready",
+          "level": 2
+        },
+        {
+          "name": "honey",
+          "level": 2
+        },
+        {
+          "name": "grainy",
+          "level": 2
+        }
+      ]
+    },
+    "wood-aged-beer": {
+      "abv": 5.0,
+      "srm": 11,
+      "flavors": [
+        {
+          "name": "toast",
+          "level": 2
+        },
+        {
+          "name": "caramel",
+          "level": 1
+        },
+        {
+          "name": "toffee",
+          "level": 1
+        },
+        {
+          "name": "almond",
+          "level": 1
+        },
+        {
+          "name": "coffee",
+          "level": 1
+        }
+      ]
+    }
+  }
+}

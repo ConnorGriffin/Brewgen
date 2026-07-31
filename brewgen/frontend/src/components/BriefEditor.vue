@@ -3,9 +3,7 @@ import { reactive, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import FlavorRow from './FlavorRow.vue'
 import { listStyles, getStyle, fetchSensoryRange, fetchFeasibility } from '@/api.js'
 import { srmGradient, srmWord } from '@/srm.js'
-import {
-  seedLevel, buildBrief, briefKey, focusedRangeKey, humanize
-} from '@/brief.js'
+import { buildBrief, briefKey, focusedRangeKey, humanize } from '@/brief.js'
 
 const emit = defineEmits(['generate'])
 
@@ -103,6 +101,12 @@ async function loadStyle (slug, edited = true) {
     loadError.value = true
     return
   }
+  // Every style ships a proved default; a payload without one is as unusable as
+  // a payload that never arrived, so it takes the same quiet notice.
+  if (!data.default) {
+    loadError.value = true
+    return
+  }
   loadError.value = false
   style.value = data
 
@@ -110,37 +114,34 @@ async function loadStyle (slug, edited = true) {
   const srm = data.stats?.srm || { low: 2, high: 20 }
   abvBounds.min = round1(abv.low)
   abvBounds.max = round1(abv.high)
-  brief.abv = round1((abv.low + abv.high) / 2)
   srmBounds.min = Math.round(srm.low)
   srmBounds.max = Math.round(srm.high)
-  brief.srm = Math.round((srm.low + srm.high) / 2)
 
-  brief.flavors = seedFlavors(data)
+  brief.abv = data.default.abv
+  brief.srm = data.default.srm
+  brief.flavors = provedFlavors(data)
   // Initial style data is enough to Generate; only a visitor's later style
   // change earns a lazy advisory preview.
   if (edited) scheduleFeasibility()
 }
 
-/* Style-mentioned flavours arrive pre-set (BJCP descriptors), seeded to a level
- * from their style mean, capped at five rows. No range requests fire here —
- * a focused range is fetched only when the visitor opens or adds a flavour. */
-function seedFlavors (data) {
-  const mentioned = Object.keys(data.bjcp_sensory || {})
+/* The style's committed default brief: a strength, a colour and flavour rows at
+ * word steps that generation has already proved admit a grain bill. It rides in
+ * with the style payload, so opening a style still costs no compute, and nothing
+ * is re-derived here — what shows is exactly what was proved. */
+function provedFlavors (data) {
   const byName = new Map((data.sensory_data || []).map((s) => [s.name, s]))
-  return mentioned
-    .filter((name) => byName.has(name))
-    .slice(0, MAX_ROWS)
-    .map((name) => {
-      const sd = byName.get(name)
-      return {
-        name,
-        level: seedLevel(sd.mean),
-        styleMin: sd.min,
-        styleMax: sd.max,
-        range: null,
-        rangeKey: null
-      }
-    })
+  return data.default.flavors.map((row) => {
+    const sd = byName.get(row.name)
+    return {
+      name: row.name,
+      level: row.level,
+      styleMin: sd.min,
+      styleMax: sd.max,
+      range: null,
+      rangeKey: null
+    }
+  })
 }
 
 /* ---- focused single-descriptor range ------------------------------------ */

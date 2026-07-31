@@ -168,6 +168,12 @@ async function captureShots(shots) {
     // Append the shot index so the init script selects the right fetch stub.
     await page.goto(withShotParam(url, i), { waitUntil: 'networkidle' });
 
+    // Park the pointer off every control. One page serves all shots and the
+    // mouse position survives navigation, so a shot that follows a `clicks`
+    // shot would otherwise inherit its :hover — an un-clicked screen captured
+    // with its primary button lit, which is not what the app shows on load.
+    await page.mouse.move(0, 0);
+
     // Optional interaction steps for screens that are only reached by clicking
     // (e.g. a Generate button, then opening a results card). Each entry is a CSS
     // selector; Playwright's click auto-waits for the element to be visible and
